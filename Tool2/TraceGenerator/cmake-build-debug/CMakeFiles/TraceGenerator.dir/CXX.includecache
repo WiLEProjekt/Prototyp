@@ -1,0 +1,48 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/MarkovModel.cpp
+MarkovModel.h
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/MarkovModel.h
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/MarkovModel.h
+PacketlossModel.h
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PacketlossModel.h
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PacketlossModel.cpp
+PacketlossModel.h
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PacketlossModel.h
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PacketlossModel.h
+PaketlossModelType.h
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PaketlossModelType.h
+string
+-
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PaketlossModelType.cpp
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PaketlossModelType.h
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/TraceGenerator.cpp
+cstring
+-
+algorithm
+-
+TraceGenerator.h
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/TraceGenerator.h
+PaketlossModel/PaketlossModelType.h
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/PaketlossModel/PaketlossModelType.h
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/TraceGenerator.h
+iostream
+-
+
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/main.cpp
+TraceGenerator.h
+F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/TraceGenerator.h
+
