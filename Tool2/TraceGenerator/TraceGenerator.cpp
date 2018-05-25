@@ -34,21 +34,21 @@ TraceGenerator::TraceGenerator(int argc, char** argv) {
             int numPackets = atoi(argv[3]);
             float p = atof(argv[4]);
             float r = atof(argv[5]);
-            float k = 0;
+            float k = 1;
             float h = atof(argv[6]);
             model = new GilbertElliot(atoi(argv[2]),numPackets, p, r, k, h);
         }else if (strcmp(modelname.c_str(), "simplegilbert") == 0) {
             int numPackets = atoi(argv[3]);
             float p = atof(argv[4]);
             float r = atof(argv[5]);
-            float k = 0;
+            float k = 1;
             float h = 0;
             model = new GilbertElliot(atoi(argv[2]),numPackets, p, r, k, h);
         }else if (strcmp(modelname.c_str(), "bernoulli") == 0) {
             int numPackets = atoi(argv[3]);
             float p = atof(argv[4]);
             float r = 1-p;
-            float k = 0;
+            float k = 1;
             float h = 0;
             model = new GilbertElliot(atoi(argv[2]),numPackets, p, r, k, h);
         }else {
