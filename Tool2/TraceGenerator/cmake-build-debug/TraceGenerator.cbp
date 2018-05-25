@@ -108,16 +108,16 @@
 		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/PaketlossModel/PaketlossModelType.h">
 			<Option target="TraceGenerator"/>
 		</Unit>
-		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/PaketlossModel/TraceSaver.cpp">
-			<Option target="TraceGenerator"/>
-		</Unit>
-		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/PaketlossModel/TraceSaver.h">
-			<Option target="TraceGenerator"/>
-		</Unit>
 		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/TraceGenerator.cpp">
 			<Option target="TraceGenerator"/>
 		</Unit>
 		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/TraceGenerator.h">
+			<Option target="TraceGenerator"/>
+		</Unit>
+		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/TraceSaver.cpp">
+			<Option target="TraceGenerator"/>
+		</Unit>
+		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/TraceSaver.h">
 			<Option target="TraceGenerator"/>
 		</Unit>
 		<Unit filename="/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/main.cpp">

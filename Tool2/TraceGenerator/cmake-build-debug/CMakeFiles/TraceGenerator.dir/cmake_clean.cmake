@@ -5,7 +5,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/TraceGenerator.dir/PaketlossModel/MarkovModel.cpp.o"
   "CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o"
   "CMakeFiles/TraceGenerator.dir/PaketlossModel/GilbertElliot.cpp.o"
-  "CMakeFiles/TraceGenerator.dir/PaketlossModel/TraceSaver.cpp.o"
+  "CMakeFiles/TraceGenerator.dir/TraceSaver.cpp.o"
   "TraceGenerator.pdb"
   "TraceGenerator"
 )

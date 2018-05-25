@@ -17,16 +17,16 @@ CMakeFiles/TraceGenerator.dir/PaketlossModel/PacketlossModel.cpp.o: ../Paketloss
 
 CMakeFiles/TraceGenerator.dir/PaketlossModel/PaketlossModelType.cpp.o: ../PaketlossModel/PaketlossModelType.cpp
 
-CMakeFiles/TraceGenerator.dir/PaketlossModel/TraceSaver.cpp.o: ../PaketlossModel/TraceSaver.cpp
-CMakeFiles/TraceGenerator.dir/PaketlossModel/TraceSaver.cpp.o: ../PaketlossModel/TraceSaver.h
-
 CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../PaketlossModel/GilbertElliot.h
 CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../PaketlossModel/MarkovModel.h
 CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../PaketlossModel/PacketlossModel.h
 CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../PaketlossModel/PaketlossModelType.h
-CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../PaketlossModel/TraceSaver.h
 CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../TraceGenerator.cpp
 CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../TraceGenerator.h
+CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o: ../TraceSaver.h
+
+CMakeFiles/TraceGenerator.dir/TraceSaver.cpp.o: ../TraceSaver.cpp
+CMakeFiles/TraceGenerator.dir/TraceSaver.cpp.o: ../TraceSaver.h
 
 CMakeFiles/TraceGenerator.dir/main.cpp.o: ../TraceGenerator.h
 CMakeFiles/TraceGenerator.dir/main.cpp.o: ../main.cpp

@@ -12,15 +12,15 @@
 class GilbertElliot : public PacketlossModel{
 private:
     int numPackets;
-    int p;
-    int r;
-    int k;
-    int h;
+    float p;
+    float r;
+    float k;
+    float h;
 protected:
     vector<bool> buildTrace() override ;
 
 public:
-    GilbertElliot(unsigned int seed, int numPackets, int p, int r, int k, int h)
+    GilbertElliot(unsigned int seed, int numPackets, float p, float r, float k, float h)
             : PacketlossModel(seed), numPackets(numPackets), p(p), r(r), k(k), h(h) {};
 };
 

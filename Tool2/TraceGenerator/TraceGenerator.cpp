@@ -8,7 +8,7 @@
 #include "PaketlossModel/PaketlossModelType.h"
 #include "PaketlossModel/MarkovModel.h"
 #include "PaketlossModel/GilbertElliot.h"
-#include "PaketlossModel/TraceSaver.h"
+#include "TraceSaver.h"
 
 TraceGenerator::TraceGenerator(int argc, char** argv) {
     if(argc < 2){
@@ -76,11 +76,11 @@ void TraceGenerator::printModels() {
 void TraceGenerator::printPacketloss(vector<bool> trace){
     long zeros = 0;
     for (auto &&i : trace) {
-        if(i = false){
+        if(i == false){
             zeros++;
         }
     }
-    cout << " Packetloss: " << 100-(100/(float)trace.size()) * (float)zeros << "%" << endl;
+    cout << " Packetloss: " << (100/(float)trace.size()) * (float)zeros << "%" << endl;
 }
 
 
