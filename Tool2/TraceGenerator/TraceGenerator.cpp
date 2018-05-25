@@ -34,7 +34,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             double r = atof(argv[5]);
             double k = atof(argv[6]);
             double h = atof(argv[7]);
-            if (numPackets < 1 || numPackets > 2147483647 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
+            if (numPackets < 1 || numPackets > numeric_limits<long>::max()-1 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
                 h < 0 || h > 1) {
                 this->printModels();
             } else {
@@ -45,7 +45,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             double r = atof(argv[5]);
             double k = 1;
             double h = atof(argv[6]);
-            if (numPackets < 1 || numPackets > 2147483647 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
+            if (numPackets < 1 || numPackets > numeric_limits<long>::max()-1 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
                 h < 0 || h > 1) {
                 this->printModels();
             } else {
@@ -56,7 +56,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             double r = atof(argv[5]);
             double k = 1;
             double h = 0;
-            if (numPackets < 1 || numPackets > 2147483647 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
+            if (numPackets < 1 || numPackets > numeric_limits<long>::max()-1 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
                 h < 0 || h > 1) {
                 this->printModels();
             } else {
