@@ -36,9 +36,9 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             double h = atof(argv[7]);
             if (numPackets < 1 || numPackets > 2147483647 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
                 h < 0 || h > 1) {
-                model = new GilbertElliot(seed, numPackets, p, r, k, h);
-            } else {
                 this->printModels();
+            } else {
+                model = new GilbertElliot(seed, numPackets, p, r, k, h);
             }
         } else if (strcmp(modelname.c_str(), "gilbert") == 0) {
             double p = atof(argv[4]);
@@ -47,9 +47,9 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             double h = atof(argv[6]);
             if (numPackets < 1 || numPackets > 2147483647 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
                 h < 0 || h > 1) {
-                model = new GilbertElliot(seed, numPackets, p, r, k, h);
-            } else {
                 this->printModels();
+            } else {
+                model = new GilbertElliot(seed, numPackets, p, r, k, h);
             }
         } else if (strcmp(modelname.c_str(), "simplegilbert") == 0) {
             double p = atof(argv[4]);
@@ -58,9 +58,9 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             double h = 0;
             if (numPackets < 1 || numPackets > 2147483647 || p < 0 || p > 1 || r < 0 || r > 1 || k < 0 || k > 1 ||
                 h < 0 || h > 1) {
-                model = new GilbertElliot(seed, numPackets, p, r, k, h);
-            } else {
                 this->printModels();
+            } else {
+                model = new GilbertElliot(seed, numPackets, p, r, k, h);
             }
         } else if (strcmp(modelname.c_str(), "bernoulli") == 0) {
             double p = atof(argv[4]);
