@@ -6,13 +6,16 @@
 #define TRACEGENERATOR_MARKOVMODEL_H
 
 
+#include <vector>
 #include "PacketlossModel.h"
 
 using namespace std;
-class MarkovModel : PacketlossModel {
+class MarkovModel : public PacketlossModel {
+protected:
+    vector<bool> buildTrace() override;
+
 public:
-    MarkovModel();
-    string buildTrace() override;
+    MarkovModel(unsigned int seed) : PacketlossModel(seed) {}
 };
 
 

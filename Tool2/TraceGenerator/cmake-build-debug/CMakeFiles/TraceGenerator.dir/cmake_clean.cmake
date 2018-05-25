@@ -1,13 +1,13 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/TraceGenerator.dir/main.cpp.obj"
-  "CMakeFiles/TraceGenerator.dir/PaketlossModel/PaketlossModelType.cpp.obj"
-  "CMakeFiles/TraceGenerator.dir/PaketlossModel/PacketlossModel.cpp.obj"
-  "CMakeFiles/TraceGenerator.dir/PaketlossModel/MarkovModel.cpp.obj"
-  "CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.obj"
+  "CMakeFiles/TraceGenerator.dir/main.cpp.o"
+  "CMakeFiles/TraceGenerator.dir/PaketlossModel/PaketlossModelType.cpp.o"
+  "CMakeFiles/TraceGenerator.dir/PaketlossModel/PacketlossModel.cpp.o"
+  "CMakeFiles/TraceGenerator.dir/PaketlossModel/MarkovModel.cpp.o"
+  "CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o"
+  "CMakeFiles/TraceGenerator.dir/PaketlossModel/GilbertElliot.cpp.o"
+  "CMakeFiles/TraceGenerator.dir/PaketlossModel/TraceSaver.cpp.o"
   "TraceGenerator.pdb"
-  "TraceGenerator.exe"
-  "TraceGenerator.exe.manifest"
-  "libTraceGenerator.dll.a"
+  "TraceGenerator"
 )
 
 # Per-language clean rules from dependency scanning.

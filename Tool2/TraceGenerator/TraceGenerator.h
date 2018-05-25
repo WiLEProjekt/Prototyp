@@ -6,16 +6,16 @@
 #define TRACEGENERATOR_TRACEGENERATOR_H
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 class TraceGenerator {
 private:
     void printError();
-    void parseArguments(int argc, char** argv, string* model, char** args);
     void printModels();
+    void printPacketloss(vector<bool> trace);
 public:
     TraceGenerator(int argc, char** argv);
-
 };
 
 

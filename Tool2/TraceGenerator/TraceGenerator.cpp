@@ -7,6 +7,8 @@
 #include "TraceGenerator.h"
 #include "PaketlossModel/PaketlossModelType.h"
 #include "PaketlossModel/MarkovModel.h"
+#include "PaketlossModel/GilbertElliot.h"
+#include "PaketlossModel/TraceSaver.h"
 
 TraceGenerator::TraceGenerator(int argc, char** argv) {
     if(argc < 2){
@@ -14,18 +16,50 @@ TraceGenerator::TraceGenerator(int argc, char** argv) {
     } if(argc == 2 && strcmp(argv[1], "-showmodel") == 0){
         this->printModels();
     } else {
-        auto *args = new char[argc - 2];
-        string modelname;
-        this->parseArguments(argc, argv, &modelname, &args);
+        string modelname(argv[1]);
         std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
 
         PacketlossModel *model;
 
-        if(strcmp(modelname, "markov") == 0){
-            model = new MarkovModel();
-        } else if(strcmp(modelname, "bernoulli") == 0){
-
+        if (strcmp(modelname.c_str(), "markov") == 0) {
+            model = new MarkovModel(atoi(argv[2]));
+        } else if (strcmp(modelname.c_str(), "gilbertelliot") == 0) {
+            int numPackets = atoi(argv[3]);
+            float p = atof(argv[4]);
+            float r = atof(argv[5]);
+            float k = atof(argv[6]);
+            float h = atof(argv[7]);
+            model = new GilbertElliot(atoi(argv[2]),numPackets, p, r, k, h);
+        } else if (strcmp(modelname.c_str(), "gilbert") == 0) {
+            int numPackets = atoi(argv[3]);
+            float p = atof(argv[4]);
+            float r = atof(argv[5]);
+            float k = 0;
+            float h = atof(argv[6]);
+            model = new GilbertElliot(atoi(argv[2]),numPackets, p, r, k, h);
+        }else if (strcmp(modelname.c_str(), "simplegilbert") == 0) {
+            int numPackets = atoi(argv[3]);
+            float p = atof(argv[4]);
+            float r = atof(argv[5]);
+            float k = 0;
+            float h = 0;
+            model = new GilbertElliot(atoi(argv[2]),numPackets, p, r, k, h);
+        }else if (strcmp(modelname.c_str(), "bernoulli") == 0) {
+            int numPackets = atoi(argv[3]);
+            float p = atof(argv[4]);
+            float r = 1-p;
+            float k = 0;
+            float h = 0;
+            model = new GilbertElliot(atoi(argv[2]),numPackets, p, r, k, h);
+        }else {
+            cout << "Kein Gültiges Modell gewählt" << endl;
+            this->printModels();
+            return;
         }
+
+        vector<bool> trace = model->buildTrace();
+        this->printPacketloss(trace);
+        TraceSaver::writeTraceToFile(trace);
     }
 }
 
@@ -34,15 +68,19 @@ void TraceGenerator::printError() {
             "den Argumenten [args]\n\tTraceGenerator -showmodel\tzeigt alle verfügbaren Modelle an" << endl;
 }
 
-void TraceGenerator::parseArguments(int argc, char** argv, string* model, char** args) {
-    *model = argv[1];
-    for(int i = 0; i < argc - 2; i++){
-        args[i] = argv[i + 2];
-    }
+void TraceGenerator::printModels() {
+    cout << "Verfügbare Modelle:\n GilbertElliot [seed] [p] [r] [k] [h]\nGilbert [seed] [p] [r] [h]\n"
+            "SimpleGilbert [seed] [p] [r]\nBernoulli [seed] [p]\n Markov [seed]" << endl;
 }
 
-void TraceGenerator::printModels() {
-    cout << "Verfügbare Modelle:\n Bernoulli\n Markov" << endl;
+void TraceGenerator::printPacketloss(vector<bool> trace){
+    long zeros = 0;
+    for (auto &&i : trace) {
+        if(i = false){
+            zeros++;
+        }
+    }
+    cout << " Packetloss: " << 100-(100/(float)trace.size()) * (float)zeros << "%" << endl;
 }
 
 

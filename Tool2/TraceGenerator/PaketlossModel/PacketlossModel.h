@@ -10,10 +10,11 @@
 
 using namespace std;
 class PacketlossModel {
+protected:
+    float generateRandomNumber();
+    PacketlossModel(unsigned int seed){srand(seed);}
 public:
-    string generateTrace();
-    virtual string buildTrace() = 0;
-    bool checkTrace(string trace);
+    virtual vector<bool> buildTrace() = 0;
 };
 
 

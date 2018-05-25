@@ -1,4 +1,4 @@
-"F:\Program Files\JetBrains\CLion 2017.2.3\bin\cmake\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - MinGW Makefiles" "F:\Eigene Dateien\Documents\Projekte\C\TraceGenerator"
+/home/drieke/Downloads/clion-2018.1.2/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator
 -- Configuring done
 -- Generating done
--- Build files have been written to: F:/Eigene Dateien/Documents/Projekte/C/TraceGenerator/cmake-build-debug
+-- Build files have been written to: /home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/cmake-build-debug

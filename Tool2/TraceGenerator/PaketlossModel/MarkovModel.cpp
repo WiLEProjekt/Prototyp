@@ -2,11 +2,14 @@
 // Created by woors on 22.05.2018.
 //
 
+#include <iostream>
 #include "MarkovModel.h"
 
-MarkovModel::MarkovModel() : PacketlossModel() {}
-
-string MarkovModel::buildTrace() {
-    return "0101110101011101010101";
+vector<bool> MarkovModel::buildTrace() {
+    auto *trace = new vector<bool>();
+    for(int i = 0; i < 100; i ++){
+        trace->push_back(true);
+    }
+    return *trace;
 }
 

@@ -2,22 +2,11 @@
 // Created by woors on 22.05.2018.
 //
 
+#include <stdexcept>
+#include <vector>
 #include "PacketlossModel.h"
 
-string PacketlossModel::generateTrace() {
-    string trace = this->buildTrace();
-    if (this->checkTrace(trace)) {
-        return trace;
-    } else{
-        throw;
-    }
-}
-
-bool PacketlossModel::checkTrace(string trace) {
-    for (char c : trace) {
-        if(c != '0' && c != '1'){
-            return false;
-        }
-    }
-    return true;
+float PacketlossModel::generateRandomNumber() {
+    float max_random_number = 1.0;
+    return(static_cast <float> (rand()) / (RAND_MAX / max_random_number));
 }

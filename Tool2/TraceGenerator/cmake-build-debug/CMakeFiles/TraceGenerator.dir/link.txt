@@ -1,3 +1,1 @@
-"F:\Program Files\JetBrains\CLion 2017.2.3\bin\cmake\bin\cmake.exe" -E remove -f CMakeFiles\TraceGenerator.dir/objects.a
-F:\Programme\MinGW\bin\ar.exe cr CMakeFiles\TraceGenerator.dir/objects.a @CMakeFiles\TraceGenerator.dir\objects1.rsp
-F:\Programme\MinGW\bin\g++.exe -g   -Wl,--whole-archive CMakeFiles\TraceGenerator.dir/objects.a -Wl,--no-whole-archive  -o TraceGenerator.exe -Wl,--out-implib,libTraceGenerator.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\TraceGenerator.dir\linklibs.rsp
+/usr/bin/c++  -g   CMakeFiles/TraceGenerator.dir/main.cpp.o CMakeFiles/TraceGenerator.dir/PaketlossModel/PaketlossModelType.cpp.o CMakeFiles/TraceGenerator.dir/PaketlossModel/PacketlossModel.cpp.o CMakeFiles/TraceGenerator.dir/PaketlossModel/MarkovModel.cpp.o CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o CMakeFiles/TraceGenerator.dir/PaketlossModel/GilbertElliot.cpp.o CMakeFiles/TraceGenerator.dir/PaketlossModel/TraceSaver.cpp.o  -o TraceGenerator 
