@@ -1,6 +1,3 @@
-//
-// Created by woors on 22.05.2018.
-//
 
 #ifndef TRACEGENERATOR_PAKETLOSSMODEL_H
 #define TRACEGENERATOR_PAKETLOSSMODEL_H

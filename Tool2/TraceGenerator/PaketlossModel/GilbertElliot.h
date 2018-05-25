@@ -1,6 +1,4 @@
-//
-// Created by drieke on 25.05.18.
-//
+
 
 #ifndef TRACEGENERATOR_BERNOULLIMODEL_H
 #define TRACEGENERATOR_BERNOULLIMODEL_H
@@ -11,15 +9,12 @@
 
 class GilbertElliot : public PacketlossModel{
 private:
-    double p;
-    double r;
-    double k;
-    double h;
+    float p, r, k, h;
 protected:
     vector<bool> buildTrace() override ;
 
 public:
-    GilbertElliot(unsigned int seed, long numPackets, double p, double r, double k, double h)
+    GilbertElliot(unsigned int seed, long numPackets, float p, float r, float k, float h)
             : PacketlossModel(seed, numPackets), p(p), r(r), k(k), h(h) {};
 };
 

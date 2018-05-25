@@ -1,6 +1,3 @@
-//
-// Created by drieke on 25.05.18.
-//
 
 #include "TraceSaver.h"
 #include <fstream>
