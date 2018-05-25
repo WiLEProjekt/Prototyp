@@ -11,8 +11,9 @@
 using namespace std;
 class PacketlossModel {
 protected:
+    long numPackets;
     float generateRandomNumber();
-    PacketlossModel(unsigned int seed){srand(seed);}
+    PacketlossModel(unsigned int seed, long numPackets):numPackets(numPackets){srand(seed);}
 public:
     virtual vector<bool> buildTrace() = 0;
 };

@@ -9,7 +9,7 @@ vector<bool> GilbertElliot::buildTrace() {
     vector<bool> trace;
     bool good = true; // 1 = good state, 0 = bad state
     bool send = true; // 0 = loss, 1 = successfully send, or no loss
-    for(int i = 0; i<numPackets; i++){
+    for(long i = 0; i< this->numPackets; i++){
         if(good){ //in good state
             float randomNumberLossK = generateRandomNumber(); //Random Number that indicates if a packet is lost while being in a state
             float randomNumberStateP = generateRandomNumber(); //Random number that indicates a state transition from good -> bad

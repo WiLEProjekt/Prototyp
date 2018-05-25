@@ -15,7 +15,7 @@ protected:
     vector<bool> buildTrace() override;
 
 public:
-    MarkovModel(unsigned int seed) : PacketlossModel(seed) {}
+    MarkovModel(unsigned int seed, long numPackets) : PacketlossModel(seed, numPackets) {}
 };
 
 

@@ -55,8 +55,6 @@ algorithm
 -
 TraceGenerator.h
 /home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/TraceGenerator.h
-PaketlossModel/PaketlossModelType.h
-/home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/PaketlossModel/PaketlossModelType.h
 PaketlossModel/MarkovModel.h
 /home/drieke/Dokumente/Prototyp/Tool2/TraceGenerator/PaketlossModel/MarkovModel.h
 PaketlossModel/GilbertElliot.h

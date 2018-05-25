@@ -11,7 +11,21 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a194df5c-87c3-4a78-bb55-6d56380053a3" name="Default" comment="" />
+    <list default="true" id="a194df5c-87c3-4a78-bb55-6d56380053a3" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PaketlossModel/GilbertElliot.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/PaketlossModel/GilbertElliot.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PaketlossModel/GilbertElliot.h" beforeDir="false" afterPath="$PROJECT_DIR$/PaketlossModel/GilbertElliot.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PaketlossModel/MarkovModel.h" beforeDir="false" afterPath="$PROJECT_DIR$/PaketlossModel/MarkovModel.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PaketlossModel/PacketlossModel.h" beforeDir="false" afterPath="$PROJECT_DIR$/PaketlossModel/PacketlossModel.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TraceGenerator.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/TraceGenerator.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/CXX.includecache" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/CXX.includecache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/PaketlossModel/GilbertElliot.cpp.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/PaketlossModel/GilbertElliot.cpp.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/PaketlossModel/MarkovModel.cpp.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/PaketlossModel/MarkovModel.cpp.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/PaketlossModel/PacketlossModel.cpp.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/PaketlossModel/PacketlossModel.cpp.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TraceGenerator.dir/TraceGenerator.cpp.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/TraceGenerator" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/TraceGenerator" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/trace.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/trace.txt" afterDir="false" />
+    </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -35,11 +49,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TraceGenerator.cpp" pinned="false" current-in-tab="false">
+      <file leaf-file-name="TraceGenerator.cpp" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/TraceGenerator.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="255">
-              <caret line="32" column="30" selection-start-line="32" selection-start-column="30" selection-end-line="32" selection-end-column="30" />
+            <state relative-caret-position="608">
+              <caret line="70" column="13" selection-start-line="70" selection-start-column="13" selection-end-line="70" selection-end-column="13" />
               <folding>
                 <element signature="e#42#60#0" expanded="true" />
               </folding>
@@ -50,8 +64,8 @@
       <file leaf-file-name="GilbertElliot.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PaketlossModel/GilbertElliot.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="210">
-              <caret line="14" column="9" selection-start-line="14" selection-start-column="9" selection-end-line="14" selection-end-column="9" />
+            <state relative-caret-position="330">
+              <caret line="22" column="48" selection-start-line="22" selection-start-column="48" selection-end-line="22" selection-end-column="48" />
               <folding>
                 <element signature="e#123#140#0" expanded="true" />
               </folding>
@@ -59,13 +73,61 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="GilbertElliot.cpp" pinned="false" current-in-tab="true">
+      <file leaf-file-name="GilbertElliot.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PaketlossModel/GilbertElliot.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="285">
-              <caret line="19" column="98" lean-forward="true" selection-start-line="19" selection-start-column="98" selection-end-line="19" selection-end-column="98" />
+            <state relative-caret-position="165">
+              <caret line="11" column="23" selection-start-line="11" selection-start-column="23" selection-end-line="11" selection-end-column="23" />
               <folding>
                 <element signature="e#41#60#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MarkovModel.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="255">
+              <caret line="17" column="86" selection-start-line="17" selection-start-column="86" selection-end-line="17" selection-end-column="86" />
+              <folding>
+                <element signature="e#118#135#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="PacketlossModel.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PaketlossModel/PacketlossModel.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="150">
+              <caret line="10" column="42" selection-start-line="10" selection-start-column="42" selection-end-line="10" selection-end-column="42" />
+              <folding>
+                <element signature="e#42#62#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="PacketlossModel.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PaketlossModel/PacketlossModel.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="225">
+              <caret line="15" column="77" selection-start-line="15" selection-start-column="77" selection-end-line="15" selection-end-column="77" />
+              <folding>
+                <element signature="e#123#154#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MarkovModel.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="195">
+              <caret line="13" column="1" selection-start-line="13" selection-start-column="1" selection-end-line="13" selection-end-column="1" />
+              <folding>
+                <element signature="e#42#61#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -77,6 +139,9 @@
     <findStrings>
       <find>printPacketloss</find>
     </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
@@ -97,13 +162,13 @@
         <option value="$PROJECT_DIR$/PaketlossModel/BernoulliModel.cpp" />
         <option value="$PROJECT_DIR$/PaketlossModel/BernoulliModel.h" />
         <option value="$PROJECT_DIR$/PaketlossModel/MarkovModel.cpp" />
-        <option value="$PROJECT_DIR$/PaketlossModel/MarkovModel.h" />
         <option value="$PROJECT_DIR$/TraceGenerator.h" />
-        <option value="$PROJECT_DIR$/PaketlossModel/PacketlossModel.h" />
         <option value="$PROJECT_DIR$/PaketlossModel/PacketlossModel.cpp" />
-        <option value="$PROJECT_DIR$/TraceGenerator.cpp" />
-        <option value="$PROJECT_DIR$/PaketlossModel/GilbertElliot.h" />
         <option value="$PROJECT_DIR$/PaketlossModel/GilbertElliot.cpp" />
+        <option value="$PROJECT_DIR$/PaketlossModel/PacketlossModel.h" />
+        <option value="$PROJECT_DIR$/PaketlossModel/GilbertElliot.h" />
+        <option value="$PROJECT_DIR$/PaketlossModel/MarkovModel.h" />
+        <option value="$PROJECT_DIR$/TraceGenerator.cpp" />
       </list>
     </option>
   </component>
@@ -123,12 +188,12 @@
     <option name="width" value="933" />
     <option name="height" value="946" />
   </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -145,11 +210,13 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="settings.saveactions" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -171,7 +238,7 @@
   </component>
   <component name="RunManager" selected="Application.TraceGenerator">
     <configuration name="Build All" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" CONFIG_NAME="Debug" EXPLICIT_BUILD_TARGET_NAME="all" />
-    <configuration name="TraceGenerator" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="Gilbertelliot 65168465 100000 0.0213 0.823 0.9164 0.048561" PASS_PARENT_ENVS_2="true" PROJECT_NAME="TraceGenerator" TARGET_NAME="TraceGenerator" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="TraceGenerator" RUN_TARGET_NAME="TraceGenerator" />
+    <configuration name="TraceGenerator" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="Gilbertelliot 65168465 10000 0.814 2.749 0.00705" PASS_PARENT_ENVS_2="true" PROJECT_NAME="TraceGenerator" TARGET_NAME="TraceGenerator" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="TraceGenerator" RUN_TARGET_NAME="TraceGenerator" />
     <list>
       <item itemvalue="Application.Build All" />
       <item itemvalue="Application.TraceGenerator" />
@@ -189,23 +256,25 @@
       <updated>1526997021767</updated>
       <workItem from="1526997023899" duration="4881000" />
       <workItem from="1527235185381" duration="501000" />
-      <workItem from="1527235704036" duration="7729000" />
+      <workItem from="1527235704036" duration="10272000" />
+      <workItem from="1527250916385" duration="898000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="13111000" />
+    <option name="totallyTimeSpent" value="16552000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="64" y="-11" width="1857" height="1212" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24959569" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Messages" order="7" weight="0.32969034" />
+      <window_info anchor="bottom" id="Messages" order="7" weight="0.32937956" />
       <window_info anchor="bottom" id="CMake" order="11" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Version Control" order="10" show_stripe_button="false" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32969034" />
+      <window_info anchor="bottom" id="Version Control" order="10" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32937956" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="8" />
       <window_info id="Favorites" order="2" side_tool="true" />
@@ -232,6 +301,86 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/TraceGenerator.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="13" column="22" selection-start-line="13" selection-start-column="22" selection-end-line="13" selection-end-column="22" />
+          <folding>
+            <element signature="e#123#142#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/GilbertElliot.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" column="48" selection-start-line="22" selection-start-column="48" selection-end-line="22" selection-end-column="48" />
+          <folding>
+            <element signature="e#123#140#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/GilbertElliot.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="23" selection-start-line="11" selection-start-column="23" selection-end-line="11" selection-end-column="23" />
+          <folding>
+            <element signature="e#41#60#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="17" column="86" selection-start-line="17" selection-start-column="86" selection-end-line="17" selection-end-column="86" />
+          <folding>
+            <element signature="e#118#135#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/PacketlossModel.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="10" column="42" selection-start-line="10" selection-start-column="42" selection-end-line="10" selection-end-column="42" />
+          <folding>
+            <element signature="e#42#62#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/PacketlossModel.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="15" column="77" selection-start-line="15" selection-start-column="77" selection-end-line="15" selection-end-column="77" />
+          <folding>
+            <element signature="e#123#154#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="13" column="1" selection-start-line="13" selection-start-column="1" selection-end-line="13" selection-end-column="1" />
+          <folding>
+            <element signature="e#42#61#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TraceGenerator.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1080">
+          <caret line="72" column="114" selection-start-line="72" selection-start-column="114" selection-end-line="72" selection-end-column="114" />
+          <folding>
+            <element signature="e#42#60#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/main.cpp">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -396,33 +545,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.cpp">
+    <entry file="file://$PROJECT_DIR$/TraceSaver.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="13" column="1" selection-start-line="13" selection-start-column="1" selection-end-line="13" selection-end-column="1" />
-          <folding>
-            <element signature="e#42#61#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="17" column="12" selection-start-line="17" selection-start-column="12" selection-end-line="17" selection-end-column="12" />
-          <folding>
-            <element signature="e#118#135#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/PaketlossModel/PacketlossModel.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="51" selection-start-line="14" selection-start-column="51" selection-end-line="14" selection-end-column="51" />
-          <folding>
-            <element signature="e#123#154#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="240">
+          <caret line="16" selection-start-line="16" selection-end-line="16" />
         </state>
       </provider>
     </entry>
@@ -436,12 +562,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TraceSaver.cpp">
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/PacketlossModel.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" selection-start-line="16" selection-end-line="16" />
+        <state relative-caret-position="225">
+          <caret line="15" column="77" selection-start-line="15" selection-start-column="77" selection-end-line="15" selection-end-column="77" />
           <folding>
-            <element signature="e#41#64#0" expanded="true" />
+            <element signature="e#123#154#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -456,32 +582,52 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TraceGenerator.cpp">
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="32" column="30" selection-start-line="32" selection-start-column="30" selection-end-line="32" selection-end-column="30" />
+        <state relative-caret-position="195">
+          <caret line="13" column="1" selection-start-line="13" selection-start-column="1" selection-end-line="13" selection-end-column="1" />
           <folding>
-            <element signature="e#42#60#0" expanded="true" />
+            <element signature="e#42#61#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/PaketlossModel/GilbertElliot.h">
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/MarkovModel.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="9" selection-start-line="14" selection-start-column="9" selection-end-line="14" selection-end-column="9" />
+        <state relative-caret-position="255">
+          <caret line="17" column="86" selection-start-line="17" selection-start-column="86" selection-end-line="17" selection-end-column="86" />
           <folding>
-            <element signature="e#123#140#0" expanded="true" />
+            <element signature="e#118#135#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/PaketlossModel/GilbertElliot.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="19" column="98" lean-forward="true" selection-start-line="19" selection-start-column="98" selection-end-line="19" selection-end-column="98" />
+        <state relative-caret-position="165">
+          <caret line="11" column="23" selection-start-line="11" selection-start-column="23" selection-end-line="11" selection-end-column="23" />
           <folding>
             <element signature="e#41#60#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PaketlossModel/GilbertElliot.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" column="48" selection-start-line="22" selection-start-column="48" selection-end-line="22" selection-end-column="48" />
+          <folding>
+            <element signature="e#123#140#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TraceGenerator.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="608">
+          <caret line="70" column="13" selection-start-line="70" selection-start-column="13" selection-end-line="70" selection-end-column="13" />
+          <folding>
+            <element signature="e#42#60#0" expanded="true" />
           </folding>
         </state>
       </provider>
