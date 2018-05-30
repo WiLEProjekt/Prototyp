@@ -246,7 +246,7 @@
   </component>
   <component name="RunManager" selected="Application.TraceGenerator">
     <configuration name="Build All" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" CONFIG_NAME="Debug" EXPLICIT_BUILD_TARGET_NAME="all" />
-    <configuration name="TraceGenerator" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="Gilbertelliot 65168465 10000 0.2 0.7 0.05 0.97" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Project" TARGET_NAME="TraceGenerator" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Project" RUN_TARGET_NAME="TraceGenerator" />
+    <configuration name="TraceGenerator" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="Gilbertelliot 65168465 10000 0.2 0.7 0.05 0.97" PASS_PARENT_ENVS_2="true" PROJECT_NAME="TraceGenerator" TARGET_NAME="TraceGenerator" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="TraceGenerator" RUN_TARGET_NAME="TraceGenerator" />
     <list>
       <item itemvalue="Application.Build All" />
       <item itemvalue="Application.TraceGenerator" />

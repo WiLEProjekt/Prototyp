@@ -1,0 +1,4 @@
+64 bytes from localhost (127.0.0.1): icmp_seq=1 ttl=64 time=0.038 ms
+64 bytes from localhost (127.0.0.1): icmp_seq=2 ttl=64 time=0.041 ms
+64 bytes from localhost (127.0.0.1): icmp_seq=3 ttl=64 time=0.040 ms
+
