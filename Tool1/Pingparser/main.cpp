@@ -26,13 +26,15 @@ unsigned long parsePacketNumber(string line){
     return packetNumberValue;
 }
 
-void evaluate(unsigned long packetNumber, vector<vector<unsigned int>*> iterations){
-    cout << packetNumber << " Packets in " << iterations.size() << " iterations" << endl;
+void write(bool packetRecieved){
+    fstream file;
+    file.open("trace.txt", ios::app);
+    file << packetRecieved;
+    file.close();
 }
 
 int main(int argc, char** argv) {
-    vector<vector<unsigned int>*> iterations;
-    auto *seqNums = new vector<unsigned int>;
+    const unsigned int MAX_SEQ_NUM = 65536;
     unsigned long packetNumber;
 
     if(argc < 2){
@@ -47,20 +49,24 @@ int main(int argc, char** argv) {
     for(string line; getline(fileStream, line);){
         if(line.find("icmp_seq=") != string::npos) {
             unsigned int seqNum = parseSequenzNumber(line);
-            seqNums->push_back(seqNum);
             if(seqNum < lastSeqNum){
-                iterations.push_back(seqNums);
-                seqNums = new vector<unsigned int>;
+                int loss = MAX_SEQ_NUM - lastSeqNum;
+            } else{
+                int loss = seqNum - lastSeqNum;
+                if(loss == 1){
+                    write(true);
+                } else {
+                    for (int i = 0; i < loss - 1; i++) {
+                        write(false);
+                    }
+                }
             }
             lastSeqNum = seqNum;
         } else if(line.find("packets transmitted, ") != string::npos){
-            iterations.push_back(seqNums);
             packetNumber = parsePacketNumber(line);
         }
     }
 
     fileStream.close();
-
-    evaluate(packetNumber, iterations);
     return 0;
 }
