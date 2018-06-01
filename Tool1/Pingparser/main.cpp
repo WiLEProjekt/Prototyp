@@ -50,11 +50,13 @@ int main(int argc, char** argv) {
             unsigned int seqNum = parseSequenzNumber(line); //parse string to int
             int diff = seqNum - lastSeqNum;
             if(diff > 1){ //packets are lost in ascending order, maximum sequencenumber is not yet reached
-                for(int i = 0; i<diff-1; i++){
+                for(int i = 0; i<diff-1; i++){ //Push lost packets
                     packetCounter++;
                     parsedTrace.push_back(false);
                     //write(false);
                 }
+                parsedTrace.push_back(true); //Push found packet
+                packetCounter++;
             }else if(diff <= 0){ //Packet loss at maximum sequencenumber detected
                 diff = MAX_SEQ_NUM - lastSeqNum + seqNum + 1;
                 for(int i = 0; i<diff-1; i++){
@@ -62,6 +64,8 @@ int main(int argc, char** argv) {
                     parsedTrace.push_back(false);
                     //write(false);
                 }
+                parsedTrace.push_back(true);
+                packetCounter++;
             }else{ //diff = 1
                 packetCounter++;
                 parsedTrace.push_back(true);
@@ -72,6 +76,7 @@ int main(int argc, char** argv) {
         }
     }
     fileStream.close();
+    cout << packetCounter << endl;
     if(packetCounter < packetNumber){ //last packages sent are lost
         for(int i = 0; i< packetNumber-1; i++){
             parsedTrace.push_back(false);
