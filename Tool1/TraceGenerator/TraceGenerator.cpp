@@ -5,6 +5,7 @@
 #include "PaketlossModel/MarkovModel.h"
 #include "PaketlossModel/GilbertElliot.h"
 #include "TraceSaver.h"
+#include <random>
 
 TraceGenerator::TraceGenerator(int argc, char **argv) {
     if (argc < 2) {
@@ -19,6 +20,8 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         PacketlossModel *model;
         unsigned int seed = static_cast<unsigned int>(atol(argv[2]));
         long numPackets = atol(argv[3]);
+
+        mt19937 randomgenerator (seed);
 
         if (strcmp(modelname.c_str(), "-real") == 0) {
 
