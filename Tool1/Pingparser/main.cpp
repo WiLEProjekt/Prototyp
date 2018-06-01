@@ -29,7 +29,7 @@ unsigned long parsePacketNumber(string line){
 }
 
 int main(int argc, char** argv) {
-    const unsigned int MAX_SEQ_NUM = 65536;
+    const unsigned int MAX_SEQ_NUM = 65535;
     unsigned long packetCounter = 0;
 
     vector<bool> parsedTrace;
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 
     fstream fileStream;
     fileStream.open(inputFilename, ios::in);
-    unsigned int lastSeqNum = 0;
+    unsigned int lastSeqNum = 0; //important initialization => detects if first few packages are lost
     unsigned int lostPackets = 0;
     for(string line; getline(fileStream, line);){ //Grab all lines
         if(line.find("icmp_seq=") != string::npos){ //search for the sequence number
@@ -53,7 +53,6 @@ int main(int argc, char** argv) {
                 for(int i = 0; i<diff-1; i++){ //Push lost packets
                     packetCounter++;
                     parsedTrace.push_back(false);
-                    //write(false);
                 }
                 parsedTrace.push_back(true); //Push found packet
                 packetCounter++;
@@ -62,36 +61,36 @@ int main(int argc, char** argv) {
                 for(int i = 0; i<diff; i++){
                     packetCounter++;
                     parsedTrace.push_back(false);
-                    //write(false);
                 }
-                //parsedTrace.push_back(true);
-                //packetCounter++;
-            }else{ //diff = 1
+                parsedTrace.push_back(true); //push found packet
+                packetCounter++;
+            }else{ //diff = 1 = no packet loss
                 packetCounter++;
                 parsedTrace.push_back(true);
-                //write(true);
             }
 
             lastSeqNum = seqNum;
         }
     }
     fileStream.close();
-    cout << packetCounter << endl;
-    if(packetCounter < packetNumber){ //last packages sent are lost
+    if(packetCounter < packetNumber){ //detection if the last packages that were sent are lost
         for(int i = 0; i< packetNumber-1; i++){
             parsedTrace.push_back(false);
-            //write(false);
         }
     }
-    cout << "Verarbeitete Pakete: " << packetNumber << endl;
     string out = "../ParsedTraces/"+outputFilename;
     fstream file;
     file.open(out, ios::out);
+    unsigned int received = 0;
     for(int i = 0; i<parsedTrace.size(); i++){
+        if(parsedTrace[i]){
+            received++;
+        }
         file << parsedTrace[i];
     }
-    //file << packetRecieved;
     file.close();
+    cout << "trace successfully parsed" << endl;
+    cout << "messages received: " << received << endl;
 
     return 0;
 }
