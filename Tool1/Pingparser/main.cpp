@@ -58,14 +58,14 @@ int main(int argc, char** argv) {
                 parsedTrace.push_back(true); //Push found packet
                 packetCounter++;
             }else if(diff <= 0){ //Packet loss at maximum sequencenumber detected
-                diff = MAX_SEQ_NUM - lastSeqNum + seqNum + 1;
-                for(int i = 0; i<diff-1; i++){
+                diff = MAX_SEQ_NUM - lastSeqNum + seqNum;
+                for(int i = 0; i<diff; i++){
                     packetCounter++;
                     parsedTrace.push_back(false);
                     //write(false);
                 }
-                parsedTrace.push_back(true);
-                packetCounter++;
+                //parsedTrace.push_back(true);
+                //packetCounter++;
             }else{ //diff = 1
                 packetCounter++;
                 parsedTrace.push_back(true);
@@ -95,34 +95,3 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-
-/*
-       if(line.find("icmp_seq=") != string::npos) {
-           unsigned int seqNum = parseSequenzNumber(line);
-           if(seqNum < lastSeqNum){
-               unsigned int loss = MAX_SEQ_NUM - lastSeqNum + seqNum - 1;
-               if(loss == 0){
-                   write(true);
-               } else {
-                   for (int i = 0; i < loss; ++i) {
-                       write(false);
-                   }
-               }
-           } else{
-               int loss = seqNum - lastSeqNum - 1;
-               if(loss == 0){
-                   write(true);
-               } else {
-                   for (int i = 0; i < loss; i++) {
-                       write(false);
-                   }
-               }
-           }
-           lastSeqNum = seqNum;
-       } else if(line.find("packets transmitted, ") != string::npos){
-           packetNumber = parsePacketNumber(line);
-           unsigned long loss = packetNumber - counter;
-           for(int i = 0; i < loss; i++){
-               write(false);
-           }
-       }*/
