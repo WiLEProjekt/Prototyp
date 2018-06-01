@@ -51,20 +51,23 @@ int main(int argc, char** argv) {
             int diff = seqNum - lastSeqNum;
             if(diff > 1){ //packets are lost in ascending order, maximum sequencenumber is not yet reached
                 for(int i = 0; i<diff-1; i++){
+                    packetCounter++;
                     parsedTrace.push_back(false);
                     //write(false);
                 }
             }else if(diff <= 0){ //Packet loss at maximum sequencenumber detected
                 diff = MAX_SEQ_NUM - lastSeqNum + seqNum + 1;
                 for(int i = 0; i<diff-1; i++){
+                    packetCounter++;
                     parsedTrace.push_back(false);
                     //write(false);
                 }
             }else{ //diff = 1
+                packetCounter++;
                 parsedTrace.push_back(true);
                 //write(true);
             }
-            packetCounter++;
+
             lastSeqNum = seqNum;
         }
     }
