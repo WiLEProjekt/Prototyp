@@ -1,5 +1,5 @@
 //
-// Reads a binary trace, extracts its' packetlossrate,
+// Reads a binary trace, extracts its' packetlossrate, calculates burst sizes, writes them to a file
 //
 #include <iostream>
 #include <fstream>
@@ -8,8 +8,14 @@
 
 using namespace std;
 int main(int argc, char** argv){
+    if(argc < 3){
+        cout << "usage: ./validationtool [inputfilename] [outputfilename]" << endl;
+        return -1;
+    }
+    string input = argv[1];
+    string output = argv[2];
     fstream fileStream;
-    fileStream.open("../../Pingparser/ParsedTraces/GilbertElliot.txt", ios::in);
+    fileStream.open(input, ios::in);
     string text;
     fileStream >> text;
     fileStream.close();
@@ -19,6 +25,7 @@ int main(int argc, char** argv){
     int receivedcounter = 0;
     int temp = 0;
     vector<int> trace;
+    //calculate burst sizes
     for(unsigned int i = 0; i<text.size(); i++){
         if(i > 0){
             if(text[i] == '0' && text[i-1] == '0'){
@@ -56,5 +63,14 @@ int main(int argc, char** argv){
     cout << "packets lost: " << losscounter << endl;
     cout << "packets received: " << receivedcounter << endl;
     cout << "packetloss: " << packetloss << endl;
+
+    //write burst sizes to file
+    fstream fout;
+    fout.open(output, ios::out);
+    for(int i = 0; i<trace.size(); i++){
+        fout << trace[i];
+        fout << "\n";
+    }
+    fout.close();
     return 0;
 }
