@@ -12,6 +12,12 @@ using std::ios;
 
 unsigned long counter = 0;
 
+int parseSeqNumFromHex(unsigned char first, unsigned char second){
+    printf("first: %u, second: %u\n", first, second);
+    unsigned int seqNum = first * 256 + second;
+    printf("seqNum: %u\n", seqNum);
+}
+
 void readPcapFile(char* filename){
     printf("File: %s", filename);
     char errbuff[PCAP_ERRBUF_SIZE];
@@ -20,6 +26,7 @@ void readPcapFile(char* filename){
     const u_char *data;
     u_int packetCount = 0;
     while(int returnValue = pcap_next_ex(pcap, &header, &data) >= 0){
+
         printf("Packet # %i\n", ++packetCount);
         printf("Packet size: %d bytes\n", header->len);
         if(header->len != header->caplen){
@@ -27,10 +34,14 @@ void readPcapFile(char* filename){
         }
         printf("Epoch Time: %d:%d seconds\n", header->ts.tv_sec, header->ts.tv_usec);
 
-        for (u_int i = 0; i < header->caplen; i++) {
+        if(data[35] == 0){
+            parseSeqNumFromHex(data[40], data[41]);
+        }
+        for (u_int i = 0; i < header->len; i++) {
             if(i%16 == 0){
-                printf("%.2x ", data[i]);
+                printf("\n");
             }
+            printf("%.2x ", data[i]);
         }
         printf("\n\n");
     }
