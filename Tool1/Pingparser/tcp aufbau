@@ -1,0 +1,19 @@
+syn	seq = random, len=0
+						syn ack	seq=random ack=s.seq+1 len=0
+ack	seq=s.seq+1, ack=c.seq+1, len=0
+						psh ack seq=c.seq+1	
+
+
+seq = vorher.seq+vorher.len (wenn len=0: +1)
+ack = anderer.seq+1
+
+
+
+
+sourceip=data[28-31]
+destip=data[32-35]
+sourceport=data[36-37]
+destport=data[38-39]
+seq=data[40-43]
+ack=data[44-47]
+daten=data[68-68+len]
