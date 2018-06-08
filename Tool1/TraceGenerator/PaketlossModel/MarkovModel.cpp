@@ -27,6 +27,8 @@ vector<bool> MarkovModel::buildTrace() {
             case 3:
                 if (randomValue <= this->p32) {
                     state = 2;
+                } else if(randomValue <= this->p32 + this->p31){
+                    state = 1;
                 }
                 value = false;
                 break;

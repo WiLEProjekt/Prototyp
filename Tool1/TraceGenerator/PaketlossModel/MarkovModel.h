@@ -13,11 +13,23 @@ protected:
     vector<bool> buildTrace() override;
 
 private:
-    float p12, p14, p23, p13, p32, p41;
+    float p13, p14, p23, p31, p32, p41;
 
 public:
-    MarkovModel(unsigned int seed, long numPackets, float p12, float p14, float p23, float p13, float p32, float p41)
-            : PacketlossModel(seed, numPackets), p12(p12), p14(p14), p23(p23), p13(p13), p32(p32), p41(p41) {}
+    /**
+     *
+     * Constructor
+     * @param seed seed of the random generator
+     * @param numPackets number of packets
+     * @param p13 chance of switching from state-1 to state-3
+     * @param p14 chance of switching from state-1 to state-4
+     * @param p23 chance of switching from state-2 to state-3
+     * @param p31 chance of switching from state-3 to state-1
+     * @param p32 chance of switching from state-3 to state-2
+     * @param p41 chance of switching from state-4 to state-1
+     */
+    MarkovModel(unsigned int seed, long numPackets, float p13, float p14, float p23, float p31, float p32, float p41)
+            : PacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32), p41(p41) {}
 };
 
 
