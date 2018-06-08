@@ -6,24 +6,118 @@
 #include <cstring>
 #include <map>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace std;
 using std::ios;
 
 const unsigned int MAX_SEQ_NUM = 65535;
 
-
-unsigned int parseSeqNumFromHex(unsigned char first, unsigned char second) {
-    unsigned int seqNum = first * (unsigned int) 256 + second;
-    printf("seqNum: %u\n", seqNum);
+/**
+ * parses a sequenz number from a line of a ping
+ * @param line the line of the ping
+ * @return the sequenz number
+ */
+unsigned int parseSequenzNumber(string line) {
+    string delimeterFront = "icmp_seq=";
+    string delimeterBack = " ttl";
+    size_t pos = line.find(delimeterFront);
+    line.erase(0, pos + delimeterFront.length());
+    pos = line.find(delimeterBack);
+    string token = line.substr(0, pos);
+    unsigned int seqNum;
+    stringstream(token) >> seqNum;
     return seqNum;
 }
 
-void readPcapFile(char *filename, const string &outputFilename) {
+/**
+ * Parses a number from a byte array
+ * @param the byte array
+ * @param the length of the byte array
+ * @return the parsed number
+ */
+unsigned int parseNumberFromBytes(unsigned char *bytes, int length) {
+    unsigned int number = 0;
+    for (int i = length - 1; i >= 0; i--) {
+        number += bytes[length - i - 1] * pow(256, i);
+    }
+
+    return number;
+}
+
+/**
+ * Writes the calculated losses in a file
+ * @param outputFilename the filename
+ * @param calculatedLossed the calculated lossed
+ */
+void writeTraceInFile(string outputFilename, vector<bool> calculatedLossed) {
+    string out = "ParsedTraces/" + outputFilename;
+    fstream file;
+    file.open(out.c_str(), ios::out);
+    unsigned int received = 0;
+    for (int i = 0; i < calculatedLossed.size(); i++) {
+        if (calculatedLossed[i]) {
+            received++;
+        }
+        file << calculatedLossed[i];
+    }
+    file.close();
+    cout << "trace successfully parsed" << endl;
+    cout << "messages received: " << received << endl;
+}
+
+/**
+ * Calculates the losses
+ * @param sequenzNumbers the sequenzNumbers of the trace in order of their appearance
+ * @return the calculated losses in order of their appearance
+ */
+vector<bool> findlosses(vector<unsigned int> sequenzNumbers) {
+    vector<bool> calculatedLosses;
+    unsigned int lastSeqNum = 0; //important initialization => detects if first few packages are lost
+    unsigned long packetCounter = 0;
+    bool firstSeqNumRed = false;
+
+    for (unsigned long i = 0; i < sequenzNumbers.size(); i++) {
+        unsigned int seqNum = sequenzNumbers.at(i);
+        if (firstSeqNumRed) {
+            int diff = seqNum - lastSeqNum;
+            if (diff > 1) { //packets are lost in ascending order, maximum sequencenumber is not yet reached
+                for (int i = 0; i < diff - 1; i++) { //Push lost packets
+                    packetCounter++;
+                    calculatedLosses.push_back(false);
+                }
+                calculatedLosses.push_back(true); //Push found packet
+                packetCounter++;
+            } else if (diff <= 0) { //Packet loss at maximum sequencenumber detected
+                diff = MAX_SEQ_NUM - lastSeqNum + seqNum;
+                for (int i = 0; i < diff; i++) {
+                    packetCounter++;
+                    calculatedLosses.push_back(false);
+                }
+                calculatedLosses.push_back(true); //push found packet
+                packetCounter++;
+            } else { //diff = 1 = no packet loss
+                packetCounter++;
+                calculatedLosses.push_back(true);
+            }
+        } else {
+            calculatedLosses.push_back(true);
+        }
+        firstSeqNumRed = true;
+        lastSeqNum = seqNum;
+    }
+    return calculatedLosses;
+}
+
+/**
+ * Reads a .pcap file
+ * @param filename the .pcap filename
+ * @return the calculated losses
+ */
+vector<bool> readPcapFile(string filename) {
     vector<unsigned int> seqNums;
-    printf("File: %s", filename);
     char errbuff[PCAP_ERRBUF_SIZE];
-    pcap_t *pcap = pcap_open_offline(filename, errbuff);
+    pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
     struct pcap_pkthdr *header;
     const u_char *data;
     u_int packetCount = 0;
@@ -38,10 +132,8 @@ void readPcapFile(char *filename, const string &outputFilename) {
         printf("Data: %.2x %.2x<\n%d %d\n", data[38], data[39], data[38], data[39]);
         if (data[34] == 0 && data[35] == 0 && data[38] == 15 &&
             data[39] == 75) { //35 = 0 && 28 = 15 & 39 = 75: ICMP, 34 = 0: response
-            printf("true\n");
-            seqNums.push_back(parseSeqNumFromHex(data[40], data[41]));
-        } else {
-            printf("false: %d %d %d %d", data[35], data[36], data[38], data[39]);
+            unsigned char seqNumBytes[] = {data[40], data[41]};
+            seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
         }
         for (u_int i = 0; i < header->len; i++) {
             if (i % 16 == 0) {
@@ -52,148 +144,64 @@ void readPcapFile(char *filename, const string &outputFilename) {
         printf("\n\n");
     }
 
-    unsigned int lastSeqNum = 0;
-    unsigned long packetCounter = 0;
-    vector<bool> parsedTrace;
-    bool firstSeqNumRed = false;
+    return findlosses(seqNums);
+}
 
-    for (unsigned long i = 0; i < seqNums.size(); i++) {
-        unsigned int seqNum = seqNums.at(i);
-        if (firstSeqNumRed) {
-            int diff = seqNum - lastSeqNum;
-            if (diff > 1) { //packets are lost in ascending order, maximum sequencenumber is not yet reached
-                for (int i = 0; i < diff - 1; i++) { //Push lost packets
-                    packetCounter++;
-                    parsedTrace.push_back(false);
-                }
-                parsedTrace.push_back(true); //Push found packet
-                packetCounter++;
-            } else if (diff <= 0) { //Packet loss at maximum sequencenumber detected
-                diff = MAX_SEQ_NUM - lastSeqNum + seqNum;
-                for (int i = 0; i < diff; i++) {
-                    packetCounter++;
-                    parsedTrace.push_back(false);
-                }
-                parsedTrace.push_back(true); //push found packet
-                packetCounter++;
-            } else { //diff = 1 = no packet loss
-                packetCounter++;
-                parsedTrace.push_back(true);
-            }
+/**
+ * Reads a ping file
+ * @param filename the ping file
+ * @param packetNumber the number of packets
+ * @return the calculated losses
+ */
+vector<bool> readPingFile(string filename, unsigned int packetNumber) {
+    fstream fileStream;
+    fileStream.open(filename.c_str(), ios::in);
+    vector<unsigned int> sequenzNumbers;
+
+    for (string line; getline(fileStream, line);) { //Grab all lines
+        if (line.find("icmp_seq=") != string::npos) { //search for the sequence number
+            sequenzNumbers.push_back(parseSequenzNumber(line)); //parse string to int
         }
-        firstSeqNumRed = true;
-        lastSeqNum = seqNum;
-        cout << "seqNum: " << seqNum << endl;
     }
+    fileStream.close();
+    vector<bool> calculatedLosses = findlosses(sequenzNumbers);
 
-    string out = "../ParsedTraces/" + outputFilename;
-    fstream file;
-    file.open(out.c_str(), ios::out);
-    unsigned int received = 0;
-    for (int i = 0; i < parsedTrace.size(); i++) {
-        if (parsedTrace[i]) {
-            received++;
+    if (calculatedLosses.size() < packetNumber) { //detection if the last packages that were sent are lost
+        int endLosses = packetNumber - calculatedLosses.size();
+        for (int i = 0; i < endLosses; i++) {
+            calculatedLosses.push_back(false);
         }
-        file << parsedTrace[i];
     }
-    file.close();
-    cout << "trace successfully parsed" << endl;
-    cout << "messages received: " << received << endl;
+    return calculatedLosses;
 }
 
-unsigned int parseSequenzNumber(string line) {
-    ;
-    string delimeterFront = "icmp_seq=";
-    string delimeterBack = " ttl";
-    size_t pos = line.find(delimeterFront);
-    line.erase(0, pos + delimeterFront.length());
-    pos = line.find(delimeterBack);
-    string token = line.substr(0, pos);
-    unsigned int seqNum;
-    stringstream(token) >> seqNum;
-    return seqNum;
-}
 
-unsigned long parsePacketNumber(string line) {
-    string delimeter = " packets transmitted, ";
-    string token = line.substr(0, line.find(delimeter));
-    unsigned long packetNumberValue;
-    stringstream(token) >> packetNumberValue;
-    return packetNumberValue;
-}
-
+/**
+ * Prints the correct call of the Program
+ */
 void printArgError() {
-    cout
-            << "Pingparser -ping [filename of pingtrace] [output-filename .txt] [total number of packets used in the pingtrace]\nPingparser -pcap [filename of trace .pcap] [output-filename .txt]"
-            << endl;
+    cout << "Pingparser -ping [filename of pingtrace] [output-filename .txt] "
+         << "[total number of packets used in the pingtrace]\n"
+         << "Pingparser -pcap [filename of trace .pcap] [output-filename .txt]" << endl;
 }
 
 int main(int argc, char **argv) {
-    unsigned long packetCounter = 0;
-
-    vector<bool> parsedTrace;
     if (argc < 4) {
         printArgError();
         return -1;
     }
+
+    string inputFilename = argv[2];
+    string outputFilename = argv[3];
+    vector<bool> calculatedLossed;
+
     if (strcmp(argv[1], "-ping") == 0) {
-        string inputFilename = argv[1];
-        string outputFilename = argv[2];
-        unsigned int packetNumber = atoi(argv[3]);
-
-        fstream fileStream;
-        fileStream.open(inputFilename.c_str(), ios::in);
-        unsigned int lastSeqNum = 0; //important initialization => detects if first few packages are lost
-
-        for (string line; getline(fileStream, line);) { //Grab all lines
-            if (line.find("icmp_seq=") != string::npos) { //search for the sequence number
-                unsigned int seqNum = parseSequenzNumber(line); //parse string to int
-                int diff = seqNum - lastSeqNum;
-                if (diff > 1) { //packets are lost in ascending order, maximum sequencenumber is not yet reached
-                    for (int i = 0; i < diff - 1; i++) { //Push lost packets
-                        packetCounter++;
-                        parsedTrace.push_back(false);
-                    }
-                    parsedTrace.push_back(true); //Push found packet
-                    packetCounter++;
-                } else if (diff <= 0) { //Packet loss at maximum sequencenumber detected
-                    diff = MAX_SEQ_NUM - lastSeqNum + seqNum;
-                    for (int i = 0; i < diff; i++) {
-                        packetCounter++;
-                        parsedTrace.push_back(false);
-                    }
-                    parsedTrace.push_back(true); //push found packet
-                    packetCounter++;
-                } else { //diff = 1 = no packet loss
-                    packetCounter++;
-                    parsedTrace.push_back(true);
-                }
-
-                lastSeqNum = seqNum;
-            }
-        }
-        fileStream.close();
-        if (packetCounter < packetNumber) { //detection if the last packages that were sent are lost
-            for (int i = 0; i < packetNumber - 1; i++) {
-                parsedTrace.push_back(false);
-            }
-        }
-        string out = "../ParsedTraces/" + outputFilename;
-        fstream file;
-        file.open(out.c_str(), ios::out);
-        unsigned int received = 0;
-        for (int i = 0; i < parsedTrace.size(); i++) {
-            if (parsedTrace[i]) {
-                received++;
-            }
-            file << parsedTrace[i];
-        }
-        file.close();
-        cout << "trace successfully parsed" << endl;
-        cout << "messages received: " << received << endl;
+        unsigned int packetNumber = atoi(argv[4]);
+        calculatedLossed = readPingFile(inputFilename, packetNumber);
     } else if (strcmp(argv[1], "-pcap") == 0) {
-        readPcapFile(argv[2], argv[3]);
+        calculatedLossed = readPcapFile(inputFilename);
     }
+    writeTraceInFile(outputFilename, calculatedLossed);
 
     return 0;
 }
