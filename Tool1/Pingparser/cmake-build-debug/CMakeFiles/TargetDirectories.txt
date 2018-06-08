@@ -1,3 +1,0 @@
-/home/dennis/Dokumente/Projektgruppe/test/Prototyp/Tool1/Pingparser/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/dennis/Dokumente/Projektgruppe/test/Prototyp/Tool1/Pingparser/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/dennis/Dokumente/Projektgruppe/test/Prototyp/Tool1/Pingparser/cmake-build-debug/CMakeFiles/Pingparser.dir
