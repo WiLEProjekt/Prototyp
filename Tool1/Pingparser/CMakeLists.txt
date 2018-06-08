@@ -3,4 +3,4 @@ project(Pingparser)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(Pingparser main.cpp)
+add_executable(main.cpp)

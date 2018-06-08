@@ -121,17 +121,15 @@ vector<bool> readPcapFile(string filename) {
     struct pcap_pkthdr *header;
     const u_char *data;
     u_int packetCount = 0;
+
     while (pcap_next_ex(pcap, &header, &data) >= 0) {
-        printf("Packet # %i\n", ++packetCount);
-        printf("Packet size: %d bytes\n", header->len);
         if (header->len != header->caplen) {
             printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
         }
-        printf("Epoch Time: %li:%li seconds\n", header->ts.tv_sec, header->ts.tv_usec);
 
-        printf("Data: %.2x %.2x<\n%d %d\n", data[38], data[39], data[38], data[39]);
-        if (data[34] == 0 && data[35] == 0 && data[38] == 15 &&
-            data[39] == 75) { //35 = 0 && 28 = 15 & 39 = 75: ICMP, 34 = 0: response
+        //Wenn Bits 35 = 0 && 28 = 15 && 39 = 75, dann ICMP.
+        //Wenn Bit 34 = 0 dann ICMP-Response
+        if (data[34] == 0 && data[35] == 0 && data[38] == 15 && data[39] == 75) {
             unsigned char seqNumBytes[] = {data[40], data[41]};
             seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
         }
