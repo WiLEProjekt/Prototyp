@@ -2,7 +2,6 @@
 #ifndef TRACEGENERATOR_PAKETLOSSMODEL_H
 #define TRACEGENERATOR_PAKETLOSSMODEL_H
 
-#include "PaketlossModelType.h"
 #include <string>
 #include <random>
 using namespace std;

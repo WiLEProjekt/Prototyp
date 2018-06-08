@@ -10,9 +10,11 @@
 TraceGenerator::TraceGenerator(int argc, char **argv) {
     if (argc < 2) {
         this->printError();
+        return;
     }
     if (argc == 2 && strcmp(argv[1], "-showmodel") == 0) {
         this->printModels();
+        return;
     } else {
         string modelname(argv[1]);
         std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
@@ -20,8 +22,6 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         PacketlossModel *model;
         unsigned int seed = static_cast<unsigned int>(atol(argv[2]));
         long numPackets = atol(argv[3]);
-
-        mt19937 randomgenerator (seed);
 
         if (strcmp(modelname.c_str(), "-real") == 0) {
 
