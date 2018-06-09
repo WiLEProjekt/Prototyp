@@ -26,16 +26,16 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         if (strcmp(modelname.c_str(), "-real") == 0) {
 
         } else if (strcmp(modelname.c_str(), "markov") == 0) {
-            if (argc != 10) {
+            if (argc != 9) {
                 this->printModels();
             } else {
-                float p12 = atof(argv[4]);
-                float p14 = atof(argv[5]);
-                float p23 = atof(argv[6]);
-                float p31 = atof(argv[7]);
-                float p32 = atof(argv[8]);
-                float p41 = atof(argv[9]);
-                model = new MarkovModel(seed, numPackets, p12, p14, p23, p31, p32, p41);
+                float p13 = atof(argv[4]);
+                float p31 = atof(argv[5]);
+                float p32 = atof(argv[6]);
+                float p23 = atof(argv[7]);
+                float p14 = atof(argv[8]);
+                float p41 = 1.0;
+                model = new MarkovModel(seed, numPackets, p13, p31, p32, p23, p14, p41);
             }
         } else if (strcmp(modelname.c_str(), "gilbertelliot") == 0) {
 
@@ -131,7 +131,7 @@ void TraceGenerator::printModels() {
          << "]> <param p [0-1]> <param r [0-1]\n\tBernoulli\t\t<seed [1-"
          << numeric_limits<unsigned int>::max() << "]> <number_of_packets [1-" << numeric_limits<long>::max()
          << "]> <param p [0-1]>\n\tMarkov\t\t\t<seed [1-" << numeric_limits<unsigned int>::max()
-         << "]> <number_of_packets [1-" << numeric_limits<long>::max() << "]>" << endl;
+         << "]> <number_of_packets [1-" << numeric_limits<long>::max() << "]> <p13> <p31> <p32> <p23> <p14>" << endl;
 }
 
 void TraceGenerator::printPacketloss(vector<bool> trace) {

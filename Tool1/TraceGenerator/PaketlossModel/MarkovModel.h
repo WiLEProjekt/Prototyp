@@ -28,8 +28,8 @@ public:
      * @param p32 chance of switching from state-3 to state-2
      * @param p41 chance of switching from state-4 to state-1
      */
-    MarkovModel(unsigned int seed, long numPackets, float p13, float p14, float p23, float p31, float p32, float p41)
-            : PacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32), p41(p41) {}
+    MarkovModel(unsigned int seed, long numPackets, float p13, float p31, float p32, float p23, float p14, float p41)
+            : PacketlossModel(seed, numPackets), p13(p13), p31(p31), p32(p32), p23(p23), p14(p14), p41(p41) {}
 };
 
 
