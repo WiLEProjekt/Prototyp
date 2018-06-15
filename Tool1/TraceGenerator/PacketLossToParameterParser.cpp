@@ -67,7 +67,6 @@ float *PacketLossToParameterParser::parseGilber(vector<bool> trace) {
         c = threeLossesChance / (lossRecieveLossChance + threeLossesChance);
     }
 
-
     r = 1 - ((a * c - b * b) / (2.f * a * c - b * (a + c)));
     h = 1.f - (b / (1.f - r));
     cout << "(" << a << " * " << r << ") / (1 - " << h << " - " << a << ")" << endl;
@@ -76,7 +75,9 @@ float *PacketLossToParameterParser::parseGilber(vector<bool> trace) {
 
     cout << "a: " << a << endl << "b: " << b << endl << "c: " << c << endl << "r: " << r << endl << "h: " << h << endl
          << "p: " << p << endl << "lossAfterLossCount: " << lossAfterLossCount << endl << "threeLossesCount: "
-         << threeLossesCount << endl << "lossRecieveLossCount: " << lossRecieveLossCount << endl;
+         << threeLossesCount << endl << "lossRecieveLossCount: " << lossRecieveLossCount << endl
+         << "threeLossesChance: " << threeLossesChance << endl << "lossRecieveLossChance: " << lossRecieveLossChance
+         << endl;
 
     return new float[4]{p, r, 1, h};
 }
