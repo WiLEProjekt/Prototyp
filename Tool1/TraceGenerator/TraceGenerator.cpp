@@ -61,7 +61,6 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 model = new MarkovModel(seed, numPackets, p13, p31, p32, p23, p14, p41);
             }
         } else if (strcmp(modelname.c_str(), "gilbertelliot") == 0) {
-
             if (argc != 8) {
                 this->printModels();
             } else {
@@ -69,11 +68,10 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float r = atof(argv[5]);
                 float k = atof(argv[6]);
                 float h = atof(argv[7]);
-                if (numPackets < 1 || numPackets > numeric_limits<long>::max() - 1 || p < 0 || p > 1 || r < 0 ||
-                    r > 1 || k < 0 || k > 1 || h < 0 || h > 1) {
-                    this->printModels();
-                } else {
+                try{
                     model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                } catch (const exception& e){
+                    this->printModels();
                 }
             }
 
@@ -85,11 +83,10 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float r = atof(argv[5]);
                 float k = 1;
                 float h = atof(argv[6]);
-                if (numPackets < 1 || numPackets > numeric_limits<long>::max() - 1 || p < 0 || p > 1 || r < 0 ||
-                    r > 1 || k < 0 || k > 1 || h < 0 || h > 1) {
-                    this->printModels();
-                } else {
+                try{
                     model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                } catch (const exception& e){
+                    this->printModels();
                 }
             }
 
@@ -101,11 +98,10 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float r = atof(argv[5]);
                 float k = 1;
                 float h = 0;
-                if (numPackets < 1 || numPackets > numeric_limits<long>::max() - 1 || p < 0 || p > 1 || r < 0 ||
-                    r > 1 || k < 0 || k > 1 || h < 0 || h > 1) {
-                    this->printModels();
-                } else {
+                try{
                     model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                } catch (const exception& e){
+                    this->printModels();
                 }
             }
 
@@ -117,11 +113,10 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float r = 1 - p;
                 float k = 1;
                 float h = 0;
-                if (numPackets < 1 || numPackets > numeric_limits<long>::max() - 1 || p < 0 || p > 1 || r < 0 ||
-                    r > 1 || k < 0 || k > 1 || h < 0 || h > 1) {
-                    this->printModels();
-                } else {
+                try{
                     model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                } catch (const exception& e){
+                    this->printModels();
                 }
             }
 

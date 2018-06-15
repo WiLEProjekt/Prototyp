@@ -28,3 +28,18 @@ vector<bool> GilbertElliot::buildTrace() {
     }
     return trace;
 }
+
+string GilbertElliot::checkParameter() {
+    if (numPackets < 1 || numPackets > numeric_limits<long>::max() - 1) {
+        return "numPackets";
+    } else if (p < 0 || p > 1) {
+        return "p";
+    } else if (r < 0 || r > 1) {
+        return "r";
+    } else if (k < 0 || k > 1) {
+        return "k";
+    } else if (h < 0 || h > 1) {
+        return "h";
+    }
+    return nullptr;
+}

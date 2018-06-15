@@ -6,10 +6,15 @@
 
 #include <vector>
 #include "PacketlossModel.h"
+#include <string>
+
+using namespace std;
 
 class GilbertElliot : public PacketlossModel{
 private:
     float p, r, k, h;
+
+    string checkParameter();
 protected:
     vector<bool> buildTrace() override ;
 
@@ -24,10 +29,20 @@ public:
      * @param h chance of success in burst-state
      */
     GilbertElliot(unsigned int seed, long numPackets, float p, float r, float k, float h)
-            : PacketlossModel(seed, numPackets), p(p), r(r), k(k), h(h) {};
+            : PacketlossModel(seed, numPackets), p(p), r(r), k(k), h(h) {
+        string invalidArgument = this->checkParameter();
+        if (invalidArgument != nullptr) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
+    };
 
     GilbertElliot(unsigned int seed, long numPackets, float parameter[])
-            : PacketlossModel(seed, numPackets), p(parameter[0]), r(parameter[1]), k(parameter[2]), h(parameter[3]) {};
+            : PacketlossModel(seed, numPackets), p(parameter[0]), r(parameter[1]), k(parameter[2]), h(parameter[3]) {
+        string invalidArgument = this->checkParameter();
+        if (invalidArgument != nullptr) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
+    };
 };
 
 
