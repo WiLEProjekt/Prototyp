@@ -50,20 +50,24 @@ unsigned int parseNumberFromBytes(unsigned char *bytes, int length) {
  * @param outputFilename the filename
  * @param calculatedLossed the calculated lossed
  */
-void writeTraceInFile(string outputFilename, vector<bool> calculatedLossed) {
+void writeTraceInFile(string outputFilename, vector<bool> calculatedLosses) {
     string out = "ParsedTraces/" + outputFilename;
     fstream file;
     file.open(out.c_str(), ios::out);
     unsigned int received = 0;
-    for (int i = 0; i < calculatedLossed.size(); i++) {
-        if (calculatedLossed[i]) {
+    for (int i = 0; i < calculatedLosses.size(); i++) {
+        if (calculatedLosses[i]) {
             received++;
         }
-        file << calculatedLossed[i];
+        file << calculatedLosses[i];
     }
     file.close();
     cout << "trace successfully parsed" << endl;
     cout << "messages received: " << received << endl;
+}
+
+void calculateModelParameter(vector<bool> calculatedLosses) {
+
 }
 
 /**

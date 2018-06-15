@@ -5,6 +5,7 @@
 #include "PaketlossModel/MarkovModel.h"
 #include "PaketlossModel/GilbertElliot.h"
 #include "TraceSaver.h"
+#include "PacketLossToParameterParser.h"
 #include <random>
 
 TraceGenerator::TraceGenerator(int argc, char **argv) {
@@ -15,6 +16,22 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
     if (argc == 2 && strcmp(argv[1], "-showmodel") == 0) {
         this->printModels();
         return;
+    } else if (argc == 4 && strcmp(argv[1], "-extract") == 0) {
+        string filename = argv[2];
+        string packetlossModelName = argv[3];
+        std::transform(packetlossModelName.begin(), packetlossModelName.end(), packetlossModelName.begin(), ::tolower);
+        PacketLossModel packetLossModel;
+        if (strcmp(packetlossModelName.c_str(), "gilbertelliot") == 0) {
+            packetLossModel = GILBERT_ELLIOT;
+        } else if (strcmp(packetlossModelName.c_str(), "markov") == 0) {
+            packetLossModel = MARKOV;
+        }
+        PacketLossToParameterParser packetLossToParameterParser(packetLossModel, filename);
+        float *parameter = packetLossToParameterParser.parseParameter();
+        cout << "p " << parameter[0] << endl;
+        cout << "r " << parameter[1] << endl;
+        cout << "k " << parameter[2] << endl;
+        cout << "h " << parameter[3] << endl;
     } else {
         string modelname(argv[1]);
         std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
@@ -115,8 +132,10 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
 }
 
 void TraceGenerator::printError() {
-    cout << "\tTraceGenerator [model] [args...]\tgenerates a trace with Model [model] and "
-            "arguments [args]\n\tTraceGenerator -showmodel\tshows all Models\n\tTraceGenerator -real [trace-file]"
+    cout << "\tTraceGenerator [model] [args...]\tgenerates a trace with Model [model] and arguments [args]\n"
+         << "\tTraceGenerator -showmodel\tshows all Models\n"
+         << "\tTraceGenerator -real [trace-file]\n"
+         << "\tTraceGenerator -extract [filename] [modelname]"
          << endl;
 }
 
