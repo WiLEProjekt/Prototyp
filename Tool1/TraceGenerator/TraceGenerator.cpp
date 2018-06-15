@@ -23,6 +23,12 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         PacketLossModel packetLossModel;
         if (strcmp(packetlossModelName.c_str(), "gilbertelliot") == 0) {
             packetLossModel = GILBERT_ELLIOT;
+        } else if (strcmp(packetlossModelName.c_str(), "gilbert") == 0) {
+            packetLossModel = GILBERT;
+        } else if (strcmp(packetlossModelName.c_str(), "simplegilbert") == 0) {
+            packetLossModel = SIMPLE_GILBERT;
+        } else if (strcmp(packetlossModelName.c_str(), "bernouli") == 0) {
+            packetLossModel = BERNOULI;
         } else if (strcmp(packetlossModelName.c_str(), "markov") == 0) {
             packetLossModel = MARKOV;
         }

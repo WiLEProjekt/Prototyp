@@ -11,6 +11,9 @@
 using namespace std;
 
 enum PacketLossModel {
+    BERNOULI,
+    SIMPLE_GILBERT,
+    GILBERT,
     GILBERT_ELLIOT,
     MARKOV
 };
@@ -20,9 +23,15 @@ private:
     PacketLossModel packetLossModel;
     string filenname;
 
+    float *parseMarkov(vector<bool> trace);
+
+    float *parseBernouli(vector<bool> trace);
+
+    float *parseSimpleGilber(vector<bool> trace);
+
     float *parseGilber(vector<bool> trace);
 
-    float *parseMarkov(vector<bool> trace);
+    float *parseGilbertElliot(vector<bool> trace);
 
     vector<bool> readFile(string filename);
 

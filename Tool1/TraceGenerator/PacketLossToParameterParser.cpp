@@ -14,8 +14,14 @@ PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModel packetL
 float *PacketLossToParameterParser::parseParameter() {
     vector<bool> trace = this->readFile(this->filenname);
     switch (packetLossModel) {
-        case GILBERT_ELLIOT:
+        case BERNOULI:
+            return this->parseBernouli(trace);
+        case SIMPLE_GILBERT:
+            return this->parseSimpleGilber(trace);
+        case GILBERT:
             return this->parseGilber(trace);
+        case GILBERT_ELLIOT:
+            return this->parseGilbertElliot(trace);
         case MARKOV:
             return this->parseMarkov(trace);
     }
@@ -88,4 +94,51 @@ vector<bool> PacketLossToParameterParser::readFile(string filename) {
 
 float *PacketLossToParameterParser::parseMarkov(vector<bool> trace) {
     return nullptr;
+}
+
+float *PacketLossToParameterParser::parseSimpleGilber(vector<bool> trace) {
+    unsigned long lossCounter = 0;
+    unsigned long recieveCounter = 0;
+    unsigned long lossAfterRecieveCounter = 0;
+    unsigned long recieveAfterLossCounter = 0;
+
+    for (int i = 0; i < trace.size(); i++) {
+        if (trace[i]) {
+            recieveCounter++;
+            if (i != 0) {
+                if (!trace[i - 1]) {
+                    recieveAfterLossCounter++;
+                }
+            }
+        } else {
+            lossCounter++;
+            if (i != 0) {
+                if (trace[i - 1]) {
+                    lossAfterRecieveCounter++;
+                }
+            }
+        }
+    }
+
+    float p = 1.f / (float) lossCounter * (float) recieveAfterLossCounter;
+    float r = 1.f / (float) recieveCounter * (float) lossAfterRecieveCounter;
+
+    return new float[4]{p, r, 1, 0};
+}
+
+float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace) {
+    return nullptr;
+}
+
+float *PacketLossToParameterParser::parseBernouli(vector<bool> trace) {
+    unsigned long lossCounter = 0;
+    for (int i = 0; i < trace.size(); i++) {
+        if (!trace[i]) {
+            lossCounter++;
+        }
+    }
+
+    float p = 1.f / (float) trace.size() * (float) lossCounter;
+
+    return new float[4]{p, 1 - p, 1, 0};
 }
