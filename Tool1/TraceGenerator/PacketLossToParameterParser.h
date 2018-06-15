@@ -27,9 +27,9 @@ private:
 
     float *parseBernouli(vector<bool> trace);
 
-    float *parseSimpleGilber(vector<bool> trace);
+    float *parseSimpleGilbert(vector<bool> trace);
 
-    float *parseGilber(vector<bool> trace);
+    float *parseGilbert(vector<bool> trace);
 
     float *parseGilbertElliot(vector<bool> trace);
 

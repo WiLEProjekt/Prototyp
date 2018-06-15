@@ -17,9 +17,9 @@ float *PacketLossToParameterParser::parseParameter() {
         case BERNOULI:
             return this->parseBernouli(trace);
         case SIMPLE_GILBERT:
-            return this->parseSimpleGilber(trace);
+            return this->parseSimpleGilbert(trace);
         case GILBERT:
-            return this->parseGilber(trace);
+            return this->parseGilbert(trace);
         case GILBERT_ELLIOT:
             return this->parseGilbertElliot(trace);
         case MARKOV:
@@ -28,7 +28,7 @@ float *PacketLossToParameterParser::parseParameter() {
     return nullptr;
 }
 
-float *PacketLossToParameterParser::parseGilber(vector<bool> trace) {
+float *PacketLossToParameterParser::parseGilbert(vector<bool> trace) {
     float a, b, c = 0;
     float r, h, p;
     unsigned long lossCount = 0;
@@ -60,14 +60,15 @@ float *PacketLossToParameterParser::parseGilber(vector<bool> trace) {
 
     a = 1.f / (float) trace.size() * (float) lossCount;
     b = 1.f / lossCount * (float) lossAfterLossCount;
-    float threeLossesChance = 1.f / (float) trace.size() * (float) threeLossesCount;
-    float lossRecieveLossChance = 1.f / (float) trace.size() * (float) lossRecieveLossCount;
+    float threeLossesChance = 1.f / (float) trace.size() / 3 * (float) threeLossesCount;
+    float lossRecieveLossChance = 1.f / (float) trace.size() / 3 * (float) lossRecieveLossCount;
 
     if (threeLossesChance != 0) {
         c = threeLossesChance / (lossRecieveLossChance + threeLossesChance);
     }
 
-    r = 1 - ((a * c - b * b) / (2.f * a * c - b * (a + c)));
+    r = 1 - (a * c - b * b) / (2 * a * c - (b * (a + c)));
+    cout << "b*(a+c): " << b * (a + c) << endl << "2*a*c: " << 2 * a * c << endl;
     h = 1.f - (b / (1.f - r));
     cout << "(" << a << " * " << r << ") / (1 - " << h << " - " << a << ")" << endl;
     cout << "(" << a * r << ") / (" << 1 - h - a << ")" << endl;
@@ -97,7 +98,7 @@ float *PacketLossToParameterParser::parseMarkov(vector<bool> trace) {
     return nullptr;
 }
 
-float *PacketLossToParameterParser::parseSimpleGilber(vector<bool> trace) {
+float *PacketLossToParameterParser::parseSimpleGilbert(vector<bool> trace) {
     unsigned long lossCounter = 0;
     unsigned long recieveCounter = 0;
     unsigned long lossAfterRecieveCounter = 0;
@@ -121,8 +122,8 @@ float *PacketLossToParameterParser::parseSimpleGilber(vector<bool> trace) {
         }
     }
 
-    float p = 1.f / (float) lossCounter * (float) recieveAfterLossCounter;
-    float r = 1.f / (float) recieveCounter * (float) lossAfterRecieveCounter;
+    float p = 1.f / (float) recieveCounter * (float) lossAfterRecieveCounter;
+    float r = 1.f / (float) lossCounter * (float) recieveAfterLossCounter;
 
     return new float[4]{p, r, 1, 0};
 }
