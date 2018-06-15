@@ -60,25 +60,16 @@ float *PacketLossToParameterParser::parseGilbert(vector<bool> trace) {
 
     a = 1.f / (float) trace.size() * (float) lossCount;
     b = 1.f / lossCount * (float) lossAfterLossCount;
-    float threeLossesChance = 1.f / (float) trace.size() / 3 * (float) threeLossesCount;
-    float lossRecieveLossChance = 1.f / (float) trace.size() / 3 * (float) lossRecieveLossCount;
-
-    if (threeLossesChance != 0) {
-        c = threeLossesChance / (lossRecieveLossChance + threeLossesChance);
-    }
+    c = 1.f/(lossRecieveLossCount+threeLossesCount)*threeLossesCount;
 
     r = 1 - (a * c - b * b) / (2 * a * c - (b * (a + c)));
-    cout << "b*(a+c): " << b * (a + c) << endl << "2*a*c: " << 2 * a * c << endl;
     h = 1.f - (b / (1.f - r));
-    cout << "(" << a << " * " << r << ") / (1 - " << h << " - " << a << ")" << endl;
-    cout << "(" << a * r << ") / (" << 1 - h - a << ")" << endl;
     p = (a * r) / (1.f - h - a);
 
     cout << "a: " << a << endl << "b: " << b << endl << "c: " << c << endl << "r: " << r << endl << "h: " << h << endl
          << "p: " << p << endl << "lossAfterLossCount: " << lossAfterLossCount << endl << "threeLossesCount: "
          << threeLossesCount << endl << "lossRecieveLossCount: " << lossRecieveLossCount << endl
-         << "threeLossesChance: " << threeLossesChance << endl << "lossRecieveLossChance: " << lossRecieveLossChance
-         << endl;
+         << "lossCount: " << lossCount << endl;
 
     return new float[4]{p, r, 1, h};
 }
