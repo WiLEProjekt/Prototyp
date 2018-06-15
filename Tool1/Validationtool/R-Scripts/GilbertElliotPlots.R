@@ -1,5 +1,5 @@
-Netem = read.table("Documents/Prototyp/Tool1/Validationtool/outputtraces/Val_Netem_GilbertElliot_20_70_95_3.txt") #change file here to plot the other datasets
-Tool = read.table("Documents/Prototyp/Tool1/Validationtool/outputtraces/Val_Tool_GilbertElliot_20_70_95_3.txt")  #change file here to plot the other datasets
+Netem = read.table("Dokumente/Prototyp/Tool1/Validationtool/outputtraces/Val_Netem_Gilbert_12_85_90.txt") #change file here to plot the other datasets
+Tool = read.table("Dokumente/Prototyp/Tool1/Validationtool/outputtraces/Val_Tool_Gilbert_0399_0263_0815.txt")  #change file here to plot the other datasets
 yGEN = Netem[,1]
 yGET = Tool[,1]
 FnGEN <- ecdf(yGEN)
