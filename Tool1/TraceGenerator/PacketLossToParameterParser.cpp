@@ -35,11 +35,13 @@ float *PacketLossToParameterParser::parseGilbert(vector<bool> trace) {
     unsigned long lossAfterLossCount = 0;
     unsigned long threeLossesCount = 0;
     unsigned long lossRecieveLossCount = 0;
+    vector<unsigned long> burstLenghtes;
+    unsigned long currentBurstLength = 0;
 
     for (unsigned long i = 0; i < trace.size(); i++) {
         if (!trace[i]) {
             lossCount++;
-
+            currentBurstLength++;
             if (i != 0) {
                 if (!trace[i - 1]) {
                     lossAfterLossCount++;
@@ -55,21 +57,37 @@ float *PacketLossToParameterParser::parseGilbert(vector<bool> trace) {
                     }
                 }
             }
+        } else {
+            if (currentBurstLength > 0) {
+                burstLenghtes.push_back(currentBurstLength);
+                currentBurstLength = 0;
+            }
         }
     }
 
+    unsigned long burstSum = 0;
+    for (unsigned long burst : burstLenghtes) {
+        burstSum += burst;
+    }
+
+    float avrgBurstLength = (float) burstSum / (float) burstLenghtes.size();
+
     a = 1.f / (float) trace.size() * (float) lossCount;
     b = 1.f / lossCount * (float) lossAfterLossCount;
-    c = 1.f/(lossRecieveLossCount+threeLossesCount)*threeLossesCount;
+    c = 1.f / (lossRecieveLossCount + threeLossesCount) * threeLossesCount;
 
     r = 1 - (a * c - b * b) / (2 * a * c - (b * (a + c)));
+
+    //r = 1.f / avrgBurstLength;
+
     h = 1.f - (b / (1.f - r));
     p = (a * r) / (1.f - h - a);
 
     cout << "a: " << a << endl << "b: " << b << endl << "c: " << c << endl << "r: " << r << endl << "h: " << h << endl
          << "p: " << p << endl << "lossAfterLossCount: " << lossAfterLossCount << endl << "threeLossesCount: "
          << threeLossesCount << endl << "lossRecieveLossCount: " << lossRecieveLossCount << endl
-         << "lossCount: " << lossCount << endl;
+         << "lossCount: " << lossCount << endl << "avrgBurstSize: " << avrgBurstLength << endl << "BurstSum: "
+         << burstSum << endl << "BurstsCount: " << burstLenghtes.size() << endl;
 
     return new float[4]{p, r, 1, h};
 }
