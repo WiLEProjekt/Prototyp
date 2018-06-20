@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include "PacketLossToParameterParser.h"
+#include "HMM.h"
 
 PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModel packetLossModel, string filename) {
     this->filenname = filename;
@@ -15,7 +16,7 @@ float *PacketLossToParameterParser::parseParameter() {
     vector<bool> trace = this->readFile(this->filenname);
     switch (packetLossModel) {
         case BERNOULI:
-            return this->parseBernouli(trace);
+            return this->parseBernoulli(trace);
         case SIMPLE_GILBERT:
             return this->parseSimpleGilbert(trace);
         case GILBERT:
@@ -104,6 +105,45 @@ vector<bool> PacketLossToParameterParser::readFile(string filename) {
 }
 
 float *PacketLossToParameterParser::parseMarkov(vector<bool> trace) {
+    //Zustände
+    int loss = 0;
+    int recieve = 1;
+    int pi_min[2];
+    int pi_max[2];
+    pi_min[loss] = 1;
+    pi_max[loss] = 1000;
+    pi_min[recieve] = 0;
+    pi_min[recieve] = 0;
+
+    double a[4][4];
+    a[0][0] = 0;
+    a[0][1] = 0;
+    a[0][2] = 0;
+    a[0][3] = 0;
+    a[1][0] = 0;
+    a[1][1] = 0;
+    a[1][2] = 0;
+    a[1][3] = 0;
+    a[2][0] = 0;
+    a[2][1] = 0;
+    a[2][2] = 0;
+    a[2][3] = 0;
+    int p_14 = 0;
+    int p_41 = 0;
+    int p_13 = 0;
+    int p_31 = 0;
+    int p_32 = 0;
+    int p_23 = 0;
+    int random_number = (int) (rand() * 1000) + 1;
+    int state;
+
+    for (int i = 0; i < trace.size(); ++i) {
+
+    }
+
+    HMM *hmm = new HMM();
+    hmm->train(trace, trace.size());
+    hmm->print();
     return nullptr;
 }
 
@@ -141,10 +181,10 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace) {
     return nullptr;
 }
 
-float *PacketLossToParameterParser::parseBernouli(vector<bool> trace) {
+float *PacketLossToParameterParser::parseBernoulli(vector<bool> trace) {
     unsigned long lossCounter = 0;
-    for (int i = 0; i < trace.size(); i++) {
-        if (!trace[i]) {
+    for (auto &&i : trace) {
+        if (!i) {
             lossCounter++;
         }
     }

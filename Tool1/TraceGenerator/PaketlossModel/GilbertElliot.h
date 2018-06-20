@@ -31,7 +31,7 @@ public:
     GilbertElliot(unsigned int seed, long numPackets, float p, float r, float k, float h)
             : PacketlossModel(seed, numPackets), p(p), r(r), k(k), h(h) {
         string invalidArgument = this->checkParameter();
-        if (invalidArgument != nullptr) {
+        if (!invalidArgument.empty()) {
             throw invalid_argument("invalid Argument {" + invalidArgument + "}");
         }
     };
@@ -39,7 +39,7 @@ public:
     GilbertElliot(unsigned int seed, long numPackets, float parameter[])
             : PacketlossModel(seed, numPackets), p(parameter[0]), r(parameter[1]), k(parameter[2]), h(parameter[3]) {
         string invalidArgument = this->checkParameter();
-        if (invalidArgument != nullptr) {
+        if (!invalidArgument.empty()) {
             throw invalid_argument("invalid Argument {" + invalidArgument + "}");
         }
     };

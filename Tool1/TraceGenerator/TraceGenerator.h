@@ -17,7 +17,7 @@ private:
      */
     void printModels();
 
-    void printModels(const exception& e);
+    void printModels(const exception &e);
     /**
      * Prints the packetloss in percent on the console
      * @param trace the loss trace

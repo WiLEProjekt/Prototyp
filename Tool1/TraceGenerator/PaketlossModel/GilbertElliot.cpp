@@ -41,5 +41,5 @@ string GilbertElliot::checkParameter() {
     } else if (h < 0 || h > 1) {
         return "h";
     }
-    return nullptr;
+    return "";
 }

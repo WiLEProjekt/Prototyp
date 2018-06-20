@@ -25,7 +25,7 @@ private:
 
     float *parseMarkov(vector<bool> trace);
 
-    float *parseBernouli(vector<bool> trace);
+    float *parseBernoulli(vector<bool> trace);
 
     float *parseSimpleGilbert(vector<bool> trace);
 

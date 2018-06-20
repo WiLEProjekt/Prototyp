@@ -18,7 +18,7 @@ const unsigned int MAX_SEQ_NUM = 65535;
  * @param line the line of the ping
  * @return the sequenz number
  */
-unsigned int parseSequenzNumber(string line) {
+unsigned int parseSequenzNumberFromPing(string line) {
     string delimeterFront = "icmp_seq=";
     string delimeterBack = " ttl";
     size_t pos = line.find(delimeterFront);
@@ -136,6 +136,9 @@ vector<bool> readPcapFile(string filename) {
         if (data[34] == 0 && data[35] == 0 && data[38] == 15 && data[39] == 75) {
             unsigned char seqNumBytes[] = {data[40], data[41]};
             seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
+        } else {
+            unsigned char seqNumBytes[] = {data[40], data[41], data[42], data[43]};
+            unsigned char ackNumBytes[] = {data[44], data[45], data[46], data[47]};
         }
         for (u_int i = 0; i < header->len; i++) {
             if (i % 16 == 0) {
@@ -162,7 +165,7 @@ vector<bool> readPingFile(string filename, unsigned int packetNumber) {
 
     for (string line; getline(fileStream, line);) { //Grab all lines
         if (line.find("icmp_seq=") != string::npos) { //search for the sequence number
-            sequenzNumbers.push_back(parseSequenzNumber(line)); //parse string to int
+            sequenzNumbers.push_back(parseSequenzNumberFromPing(line)); //parse string to int
         }
     }
     fileStream.close();
