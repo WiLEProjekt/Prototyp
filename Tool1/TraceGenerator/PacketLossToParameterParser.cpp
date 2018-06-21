@@ -1,11 +1,8 @@
-//
-// Created by drieke on 15.06.18.
-//
-
 #include <fstream>
 #include <iostream>
 #include "PacketLossToParameterParser.h"
 #include "HMM.h"
+#include <algorithm>
 
 PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModel packetLossModel, string filename) {
     this->filenname = filename;
@@ -178,6 +175,31 @@ float *PacketLossToParameterParser::parseSimpleGilbert(vector<bool> trace) {
 }
 
 float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace) {
+    vector<int> lossindices;
+    vector<int> gapindices;
+    for(int i = 0; i<trace.size(); i++){ //find all loss indices
+        if(!trace[i]){
+            cout << i << endl;
+            lossindices.push_back(i);
+        }
+    }
+
+    for(int i = 1; i<lossindices.size(); i++){ //push
+        if(lossindices[i]-lossindices[i-1]-1 < 16){
+            if(!(find(gapindices.begin(), gapindices.end(), lossindices[i-1])!=gapindices.end())){
+                gapindices.push_back(lossindices[i-1]);
+            }
+            if(!(find(gapindices.begin(), gapindices.end(), lossindices[i])!=gapindices.end())){
+                gapindices.push_back(lossindices[i]);
+            }
+        }
+    }
+
+    while()
+    cout << "gapindices" << endl;
+    for(int i = 0; i<gapindices.size();i++){
+        cout << gapindices[i] << endl;
+    }
     return nullptr;
 }
 
