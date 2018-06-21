@@ -3,6 +3,7 @@
 #include "PacketLossToParameterParser.h"
 #include "HMM.h"
 #include <algorithm>
+#include <map>
 
 PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModel packetLossModel, string filename) {
     this->filenname = filename;
@@ -102,46 +103,132 @@ vector<bool> PacketLossToParameterParser::readFile(string filename) {
 }
 
 float *PacketLossToParameterParser::parseMarkov(vector<bool> trace) {
-    //Zustände
-    int loss = 0;
-    int recieve = 1;
-    int pi_min[2];
-    int pi_max[2];
-    pi_min[loss] = 1;
-    pi_max[loss] = 1000;
-    pi_min[recieve] = 0;
-    pi_min[recieve] = 0;
+    const unsigned int G_MIN = 4;
+    const unsigned int B_MIN = 1;
+    unsigned long lossCounter = 0;
+    unsigned long receiveCounter = 0;
+    bool gapPeriod = true;
 
-    double a[4][4];
-    a[0][0] = 0;
-    a[0][1] = 0;
-    a[0][2] = 0;
-    a[0][3] = 0;
-    a[1][0] = 0;
-    a[1][1] = 0;
-    a[1][2] = 0;
-    a[1][3] = 0;
-    a[2][0] = 0;
-    a[2][1] = 0;
-    a[2][2] = 0;
-    a[2][3] = 0;
-    int p_14 = 0;
-    int p_41 = 0;
-    int p_13 = 0;
-    int p_31 = 0;
-    int p_32 = 0;
-    int p_23 = 0;
-    int random_number = (int) (rand() * 1000) + 1;
-    int state;
+    //first index of the burst, length of the burst
+    map<unsigned long, unsigned long> bursts;
+    //first index of the gap, length of the gap
+    map<unsigned long, unsigned long> gaps;
 
-    for (int i = 0; i < trace.size(); ++i) {
-
+    //Collect all gap and burst periods
+    unsigned long periodLength = 0;
+    for (unsigned long i = 0; i < trace.size(); i++) {
+        if (!trace[i]) {
+            lossCounter++;
+        } else {
+            receiveCounter++;
+        }
+        periodLength = receiveCounter + lossCounter;
+        if (gapPeriod) {
+            //Check if gapPeriod
+            if (i > B_MIN) {
+                gapPeriod = false;
+                for (int j = 0; j < B_MIN; j++) {
+                    if (trace[i - j]) {
+                        gapPeriod = true;
+                    }
+                }
+            }
+            if (!gapPeriod) {
+                gaps.insert(pair<unsigned long, unsigned long>(i - periodLength + 1, periodLength));
+                receiveCounter = 0;
+                lossCounter = 0;
+            }
+        } else {
+            //Check if gapPeriod
+            if (i > G_MIN) {
+                gapPeriod = true;
+                for (int j = 0; j < G_MIN; j++) {
+                    if (!trace[i - j]) {
+                        gapPeriod = false;
+                    }
+                }
+            }
+            if (gapPeriod) {
+                bursts.insert(pair<unsigned long, unsigned long>(i - periodLength + 1, periodLength));
+                receiveCounter = 0;
+                lossCounter = 0;
+            }
+        }
+    }
+    //collect last period
+    if (gapPeriod) {
+        gaps.insert(pair<unsigned long, unsigned long>(trace.size() - periodLength, periodLength));
+    } else {
+        bursts.insert(pair<unsigned long, unsigned long>(trace.size() - periodLength, periodLength));
     }
 
-    HMM *hmm = new HMM();
-    hmm->train(trace, trace.size());
-    hmm->print();
-    return nullptr;
+    unsigned long state1Counter = 0;
+    unsigned long state2Counter = 0;
+    unsigned long state3Counter = 0;
+    unsigned long state4Counter = 0;
+
+    unsigned long from3To2Counter = 0;
+    unsigned long from2To3Counter = 0;
+    unsigned long from1To4Counter = 0;
+    unsigned long from4To1Counter = 0;
+    unsigned long from1To3Counter = 0;
+    unsigned long from3To1Counter = 0;
+
+    //State-changes in burst period
+    for (auto &burst : bursts) {
+        for (unsigned long i = 0; i < burst.second; i++) {
+            if (trace[burst.first + i]) {
+                state2Counter++;
+                if (i > 0) {
+                    //Case 1: packet received after loss: 3->2
+                    if (!trace[burst.first + i - 1]) {
+                        from3To2Counter++;
+                    }
+                }
+            } else {
+                state3Counter++;
+                if (i != 0) {
+                    //Case 2: packet loss after receive: 2->3
+                    if (trace[burst.first + i - 1]) {
+                        from2To3Counter++;
+                    }
+                }
+            }
+        }
+    }
+
+    //State-changes in gap period
+    for (auto &gap : gaps) {
+        for (unsigned long i = 1; i < gap.second; i++) {
+            if (trace[gap.first + i]) {
+                state1Counter++;
+                //Case 1: packet received after loss: 4->1
+                if (!trace[gap.first + i - 1]) {
+                    from4To1Counter++;
+                }
+            } else {
+                state4Counter++;
+                //Case 2: packet loss after receive: 1->4
+                if (trace[gap.first + i - 1]) {
+                    from1To4Counter++;
+                }
+            }
+        }
+    }
+
+    //State-changes between periods
+    from1To3Counter = bursts.size();
+    from3To1Counter = gaps.size() - 1;
+
+
+    float p32 = 1.f / (float) state3Counter * from3To2Counter;
+    float p23 = 1.f / (float) state2Counter * from2To3Counter;
+    float p14 = 1.f / (float) state1Counter * from1To4Counter;
+    float p13 = 1.f / (float) state1Counter * from1To3Counter;
+    float p31 = 1.f / (float) state3Counter * from3To1Counter;
+    float p41 = 1;
+
+    return new float[6]{p13, p31, p32, p23, p14, p41};
 }
 
 float *PacketLossToParameterParser::parseSimpleGilbert(vector<bool> trace) {
@@ -177,27 +264,27 @@ float *PacketLossToParameterParser::parseSimpleGilbert(vector<bool> trace) {
 float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace) {
     vector<int> lossindices;
     vector<int> gapindices;
-    for(int i = 0; i<trace.size(); i++){ //find all loss indices
-        if(!trace[i]){
+    for (int i = 0; i < trace.size(); i++) { //find all loss indices
+        if (!trace[i]) {
             cout << i << endl;
             lossindices.push_back(i);
         }
     }
 
-    for(int i = 1; i<lossindices.size(); i++){ //push
-        if(lossindices[i]-lossindices[i-1]-1 < 16){
-            if(!(find(gapindices.begin(), gapindices.end(), lossindices[i-1])!=gapindices.end())){
-                gapindices.push_back(lossindices[i-1]);
+    for (int i = 1; i < lossindices.size(); i++) { //push
+        if (lossindices[i] - lossindices[i - 1] - 1 < 16) {
+            if (!(find(gapindices.begin(), gapindices.end(), lossindices[i - 1]) != gapindices.end())) {
+                gapindices.push_back(lossindices[i - 1]);
             }
-            if(!(find(gapindices.begin(), gapindices.end(), lossindices[i])!=gapindices.end())){
+            if (!(find(gapindices.begin(), gapindices.end(), lossindices[i]) != gapindices.end())) {
                 gapindices.push_back(lossindices[i]);
             }
         }
     }
 
-    while()
+    //while()
     cout << "gapindices" << endl;
-    for(int i = 0; i<gapindices.size();i++){
+    for (int i = 0; i < gapindices.size(); i++) {
         cout << gapindices[i] << endl;
     }
     return nullptr;

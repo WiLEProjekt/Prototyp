@@ -34,10 +34,19 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         }
         PacketLossToParameterParser packetLossToParameterParser(packetLossModel, filename);
         float *parameter = packetLossToParameterParser.parseParameter();
-        cout << "p " << parameter[0] << endl;
-        cout << "r " << parameter[1] << endl;
-        cout << "k " << parameter[2] << endl;
-        cout << "h " << parameter[3] << endl;
+        if(packetLossModel != MARKOV) {
+            cout << "p " << parameter[0] << endl;
+            cout << "r " << parameter[1] << endl;
+            cout << "k " << parameter[2] << endl;
+            cout << "h " << parameter[3] << endl;
+        } else {
+            cout << "p13 " << parameter[0] << endl;
+            cout << "p31 " << parameter[1] << endl;
+            cout << "p32 " << parameter[2] << endl;
+            cout << "p23 " << parameter[3] << endl;
+            cout << "p14 " << parameter[4] << endl;
+            cout << "p41 " << parameter[5] << endl;
+        }
     } else {
         string modelname(argv[1]);
         std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
