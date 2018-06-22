@@ -36,7 +36,7 @@ ExtractParameter PacketLossToParameterParser::parseParameter(unsigned int gMin) 
 }
 
 ExtractParameter PacketLossToParameterParser::parseParameter() {
-    this->parseParameter(G_MIN_DEFAULT);
+    this->parseParameter(0);
 }
 
 float *PacketLossToParameterParser::parseGilbert(vector<bool> trace) {
@@ -116,7 +116,9 @@ vector<bool> PacketLossToParameterParser::readFile(string filename) {
 }
 
 float *PacketLossToParameterParser::parseMarkov(vector<bool> trace, unsigned int gMin) {
-    const unsigned int G_MIN = 4;
+    if (gMin == 0) {
+        gMin = 4;
+    }
     const unsigned int B_MIN = 1;
     unsigned long lossCounter = 0;
     unsigned long receiveCounter = 0;
@@ -153,9 +155,9 @@ float *PacketLossToParameterParser::parseMarkov(vector<bool> trace, unsigned int
             }
         } else {
             //Check if gapPeriod
-            if (i > G_MIN) {
+            if (i > gMin) {
                 gapPeriod = true;
-                for (int j = 0; j < G_MIN; j++) {
+                for (int j = 0; j < gMin; j++) {
                     if (!trace[i - j]) {
                         gapPeriod = false;
                     }
@@ -275,6 +277,9 @@ float *PacketLossToParameterParser::parseSimpleGilbert(vector<bool> trace) {
 }
 
 float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsigned int gMin) {
+    if (gMin == 0) {
+        gMin = 16;
+    }
     vector<int> lossindices;
     vector<int> gapindices;
     for(int i = 0; i<trace.size(); i++){ //find all loss indices
@@ -284,7 +289,7 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
     }
 //cout << lossindices.size() << endl;
     for(int i = 1; i<lossindices.size(); i++){ //push
-        if(lossindices[i]-lossindices[i-1]-1 < 16){
+        if (lossindices[i] - lossindices[i - 1] - 1 < gMin) {
             if(!(find(gapindices.begin(), gapindices.end(), lossindices[i-1])!=gapindices.end())){
                 gapindices.push_back(lossindices[i-1]);
             }
@@ -300,7 +305,7 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
         if(i==0){
             bursts.push_back(gapindices[i]);
         }else{
-            if((gapindices[i]-gapindices[i-1])-1 >=16){
+            if ((gapindices[i] - gapindices[i - 1]) - 1 >= gMin) {
                 bursts.push_back(gapindices[i-1]);
                 bursts.push_back(gapindices[i]);
             }
@@ -309,7 +314,7 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
             }
         }
     }
-    if((trace.size()-1) - (bursts[bursts.size()-1])<16){
+    if ((trace.size() - 1) - (bursts[bursts.size() - 1]) < gMin) {
         bursts[bursts.size()-1] = trace.size()-1;
     }
 

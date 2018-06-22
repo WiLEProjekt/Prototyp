@@ -9,11 +9,18 @@
 #include "Pingparser.h"
 #include <random>
 
-ExtractParameter TraceGenerator::extractModelParameter(const string &filename, string &packetlossModelName){
+ExtractParameter
+TraceGenerator::extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin) {
     std::transform(packetlossModelName.begin(), packetlossModelName.end(), packetlossModelName.begin(), ::tolower);
     PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
     PacketLossToParameterParser packetLossToParameterParser(packetLossModel, filename);
-    ExtractParameter extractParameter = packetLossToParameterParser.parseParameter();
+
+    ExtractParameter extractParameter{};
+    if (gMin != 0) {
+        extractParameter = packetLossToParameterParser.parseParameter(gMin);
+    } else {
+        extractParameter = packetLossToParameterParser.parseParameter();
+    }
     float * parameter = extractParameter.parameter;
     if (packetLossModel == MARKOV) {
         cout << "p13 " << parameter[0] << endl;
@@ -42,12 +49,18 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
     } else if (strcmp(argv[1], "-extract") == 0) {
         string filename = argv[2];
         string packetlossModelName = argv[3];
-        this->extractModelParameter(filename, packetlossModelName);
+        if (argc > 4) {
+            unsigned int gMin = atoi(argv[4]);
+            this->extractModelParameter(filename, packetlossModelName, gMin);
+        } else {
+            this->extractModelParameter(filename, packetlossModelName, 0);
+        }
     } else if (strcmp(argv[1], "-import") == 0) {
         string filename = argv[2];
         string packetlossModelName = argv[3];
+        string outputFile = argv[4];
         PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
-        ExtractParameter extractParameter = this->extractModelParameter(filename, packetlossModelName);
+        ExtractParameter extractParameter = this->extractModelParameter(filename, packetlossModelName, 0);
 
 
         BasePacketlossModel *model;
@@ -59,7 +72,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
 
         vector<bool> trace = model->buildTrace();
         this->printPacketloss(trace);
-        TraceSaver::writeTraceToFile(trace);
+        TraceSaver::writeTraceToFile(trace, outputFile);
     } else if (strcmp(argv[1], "-parse") == 0) {
         if (strcmp(argv[2], "-ping") == 0) {
             Pingparser().readPingFile(argv[3], atol(argv[4]));
@@ -69,77 +82,90 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             this->printPingArgs();
         }
     } else if (strcmp(argv[1], "-gen") == 0) {
-        string modelname(argv[2]);
+        if (argc < 4) {
+            this->printModels();
+            return;
+        }
+        string outputFile(argv[2]);
+        string modelname(argv[3]);
         std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
 
         BasePacketlossModel *model;
-        unsigned int seed = static_cast<unsigned int>(atol(argv[3]));
-        long numPackets = atol(argv[4]);
+        unsigned int seed = static_cast<unsigned int>(atol(argv[4]));
+        long numPackets = atol(argv[5]);
 
         if (strcmp(modelname.c_str(), "real") == 0) {
 
         } else if (strcmp(modelname.c_str(), "markov") == 0) {
-            if (argc != 9) {
+            if (argc != 11) {
                 this->printModels();
+                return;
             } else {
-                float p13 = atof(argv[5]);
-                float p31 = atof(argv[6]);
-                float p32 = atof(argv[7]);
-                float p23 = atof(argv[8]);
-                float p14 = atof(argv[9]);
+                float p13 = atof(argv[6]);
+                float p31 = atof(argv[7]);
+                float p32 = atof(argv[8]);
+                float p23 = atof(argv[9]);
+                float p14 = atof(argv[10]);
                 float p41 = 1.0;
                 model = new MarkovModel(seed, numPackets, p13, p31, p32, p23, p14, p41);
             }
         } else if (strcmp(modelname.c_str(), "gilbertelliot") == 0) {
-            if (argc != 8) {
+            if (argc != 10) {
                 this->printModels();
+                return;
             } else {
-                float p = atof(argv[5]);
-                float r = atof(argv[6]);
-                float k = atof(argv[7]);
+                float p = atof(argv[6]);
+                float r = atof(argv[7]);
+                float k = atof(argv[8]);
+                float h = atof(argv[9]);
+                try{
+                    model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                } catch (const exception& e){
+                    this->printModels();
+                    return;
+                }
+            }
+
+        } else if (strcmp(modelname.c_str(), "gilbert") == 0) {
+            if (argc != 9) {
+                this->printModels();
+                return;
+            } else {
+                float p = atof(argv[6]);
+                float r = atof(argv[7]);
+                float k = 1;
                 float h = atof(argv[8]);
                 try{
                     model = new GilbertElliot(seed, numPackets, p, r, k, h);
                 } catch (const exception& e){
                     this->printModels();
-                }
-            }
-
-        } else if (strcmp(modelname.c_str(), "gilbert") == 0) {
-            if (argc != 7) {
-                this->printModels();
-            } else {
-                float p = atof(argv[5]);
-                float r = atof(argv[6]);
-                float k = 1;
-                float h = atof(argv[7]);
-                try{
-                    model = new GilbertElliot(seed, numPackets, p, r, k, h);
-                } catch (const exception& e){
-                    this->printModels();
+                    return;
                 }
             }
 
         } else if (strcmp(modelname.c_str(), "simplegilbert") == 0) {
-            if (argc != 6) {
+            if (argc != 8) {
                 this->printModels();
+                return;
             } else {
-                float p = atof(argv[5]);
-                float r = atof(argv[6]);
+                float p = atof(argv[6]);
+                float r = atof(argv[7]);
                 float k = 1;
                 float h = 0;
                 try{
                     model = new GilbertElliot(seed, numPackets, p, r, k, h);
                 } catch (const exception& e){
                     this->printModels();
+                    return;
                 }
             }
 
         } else if (strcmp(modelname.c_str(), "bernoulli") == 0) {
-            if (argc != 5) {
+            if (argc != 7) {
                 this->printModels();
+                return;
             } else {
-                float p = atof(argv[5]);
+                float p = atof(argv[6]);
                 float r = 1 - p;
                 float k = 1;
                 float h = 0;
@@ -147,6 +173,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                     model = new GilbertElliot(seed, numPackets, p, r, k, h);
                 } catch (const exception& e){
                     this->printModels();
+                    return;
                 }
             }
 
@@ -158,7 +185,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
 
         vector<bool> trace = model->buildTrace();
         this->printPacketloss(trace);
-        TraceSaver::writeTraceToFile(trace);
+        TraceSaver::writeTraceToFile(trace, outputFile);
     } else {
         printError();
     }
@@ -182,12 +209,14 @@ PacketLossModelType TraceGenerator::getPacketLossModelFromString(string modelnam
 }
 
 void TraceGenerator::printError() {
-    cout << "\tTraceGenerator -gen [model] [args...]\tgenerates a trace with Model [model] and arguments [args]\n"
+    cout << "\tTraceGenerator -gen [outputfile] [model] [args...]"
+         << "\tgenerates a trace with Model [model] and arguments [args] in file [outputfile]\n"
          << "\tTraceGenerator -showmodel\tshows all Models\n"
-         << "\tTraceGenerator -extract [filename] [modelname]\textracts parameter of trace-file [filename] for the model [modelname]\n"
-         << "\tTraceGenerator -import [filename] [modelname]\textracts parameter of trace-file [filename] for model [modelname] and generates a new trace\n"
-         << "\tTraceGenerator -parse [args]"
-         << endl;
+         << "\tTraceGenerator -extract [filename] [modelname] ([gMin])"
+         << "\textracts parameter of trace-file [filename] for the model [modelname]\n"
+         << "\tTraceGenerator -import [filename] [modelname] [outputfile]"
+         << "\textracts parameter of trace-file [filename] for model [modelname] and generates a new trace in [outputfile]\n"
+         << "\tTraceGenerator -parse [args]" << endl;
 }
 
 void TraceGenerator::printPingArgs() {
@@ -219,5 +248,3 @@ void TraceGenerator::printPacketloss(vector<bool> trace) {
     }
     cout << " Packetloss: " << (100 / (float) trace.size()) * (float) zeros << "%" << endl;
 }
-
-

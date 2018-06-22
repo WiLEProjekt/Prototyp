@@ -37,7 +37,7 @@ public:
 
     PacketLossModelType getPacketLossModelFromString(string modelname);
 
-    ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName);
+    ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin);
 };
 
 

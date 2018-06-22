@@ -12,7 +12,7 @@ public:
      * Writes a trace in a file
      * @param trace the loss trace
      */
-    static void writeTraceToFile(std::vector<bool> trace);
+    static void writeTraceToFile(std::vector<bool> trace, string outputFile);
 };
 
 
