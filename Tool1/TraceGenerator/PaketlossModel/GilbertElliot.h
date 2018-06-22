@@ -20,38 +20,33 @@ private:
 
     string checkParameter();
 
-    GilbertElliot(long numPackets) : BasePacketlossModel(numPackets) {
-        string invalidArgument = this->checkParameter();
-        if (!invalidArgument.empty()) {
-            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
-        }
-    }
-
-    GilbertElliot(unsigned int seed, long numPackets) : BasePacketlossModel(seed, numPackets) {
-        string invalidArgument = this->checkParameter();
-        if (!invalidArgument.empty()) {
-            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
-        }
-    }
 protected:
     vector<bool> buildTrace() override ;
 
 public:
 
 
-    GilbertElliot(long numPackets, float p, float r, float k, float h) : GilbertElliot(numPackets) {
+    GilbertElliot(long numPackets, float p, float r, float k, float h) : BasePacketlossModel(numPackets) {
         this->p = p;
         this->r = r;
         this->k = k;
         this->h = h;
+        string invalidArgument = this->checkParameter();
+        if (!invalidArgument.empty()) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
     }
 
     GilbertElliot(long numPackets, float parameter[])
-            : GilbertElliot(numPackets) {
+            : BasePacketlossModel(numPackets) {
         this->p = parameter[0];
         this->r = parameter[1];
         this->k = parameter[2];
         this->h = parameter[3];
+        string invalidArgument = this->checkParameter();
+        if (!invalidArgument.empty()) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
     }
 
     /**
@@ -64,19 +59,27 @@ public:
      * @param h chance of success in burst-state
      */
     GilbertElliot(unsigned int seed, long numPackets, float p, float r, float k, float h)
-            : GilbertElliot(seed, numPackets) {
+            : BasePacketlossModel(seed, numPackets) {
         this->p = p;
         this->r = r;
         this->k = k;
         this->h = h;
+        string invalidArgument = this->checkParameter();
+        if (!invalidArgument.empty()) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
     }
 
     GilbertElliot(unsigned int seed, long numPackets, float parameter[])
-            : GilbertElliot(seed, numPackets) {
+            : BasePacketlossModel(seed, numPackets) {
         this->p = parameter[0];
         this->r = parameter[1];
         this->k = parameter[2];
         this->h = parameter[3];
+        string invalidArgument = this->checkParameter();
+        if (!invalidArgument.empty()) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
     }
 };
 
