@@ -6,7 +6,7 @@
 
 using namespace std;
 
-enum PacketLossModel {
+enum PacketLossModelType {
     BERNOULI,
     SIMPLE_GILBERT,
     GILBERT,
@@ -14,12 +14,18 @@ enum PacketLossModel {
     MARKOV
 };
 
+struct ExtractParameter {
+    float *parameter;
+    unsigned long packetCount;
+};
+
 class PacketLossToParameterParser {
 private:
-    PacketLossModel packetLossModel;
-    string filenname;
+    const static unsigned int G_MIN_DEFAULT = 4;
+    PacketLossModelType packetLossModel;
+    string filename;
 
-    float *parseMarkov(vector<bool> trace);
+    float *parseMarkov(vector<bool> trace, unsigned int gMin);
 
     float *parseBernoulli(vector<bool> trace);
 
@@ -27,14 +33,18 @@ private:
 
     float *parseGilbert(vector<bool> trace);
 
-    float *parseGilbertElliot(vector<bool> trace);
+    float *parseGilbertElliot(vector<bool> trace, unsigned int gMin);
 
     vector<bool> readFile(string filename);
 
 public:
-    PacketLossToParameterParser(PacketLossModel packetLossModel, string filename);
 
-    float *parseParameter();
+
+    PacketLossToParameterParser(PacketLossModelType packetLossModel, string filename);
+
+    ExtractParameter parseParameter();
+
+    ExtractParameter parseParameter(unsigned int gMin);
 };
 
 

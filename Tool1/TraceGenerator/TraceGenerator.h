@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <vector>
+#include "PacketLossToParameterParser.h"
 
 using namespace std;
 class TraceGenerator {
@@ -24,12 +25,19 @@ private:
      */
     void printPacketloss(vector<bool> trace);
 public:
+
     /**
      * Constructor
      * @param argc argument count
      * @param argv arguments
      */
     TraceGenerator(int argc, char** argv);
+
+    void printPingArgs();
+
+    PacketLossModelType getPacketLossModelFromString(string modelname);
+
+    ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName);
 };
 
 

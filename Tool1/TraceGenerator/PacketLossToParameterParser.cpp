@@ -1,30 +1,42 @@
 #include <fstream>
 #include <iostream>
 #include "PacketLossToParameterParser.h"
-#include "HMM.h"
 #include <algorithm>
 #include <map>
 
-PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModel packetLossModel, string filename) {
-    this->filenname = filename;
+PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModelType packetLossModel, string filename) {
+    this->filename = filename;
     this->packetLossModel = packetLossModel;
 }
 
-float *PacketLossToParameterParser::parseParameter() {
-    vector<bool> trace = this->readFile(this->filenname);
+ExtractParameter PacketLossToParameterParser::parseParameter(unsigned int gMin) {
+    vector<bool> trace = this->readFile(this->filename);
+    float *parameter;
     switch (packetLossModel) {
         case BERNOULI:
-            return this->parseBernoulli(trace);
+            parameter = this->parseBernoulli(trace);
+            break;
         case SIMPLE_GILBERT:
-            return this->parseSimpleGilbert(trace);
+            parameter = this->parseSimpleGilbert(trace);
+            break;
         case GILBERT:
-            return this->parseGilbert(trace);
+            parameter = this->parseGilbert(trace);
+            break;
         case GILBERT_ELLIOT:
-            return this->parseGilbertElliot(trace);
+            parameter = this->parseGilbertElliot(trace, gMin);
+            break;
         case MARKOV:
-            return this->parseMarkov(trace);
+            parameter = this->parseMarkov(trace, gMin);
+            break;
     }
-    return nullptr;
+    ExtractParameter extractParameter{};
+    extractParameter.parameter = parameter;
+    extractParameter.packetCount = trace.size();
+    return extractParameter;
+}
+
+ExtractParameter PacketLossToParameterParser::parseParameter() {
+    this->parseParameter(G_MIN_DEFAULT);
 }
 
 float *PacketLossToParameterParser::parseGilbert(vector<bool> trace) {
@@ -102,7 +114,7 @@ vector<bool> PacketLossToParameterParser::readFile(string filename) {
     return trace;
 }
 
-float *PacketLossToParameterParser::parseMarkov(vector<bool> trace) {
+float *PacketLossToParameterParser::parseMarkov(vector<bool> trace, unsigned int gMin) {
     const unsigned int G_MIN = 4;
     const unsigned int B_MIN = 1;
     unsigned long lossCounter = 0;
@@ -261,7 +273,7 @@ float *PacketLossToParameterParser::parseSimpleGilbert(vector<bool> trace) {
     return new float[4]{p, r, 1, 0};
 }
 
-float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace) {
+float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsigned int gMin) {
     vector<int> lossindices;
     vector<int> gapindices;
     for (int i = 0; i < trace.size(); i++) { //find all loss indices

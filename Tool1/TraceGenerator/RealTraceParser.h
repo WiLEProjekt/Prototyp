@@ -6,7 +6,7 @@
 #define TRACEGENERATOR_REALTRACEPARSER_H
 
 #include <iostream>
-#include "PaketlossModel/PacketlossModel.h"
+#include "PaketlossModel/BasePacketlossModel.h"
 
 using namespace std;
 

@@ -5,20 +5,51 @@
 
 
 #include <vector>
-#include "PacketlossModel.h"
+#include "BasePacketlossModel.h"
 #include <string>
 
 using namespace std;
 
-class GilbertElliot : public PacketlossModel{
+class GilbertElliot : public BasePacketlossModel {
 private:
     float p, r, k, h;
 
     string checkParameter();
+
+    GilbertElliot(long numPackets) : BasePacketlossModel(numPackets) {
+        string invalidArgument = this->checkParameter();
+        if (!invalidArgument.empty()) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
+    }
+
+    GilbertElliot(unsigned int seed, long numPackets) : BasePacketlossModel(seed, numPackets) {
+        string invalidArgument = this->checkParameter();
+        if (!invalidArgument.empty()) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
+    }
 protected:
     vector<bool> buildTrace() override ;
 
 public:
+
+
+    GilbertElliot(long numPackets, float p, float r, float k, float h) : GilbertElliot(numPackets) {
+        this->p = p;
+        this->r = r;
+        this->k = k;
+        this->h = h;
+    }
+
+    GilbertElliot(long numPackets, float parameter[])
+            : GilbertElliot(numPackets) {
+        this->p = parameter[0];
+        this->r = parameter[1];
+        this->k = parameter[2];
+        this->h = parameter[3];
+    }
+
     /**
      * Constructor
      * @param seed the seed of the random generator
@@ -29,20 +60,20 @@ public:
      * @param h chance of success in burst-state
      */
     GilbertElliot(unsigned int seed, long numPackets, float p, float r, float k, float h)
-            : PacketlossModel(seed, numPackets), p(p), r(r), k(k), h(h) {
-        string invalidArgument = this->checkParameter();
-        if (!invalidArgument.empty()) {
-            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
-        }
-    };
+            : GilbertElliot(seed, numPackets) {
+        this->p = p;
+        this->r = r;
+        this->k = k;
+        this->h = h;
+    }
 
     GilbertElliot(unsigned int seed, long numPackets, float parameter[])
-            : PacketlossModel(seed, numPackets), p(parameter[0]), r(parameter[1]), k(parameter[2]), h(parameter[3]) {
-        string invalidArgument = this->checkParameter();
-        if (!invalidArgument.empty()) {
-            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
-        }
-    };
+            : GilbertElliot(seed, numPackets) {
+        this->p = parameter[0];
+        this->r = parameter[1];
+        this->k = parameter[2];
+        this->h = parameter[3];
+    }
 };
 
 

@@ -1,8 +1,8 @@
 
 #include <stdexcept>
 #include <vector>
-#include "PacketlossModel.h"
+#include "BasePacketlossModel.h"
 #include <iostream>
-float PacketlossModel::generateRandomNumber() {
+float BasePacketlossModel::generateRandomNumber() {
     return(distribution(generator));
 }

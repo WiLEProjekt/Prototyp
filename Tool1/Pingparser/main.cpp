@@ -66,10 +66,6 @@ void writeTraceInFile(string outputFilename, vector<bool> calculatedLosses) {
     cout << "messages received: " << received << endl;
 }
 
-void calculateModelParameter(vector<bool> calculatedLosses) {
-
-}
-
 /**
  * Calculates the losses
  * @param sequenzNumbers the sequenzNumbers of the trace in order of their appearance
