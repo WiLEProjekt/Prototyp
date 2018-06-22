@@ -11,6 +11,10 @@ PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModelType pac
 
 ExtractParameter PacketLossToParameterParser::parseParameter(unsigned int gMin) {
     vector<bool> trace = this->readFile(this->filename);
+    if (trace.empty()) {
+        cout << "file " << this->filename << " not found or is empty" << endl;
+        throw invalid_argument("file " + this->filename + " not found or is empty");
+    }
     float *parameter;
     switch (packetLossModel) {
         case BERNOULI:
@@ -28,6 +32,9 @@ ExtractParameter PacketLossToParameterParser::parseParameter(unsigned int gMin) 
         case MARKOV:
             parameter = this->parseMarkov(trace, gMin);
             break;
+        default:
+            cout << "invalid model: " << packetLossModel << endl;
+            throw invalid_argument("invalid model: " + packetLossModel);
     }
     ExtractParameter extractParameter{};
     extractParameter.parameter = parameter;

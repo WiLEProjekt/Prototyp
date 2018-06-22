@@ -71,8 +71,8 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         } else {
             model = new GilbertElliot(extractParameter.packetCount, extractParameter.parameter);
         }
-        delete[] (extractParameter.parameter);
         vector<bool> trace = model->buildTrace();
+        delete[] (extractParameter.parameter);
         this->printPacketloss(trace);
         TraceSaver::writeTraceToFile(trace, outputFile);
     } else if (strcmp(argv[1], "-parse") == 0) {
@@ -211,6 +211,9 @@ PacketLossModelType TraceGenerator::getPacketLossModelFromString(string modelnam
         packetLossModel = BERNOULI;
     } else if (strcmp(modelname.c_str(), "markov") == 0) {
         packetLossModel = MARKOV;
+    } else {
+        printModels();
+        throw invalid_argument("Model " + modelname + " is not defined");
     }
     return packetLossModel;
 }
