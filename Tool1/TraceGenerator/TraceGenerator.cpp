@@ -62,14 +62,22 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         string packetlossModelName = argv[3];
         string outputFile = argv[4];
         PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
-        ExtractParameter extractParameter = this->extractModelParameter(filename, packetlossModelName, 0);
+        unsigned int gMin = 0;
+        unsigned int seed = time(0);
+        if (argc > 5) {
+            gMin = atoi(argv[5]);
+        }
+        if (argc > 6) {
+            seed = atol(argv[6]);
+        }
+        ExtractParameter extractParameter = this->extractModelParameter(filename, packetlossModelName, gMin);
 
 
         BasePacketlossModel *model;
         if(packetLossModel == MARKOV) {
-            model = new MarkovModel(extractParameter.packetCount, extractParameter.parameter);
+            model = new MarkovModel(extractParameter.packetCount, seed, extractParameter.parameter);
         } else {
-            model = new GilbertElliot(extractParameter.packetCount, extractParameter.parameter);
+            model = new GilbertElliot(extractParameter.packetCount, seed, extractParameter.parameter);
         }
         vector<bool> trace = model->buildTrace();
         delete[] (extractParameter.parameter);
@@ -224,7 +232,7 @@ void TraceGenerator::printError() {
          << "\tTraceGenerator -showmodel\tshows all Models\n"
          << "\tTraceGenerator -extract [filename] [modelname] ([gMin])"
          << "\textracts parameter of trace-file [filename] for the model [modelname]\n"
-         << "\tTraceGenerator -import [filename] [modelname] [outputfile]"
+         << "\tTraceGenerator -import [filename] [modelname] [outputfile] ([gMin]) ([seed])"
          << "\textracts parameter of trace-file [filename] for model [modelname] and generates a new trace in [outputfile]\n"
          << "\tTraceGenerator -parse [args]" << endl;
 }

@@ -321,8 +321,10 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
             }
         }
     }
-    if ((trace.size() - 1) - (bursts[bursts.size() - 1]) < gMin) {
-        bursts[bursts.size()-1] = trace.size()-1;
+    if (bursts.size() > 0) {
+        if ((trace.size() - 1) - (bursts[bursts.size() - 1]) < gMin) {
+            bursts[bursts.size() - 1] = trace.size() - 1;
+        }
     }
 
     int transingoodstate=0;
@@ -348,18 +350,20 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
 
     int goodBadStateTrans = 0;
     int badGoodStateTrans = 0;
-    if(bursts[0] != 0 && bursts[bursts.size()-1] != trace.size()-1){
-        goodBadStateTrans = bursts.size()/2;
-        badGoodStateTrans = bursts.size()/2;
-    }else if(bursts[0] == 0 && bursts[bursts.size()-1] != trace.size()-1){
-        goodBadStateTrans = bursts.size()/2-1;
-        badGoodStateTrans = bursts.size()/2;
-    }else if(bursts[0] != 0 && bursts[bursts.size()-1] == trace.size()-1) {
-        goodBadStateTrans = bursts.size()/2;
-        badGoodStateTrans = bursts.size()/2-1;
-    }else{
-        goodBadStateTrans = bursts.size()/2-1;
-        badGoodStateTrans = bursts.size()/2-1;
+    if (bursts.size() > 0) {
+        if (bursts[0] != 0 && bursts[bursts.size() - 1] != trace.size() - 1) {
+            goodBadStateTrans = bursts.size() / 2;
+            badGoodStateTrans = bursts.size() / 2;
+        } else if (bursts[0] == 0 && bursts[bursts.size() - 1] != trace.size() - 1) {
+            goodBadStateTrans = bursts.size() / 2 - 1;
+            badGoodStateTrans = bursts.size() / 2;
+        } else if (bursts[0] != 0 && bursts[bursts.size() - 1] == trace.size() - 1) {
+            goodBadStateTrans = bursts.size() / 2;
+            badGoodStateTrans = bursts.size() / 2 - 1;
+        } else {
+            goodBadStateTrans = bursts.size() / 2 - 1;
+            badGoodStateTrans = bursts.size() / 2 - 1;
+        }
     }
     //cout << "goodbad: " << goodBadStateTrans << endl;
     //cout << "badgood: " << badGoodStateTrans << endl;
@@ -410,11 +414,21 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
             //cout << "lst: " << lstinBadState << endl;
         }
     }
-    if(bursts[bursts.size()-1]<trace.size()-1){
-        for(int a = bursts[bursts.size()-1]+1; a<trace.size();a++){
-            if(trace[a]==1){
+    if (bursts.size() > 0) {
+        if (bursts[bursts.size() - 1] < trace.size() - 1) {
+            for (int a = bursts[bursts.size() - 1] + 1; a < trace.size(); a++) {
+                if (trace[a] == 1) {
+                    rcvinGoodState++;
+                } else {
+                    lstinGoodState++;
+                }
+            }
+        }
+    } else {
+        for (int i = 0; i < trace.size(); i++) {
+            if (trace[i]) {
                 rcvinGoodState++;
-            }else{
+            } else {
                 lstinGoodState++;
             }
         }

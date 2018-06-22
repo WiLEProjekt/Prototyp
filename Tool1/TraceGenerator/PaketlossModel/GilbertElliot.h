@@ -49,6 +49,18 @@ public:
         }
     }
 
+    GilbertElliot(long numPackets, unsigned int seed, float parameter[])
+            : BasePacketlossModel(seed, numPackets) {
+        this->p = parameter[0];
+        this->r = parameter[1];
+        this->k = parameter[2];
+        this->h = parameter[3];
+        string invalidArgument = this->checkParameter();
+        if (!invalidArgument.empty()) {
+            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
+        }
+    }
+
     /**
      * Constructor
      * @param seed the seed of the random generator
@@ -64,18 +76,6 @@ public:
         this->r = r;
         this->k = k;
         this->h = h;
-        string invalidArgument = this->checkParameter();
-        if (!invalidArgument.empty()) {
-            throw invalid_argument("invalid Argument {" + invalidArgument + "}");
-        }
-    }
-
-    GilbertElliot(unsigned int seed, long numPackets, float parameter[])
-            : BasePacketlossModel(seed, numPackets) {
-        this->p = parameter[0];
-        this->r = parameter[1];
-        this->k = parameter[2];
-        this->h = parameter[3];
         string invalidArgument = this->checkParameter();
         if (!invalidArgument.empty()) {
             throw invalid_argument("invalid Argument {" + invalidArgument + "}");
