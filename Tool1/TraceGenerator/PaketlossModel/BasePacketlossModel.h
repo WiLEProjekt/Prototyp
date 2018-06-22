@@ -24,7 +24,9 @@ protected:
      */
     BasePacketlossModel(long numPackets) : numPackets(numPackets) {
         generator.seed(time(0));
-        distribution = *new uniform_real_distribution<float>(0.0, 1.0);
+        uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
+        distribution = *dist;
+        delete (dist);
     }
 
     /**
@@ -34,8 +36,11 @@ protected:
      */
     BasePacketlossModel(unsigned int seed, long numPackets) : numPackets(numPackets) {
         generator.seed(seed);
-        distribution = *new uniform_real_distribution<float>(0.0, 1.0);
+        uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
+        distribution = *dist;
+        delete (dist);
     }
+
 public:
     /**
      * Builds a loss trace

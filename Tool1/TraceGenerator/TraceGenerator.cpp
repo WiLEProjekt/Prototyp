@@ -49,12 +49,14 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
     } else if (strcmp(argv[1], "-extract") == 0) {
         string filename = argv[2];
         string packetlossModelName = argv[3];
+        ExtractParameter parameter{};
         if (argc > 4) {
             unsigned int gMin = atoi(argv[4]);
-            this->extractModelParameter(filename, packetlossModelName, gMin);
+            parameter = this->extractModelParameter(filename, packetlossModelName, gMin);
         } else {
-            this->extractModelParameter(filename, packetlossModelName, 0);
+            parameter = this->extractModelParameter(filename, packetlossModelName, 0);
         }
+        delete[] (parameter.parameter);
     } else if (strcmp(argv[1], "-import") == 0) {
         string filename = argv[2];
         string packetlossModelName = argv[3];
@@ -69,7 +71,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         } else {
             model = new GilbertElliot(extractParameter.packetCount, extractParameter.parameter);
         }
-
+        delete[] (extractParameter.parameter);
         vector<bool> trace = model->buildTrace();
         this->printPacketloss(trace);
         TraceSaver::writeTraceToFile(trace, outputFile);
@@ -90,7 +92,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         string modelname(argv[3]);
         std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
 
-        BasePacketlossModel *model;
+        BasePacketlossModel *model = nullptr;
         unsigned int seed = static_cast<unsigned int>(atol(argv[4]));
         long numPackets = atol(argv[5]);
 
@@ -183,9 +185,14 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             return;
         }
 
-        vector<bool> trace = model->buildTrace();
-        this->printPacketloss(trace);
-        TraceSaver::writeTraceToFile(trace, outputFile);
+        if (model != nullptr) {
+            vector<bool> trace = model->buildTrace();
+            delete (model);
+            this->printPacketloss(trace);
+            TraceSaver::writeTraceToFile(trace, outputFile);
+        } else {
+            printModels();
+        }
     } else {
         printError();
     }

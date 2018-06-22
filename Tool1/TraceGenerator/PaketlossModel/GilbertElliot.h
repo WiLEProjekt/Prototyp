@@ -7,12 +7,16 @@
 #include <vector>
 #include "BasePacketlossModel.h"
 #include <string>
+#include <stdexcept>
 
 using namespace std;
 
 class GilbertElliot : public BasePacketlossModel {
 private:
-    float p, r, k, h;
+    float p = -1;
+    float r = -1;
+    float k = -1;
+    float h = -1;
 
     string checkParameter();
 
