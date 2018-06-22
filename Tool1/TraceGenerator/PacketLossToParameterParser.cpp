@@ -448,11 +448,11 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
         cout << gapindices[i] << endl;
     }*/
 
-/*
+
     cout << "startend" << endl;
     for(int i = 0; i<bursts.size(); i++){
         cout << bursts[i] << endl;
-    }*/
+    }
     return new float[4]{p, r, k, h};
 }
 
