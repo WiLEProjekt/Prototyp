@@ -12,8 +12,17 @@
 #include <math.h>
 #include <pcap.h>
 #include <sstream>
+#include <algorithm>
+#include <map>
 
 using namespace std;
+
+enum Protocol {
+    ICMP,
+    TCP,
+    NONE
+};
+
 
 class Pingparser {
 
@@ -25,7 +34,7 @@ private:
      * @param sequenzNumbers the sequenzNumbers of the trace in order of their appearance
      * @return the calculated losses in order of their appearance
      */
-    vector<bool> findLosses(vector<unsigned int> sequenzNumbers);
+    vector<bool> findMissingSeqNums(vector<unsigned int> sequenzNumbers);
 
     /**
      * Writes the calculated losses in a file
@@ -49,21 +58,37 @@ private:
      */
     unsigned int parseSequenzNumberFromPing(string line);
 
+    /**
+     * Finds duplicate seqNums in to detect packetloss in tcp
+     * @param seqNums a map of the source ips and the seqNums
+     * @return a 01-trace
+     */
+    vector<bool> findDuplicateSeqNums(const map<string, vector<unsigned int>> &seqNums);
+
+    /**
+     * Parses an IP-Address from bytes
+     * @param bytes the bytes
+     * @return the IP-Address
+     */
+    string parseIP(unsigned char bytes[4]);
+
 public:
     /**
     * Reads a ping file
     * @param filename the ping file
     * @param packetNumber the number of packets
+    * @param outputFile the output file
     * @return the calculated losses
     */
-    vector<bool> readPingFile(const string &filename, unsigned int packetNumber);
+    vector<bool> readPingFile(const string &filename, unsigned int packetNumber, string outputFile);
 
     /**
     * Reads a .pcap file
     * @param filename the .pcap filename
+    * @param outputFile the output file
     * @return the calculated losses
     */
-    vector<bool> readPcapFile(const string &filename);
+    vector<bool> readPcapFile(const string &filename, Protocol protocol, string outputFile);
 };
 
 

@@ -84,10 +84,28 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         this->printPacketloss(trace);
         TraceSaver::writeTraceToFile(trace, outputFile);
     } else if (strcmp(argv[1], "-parse") == 0) {
+        if(argc < 3){
+            this->printError();
+            return ;
+        }
         if (strcmp(argv[2], "-ping") == 0) {
-            Pingparser().readPingFile(argv[3], atol(argv[4]));
+            if(argc < 6){
+                this->printPingArgs();
+                return ;
+            }
+            Pingparser().readPingFile(argv[3], atol(argv[4]), argv[5]);
+
         } else if (strcmp(argv[2], "-pcap") == 0) {
-            Pingparser().readPcapFile(argv[3]);
+            if(argc < 6){
+                this->printPingArgs();
+                return ;
+            }
+            string proto = argv[3];
+            std::transform(proto.begin(), proto.end(), proto.begin(), ::tolower);
+            Protocol protocol = this->parseProtocol(proto);
+            if(protocol != NONE) {
+                Pingparser().readPcapFile(argv[4], protocol, argv[5]);
+            }
         } else {
             this->printPingArgs();
         }
@@ -101,7 +119,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
 
         BasePacketlossModel *model = nullptr;
-        unsigned int seed = static_cast<unsigned int>(atol(argv[4]));
+        auto seed = static_cast<unsigned int>(atol(argv[4]));
         long numPackets = atol(argv[5]);
 
         if (strcmp(modelname.c_str(), "real") == 0) {
@@ -238,12 +256,12 @@ void TraceGenerator::printError() {
 }
 
 void TraceGenerator::printPingArgs() {
-    cout << "Pingparser -ping [filename of pingtrace] [output filename] [total number of packets in the pingrace]\n"
-         << "Pingparser -pcap [filename of pcap trace .pcap] [output filename]" << endl;
+    cout << "TraceGenerator -parse -ping [filename of pingtrace] [total number of packets in the pingtrace] [output filename]\n"
+         << "TraceGenerator -parse -pcap [TCP|ICMP] [filename of pcap trace .pcap] [output filename]" << endl;
 }
 
 void TraceGenerator::printModels() {
-    cout << "Models:\n"
+    cout << "Tracegenerator [outputfile]\n"
          << "\treal [filename]\n"
          << "\tGilbertElliot\t<seed [1-" << numeric_limits<unsigned int>::max() << "]> <number_of_packets [1-"
          << numeric_limits<long>::max() << "]> <param p [0-1]> <param r [0-1]> <param k [0-1]> <param h [0-1]>\n"
@@ -265,4 +283,15 @@ void TraceGenerator::printPacketloss(vector<bool> trace) {
         }
     }
     cout << " Packetloss: " << (100 / (float) trace.size()) * (float) zeros << "%" << endl;
+}
+
+Protocol TraceGenerator::parseProtocol(string proto) {
+    if(strcmp(proto.c_str(), "icmp") == 0){
+        return ICMP;
+    } else if (strcmp(proto.c_str(), "tcp") == 0){
+        return TCP;
+    } else {
+        cout << proto << " is not a valid protocol" << endl;
+        return NONE;
+    }
 }

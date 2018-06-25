@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include "PacketLossToParameterParser.h"
+#include "Pingparser.h"
 
 using namespace std;
 class TraceGenerator {
@@ -38,6 +39,8 @@ public:
     PacketLossModelType getPacketLossModelFromString(string modelname);
 
     ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin);
+
+    Protocol parseProtocol(string proto);
 };
 
 
