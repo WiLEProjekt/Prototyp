@@ -19,12 +19,39 @@ private:
      */
     void printModels();
 
-    void printModels(const exception &e);
     /**
      * Prints the packetloss in percent on the console
      * @param trace the loss trace
      */
     void printPacketloss(vector<bool> trace);
+
+    /**
+     * Prints the arguments for the parse option
+     */
+    void printParseArgs();
+
+    /**
+     * Returns the PacketLossModel with the name @param modelname
+     * @param modelname the name of the model
+     * @return the packetLossModel
+     */
+    PacketLossModelType getPacketLossModelFromString(string modelname);
+
+    /**
+     * Extracts the ModelParameter of a file with 01-trace
+     * @param filename the file
+     * @param packetlossModelName the Model for the paramter
+     * @param gMin the burst size
+     * @return the parameter for the model
+     */
+    ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin);
+
+     /**
+     * Returns the Protcol with the name @param proto
+     * @param proto the name of the protocol
+     * @return the Protcol
+     */
+    Protocol parseProtocol(string proto);
 public:
 
     /**
@@ -33,14 +60,6 @@ public:
      * @param argv arguments
      */
     TraceGenerator(int argc, char** argv);
-
-    void printPingArgs();
-
-    PacketLossModelType getPacketLossModelFromString(string modelname);
-
-    ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin);
-
-    Protocol parseProtocol(string proto);
 };
 
 

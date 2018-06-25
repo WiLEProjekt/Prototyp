@@ -90,14 +90,14 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         }
         if (strcmp(argv[2], "-ping") == 0) {
             if(argc < 6){
-                this->printPingArgs();
+                this->printParseArgs();
                 return ;
             }
             Pingparser().readPingFile(argv[3], atol(argv[4]), argv[5]);
 
         } else if (strcmp(argv[2], "-pcap") == 0) {
             if(argc < 6){
-                this->printPingArgs();
+                this->printParseArgs();
                 return ;
             }
             string proto = argv[3];
@@ -107,7 +107,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 Pingparser().readPcapFile(argv[4], protocol, argv[5]);
             }
         } else {
-            this->printPingArgs();
+            this->printParseArgs();
         }
     } else if (strcmp(argv[1], "-gen") == 0) {
         if (argc < 4) {
@@ -255,7 +255,7 @@ void TraceGenerator::printError() {
          << "\tTraceGenerator -parse [args]" << endl;
 }
 
-void TraceGenerator::printPingArgs() {
+void TraceGenerator::printParseArgs() {
     cout << "TraceGenerator -parse -ping [filename of pingtrace] [total number of packets in the pingtrace] [output filename]\n"
          << "TraceGenerator -parse -pcap [TCP|ICMP] [filename of pcap trace .pcap] [output filename]" << endl;
 }
