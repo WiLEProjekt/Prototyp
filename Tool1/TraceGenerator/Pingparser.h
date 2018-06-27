@@ -41,7 +41,7 @@ private:
      * @param outputFilename the filename
      * @param calculatedLossed the calculated lossed
      */
-    void wrtieTraceInFile(const string &outputFile, vector<bool> calculatedLosses);
+    void writeTraceInFile(const string &outputFile, vector<bool> calculatedLosses);
 
     /**
      * Parses a number from a byte array

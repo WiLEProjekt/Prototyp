@@ -41,10 +41,11 @@ vector<bool> Pingparser::findMissingSeqNums(vector<unsigned int> sequenzNumbers)
         firstSeqNumRed = true;
         lastSeqNum = seqNum;
     }
+    
     return calculatedLosses;
 }
 
-void Pingparser::wrtieTraceInFile(const string &outputFile, vector<bool> calculatedLosses) {
+void Pingparser::writeTraceInFile(const string &outputFile, vector<bool> calculatedLosses) {
     string out = outputFile;
     fstream file;
     file.open(out.c_str(), ios::out);
@@ -72,7 +73,7 @@ unsigned int Pingparser::parseNumberFromBytes(unsigned char *bytes, int length) 
 vector<bool> Pingparser::readPingFile(const string &filename, unsigned int packetNumber, string outputFile) {
     vector<bool> calculatedLosses = this->readPingFile(filename, packetNumber);
     if (!calculatedLosses.empty()) {
-        this->wrtieTraceInFile(outputFile, calculatedLosses);
+        this->writeTraceInFile(outputFile, calculatedLosses);
         return calculatedLosses;
     }
 }
@@ -80,7 +81,7 @@ vector<bool> Pingparser::readPingFile(const string &filename, unsigned int packe
 vector<bool> Pingparser::readPcapFile(const string &filename, Protocol protocol, string outputFile) {
     vector<bool> trace = this->readPcapFile(filename, protocol);
     if (!trace.empty()) {
-        this->wrtieTraceInFile(outputFile, trace);
+        this->writeTraceInFile(outputFile, trace);
         return trace;
     }
 }
@@ -184,11 +185,12 @@ vector<bool> Pingparser::readPcapFile(const string &filename, Protocol protocol)
                 printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
             }
 
-            //Wenn Bits 35 = 0 && 28 = 15 && 39 = 75, dann ICMP.
-            //Wenn Bit 34 = 0 dann ICMP-Response
+            //Byte 23 = 1: ICMP
+            //Byte 34 = 0: Response
+            //Byte 12 = 8 und 13 = 0: IP
             switch (protocol) {
                 case ICMP:
-                    if (data[23] == 1 && data[34] == 0) {
+                    if (data[23] == 1 && data[34] == 0 && data[12] == 8 && data[13] == 0) {
                         unsigned char seqNumBytes[] = {data[40], data[41]};
                         seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
                     }
