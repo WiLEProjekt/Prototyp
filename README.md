@@ -58,4 +58,5 @@ Wandelt eine .pcap-Datei [filename] in eine Trace-Datei [outputfile] um. [tcp/ic
 
 #### PCAP Trace als Eingabe, Parameterschätzung durchführen und damit mit unseren Modellen einen neuen Trace generieren
 ./TraceGenerator -import [tcp/icmp] [filename] [modelname] [outputfile] ([gMin]) ([seed])
+
 ./TraceGenerator -import icmp inputfile.pcap gilbertelliot genGE.txt 16 1
