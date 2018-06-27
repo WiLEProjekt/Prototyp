@@ -188,10 +188,11 @@ vector<bool> Pingparser::readPcapFile(const string &filename, Protocol protocol)
             //Wenn Bit 34 = 0 dann ICMP-Response
             switch (protocol) {
                 case ICMP:
-                    if (data[34] == 0 && data[35] == 0 && data[38] == 15 && data[39] == 75) {
+                    if (data[23] == 1 && data[34] == 0) {
                         unsigned char seqNumBytes[] = {data[40], data[41]};
                         seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
                     }
+                    break;
                 case TCP:
                     if (data[25] == 6) {
                         unsigned char seqNumBytes[] = {data[40], data[41], data[42], data[43]};
@@ -208,6 +209,7 @@ vector<bool> Pingparser::readPcapFile(const string &filename, Protocol protocol)
                             tcpSeqNums.insert(pair<string, vector<unsigned int>>(sourceIp, new_vector));
                         }
                     }
+                    break;
             }
         }
         vector<bool> trace;
