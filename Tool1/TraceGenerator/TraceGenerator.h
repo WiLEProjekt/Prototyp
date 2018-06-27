@@ -46,11 +46,11 @@ private:
      */
     ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin);
 
-     /**
-     * Returns the Protcol with the name @param proto
-     * @param proto the name of the protocol
-     * @return the Protcol
-     */
+    /**
+    * Returns the Protocol with the name @param proto
+    * @param proto the name of the protocol
+    * @return the Protocol
+    */
     Protocol parseProtocol(string proto);
 public:
 
