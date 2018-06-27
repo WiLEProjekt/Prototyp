@@ -17,7 +17,7 @@ ExtractParameter PacketLossToParameterParser::parseParameter(unsigned int gMin) 
     }
     float *parameter;
     switch (packetLossModel) {
-        case BERNOULI:
+        case BERNOULLI:
             parameter = this->parseBernoulli(trace);
             break;
         case SIMPLE_GILBERT:

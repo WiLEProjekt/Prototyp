@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "TraceGenerator.h"
 #include "PaketlossModel/MarkovModel.h"
-#include "PaketlossModel/GilbertElliot.h"
+#include "PaketlossModel/GilbertElliotModel.h"
 #include "TraceSaver.h"
 #include "PacketLossToParameterParser.h"
 #include "Pingparser.h"
@@ -77,7 +77,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         if(packetLossModel == MARKOV) {
             model = new MarkovModel(extractParameter.packetCount, seed, extractParameter.parameter);
         } else {
-            model = new GilbertElliot(extractParameter.packetCount, seed, extractParameter.parameter);
+            model = new GilbertElliotModel(extractParameter.packetCount, seed, extractParameter.parameter);
         }
         vector<bool> trace = model->buildTrace();
         delete[] (extractParameter.parameter);
@@ -135,7 +135,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float p23 = atof(argv[9]);
                 float p14 = atof(argv[10]);
                 float p41 = 1.0;
-                model = new MarkovModel(seed, numPackets, p13, p31, p32, p23, p14, p41);
+                model = new MarkovModel(seed, numPackets, p13, p31, p32, p23, p14);
             }
         } else if (strcmp(modelname.c_str(), "gilbertelliot") == 0) {
             if (argc != 10) {
@@ -147,7 +147,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float k = atof(argv[8]);
                 float h = atof(argv[9]);
                 try{
-                    model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                    model = new GilbertElliotModel(seed, numPackets, p, r, k, h);
                 } catch (const exception& e){
                     this->printModels();
                     return;
@@ -164,7 +164,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float k = 1;
                 float h = atof(argv[8]);
                 try{
-                    model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                    model = new GilbertElliotModel(seed, numPackets, p, r, k, h);
                 } catch (const exception& e){
                     this->printModels();
                     return;
@@ -181,7 +181,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float k = 1;
                 float h = 0;
                 try{
-                    model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                    model = new GilbertElliotModel(seed, numPackets, p, r, k, h);
                 } catch (const exception& e){
                     this->printModels();
                     return;
@@ -198,7 +198,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float k = 1;
                 float h = 0;
                 try{
-                    model = new GilbertElliot(seed, numPackets, p, r, k, h);
+                    model = new GilbertElliotModel(seed, numPackets, p, r, k, h);
                 } catch (const exception& e){
                     this->printModels();
                     return;
@@ -234,7 +234,7 @@ PacketLossModelType TraceGenerator::getPacketLossModelFromString(string modelnam
     } else if (strcmp(modelname.c_str(), "simplegilbert") == 0) {
         packetLossModel = SIMPLE_GILBERT;
     } else if (strcmp(modelname.c_str(), "bernouli") == 0) {
-        packetLossModel = BERNOULI;
+        packetLossModel = BERNOULLI;
     } else if (strcmp(modelname.c_str(), "markov") == 0) {
         packetLossModel = MARKOV;
     } else {

@@ -1,9 +1,9 @@
 
 
 #include <iostream>
-#include "GilbertElliot.h"
+#include "GilbertElliotModel.h"
 
-vector<bool> GilbertElliot::buildTrace() {
+vector<bool> GilbertElliotModel::buildTrace() {
     vector<bool> trace;
     bool good = true; // 1 = good state, 0 = bad state
     bool send = true; // 0 = loss, 1 = successfully send, or no loss
@@ -29,7 +29,7 @@ vector<bool> GilbertElliot::buildTrace() {
     return trace;
 }
 
-string GilbertElliot::checkParameter() {
+string GilbertElliotModel::checkParameter() {
     if (numPackets < 1 || numPackets > numeric_limits<long>::max() - 1) {
         return "numPackets";
     } else if (p < 0 || p > 1) {

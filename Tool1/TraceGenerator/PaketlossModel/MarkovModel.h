@@ -52,7 +52,7 @@ public:
      * @param p41 chance of switching from state-4 to state-1
      */
     MarkovModel(long numPackets, float p13, float p31, float p32, float p23, float p14)
-            : BasePacketlossModel(numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32), p41(1) {}
+            : BasePacketlossModel(numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
     /**
      *
      * Constructor
@@ -66,7 +66,7 @@ public:
      * @param p41 chance of switching from state-4 to state-1
      */
     MarkovModel(unsigned int seed, long numPackets, float p13, float p31, float p32, float p23, float p14)
-            : BasePacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32), p41(1) {}
+            : BasePacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
 
 };
 

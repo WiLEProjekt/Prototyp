@@ -11,7 +11,7 @@
 
 using namespace std;
 
-class GilbertElliot : public BasePacketlossModel {
+class GilbertElliotModel : public BasePacketlossModel {
 private:
     float p = -1;
     float r = -1;
@@ -24,10 +24,8 @@ private:
      */
     string checkParameter();
 
-protected:
-    vector<bool> buildTrace() override ;
-
 public:
+    vector<bool> buildTrace() override;
 
 
     /**
@@ -38,7 +36,7 @@ public:
      * @param k chance of receive in gap-state
      * @param h chance of receive in burst-state
      */
-    GilbertElliot(long numPackets, float p, float r, float k, float h) : BasePacketlossModel(numPackets) {
+    GilbertElliotModel(long numPackets, float p, float r, float k, float h) : BasePacketlossModel(numPackets) {
         this->p = p;
         this->r = r;
         this->k = k;
@@ -54,7 +52,7 @@ public:
      * @param numPackets the number of packets
      * @param parameter the 4 parameter [p, r, k, h]
      */
-    GilbertElliot(long numPackets, float parameter[])
+    GilbertElliotModel(long numPackets, float parameter[])
             : BasePacketlossModel(numPackets) {
         this->p = parameter[0];
         this->r = parameter[1];
@@ -72,7 +70,7 @@ public:
      * @param seed the seed of the random generator
      * @param parameter the 4 parameter [p, r, k, h]
      */
-    GilbertElliot(long numPackets, unsigned int seed, float parameter[])
+    GilbertElliotModel(long numPackets, unsigned int seed, float parameter[])
             : BasePacketlossModel(seed, numPackets) {
         this->p = parameter[0];
         this->r = parameter[1];
@@ -93,7 +91,7 @@ public:
      * @param k chance of receive in gap-state
      * @param h chance of receive in burst-state
      */
-    GilbertElliot(unsigned int seed, long numPackets, float p, float r, float k, float h)
+    GilbertElliotModel(unsigned int seed, long numPackets, float p, float r, float k, float h)
             : BasePacketlossModel(seed, numPackets) {
         this->p = p;
         this->r = r;

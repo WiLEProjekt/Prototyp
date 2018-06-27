@@ -7,7 +7,7 @@
 using namespace std;
 
 enum PacketLossModelType {
-    BERNOULI,
+    BERNOULLI,
     SIMPLE_GILBERT,
     GILBERT,
     GILBERT_ELLIOT,
