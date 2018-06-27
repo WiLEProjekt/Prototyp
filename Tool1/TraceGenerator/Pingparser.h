@@ -82,6 +82,8 @@ public:
     */
     vector<bool> readPingFile(const string &filename, unsigned int packetNumber, string outputFile);
 
+    vector<bool> readPingFile(const string &filename, unsigned int packetNumber);
+
     /**
     * Reads a .pcap file
     * @param filename the .pcap filename
@@ -89,6 +91,8 @@ public:
     * @return the calculated losses
     */
     vector<bool> readPcapFile(const string &filename, Protocol protocol, string outputFile);
+
+    vector<bool> readPcapFile(const string &filename, Protocol protocol);
 };
 
 

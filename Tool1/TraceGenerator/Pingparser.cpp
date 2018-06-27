@@ -69,75 +69,17 @@ unsigned int Pingparser::parseNumberFromBytes(unsigned char *bytes, int length) 
 }
 
 vector<bool> Pingparser::readPingFile(const string &filename, unsigned int packetNumber, string outputFile) {
-    fstream fileStream;
-    fileStream.open(filename.c_str(), ios::in);
-    vector<unsigned int> sequenzNumbers;
+    vector<bool> calculatedLosses = this->readPingFile(filename, packetNumber);
 
-    for (string line; getline(fileStream, line);) { //Grab all lines
-        if (line.find("icmp_seq=") != string::npos) { //search for the sequence number
-            sequenzNumbers.push_back(parseSequenzNumberFromPing(line)); //parse string to int
-        }
-    }
-    fileStream.close();
-    vector<bool> calculatedLosses = findMissingSeqNums(sequenzNumbers);
-
-    if (calculatedLosses.size() < packetNumber) { //detection if the last packages that were sent are lost
-        int endLosses = packetNumber - calculatedLosses.size();
-        for (int i = 0; i < endLosses; i++) {
-            calculatedLosses.push_back(false);
-        }
-    }
     this->wrtieTraceInFile(outputFile, calculatedLosses);
     return calculatedLosses;
 }
 
 vector<bool> Pingparser::readPcapFile(const string &filename, Protocol protocol, string outputFile) {
-    vector<unsigned int> seqNums;
-    char errbuff[PCAP_ERRBUF_SIZE];
-    pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
-    struct pcap_pkthdr *header;
-    const u_char *data;
-    map<string, vector<unsigned int>> tcpSeqNums;
-
-    while (pcap_next_ex(pcap, &header, &data) >= 0) {
-        if (header->len != header->caplen) {
-            printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
-        }
-
-        //Wenn Bits 35 = 0 && 28 = 15 && 39 = 75, dann ICMP.
-        //Wenn Bit 34 = 0 dann ICMP-Response
-        switch (protocol) {
-            case ICMP:
-                if (data[34] == 0 && data[35] == 0 && data[38] == 15 && data[39] == 75) {
-                    unsigned char seqNumBytes[] = {data[40], data[41]};
-                    seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
-                }
-            case TCP:
-                if (data[25] == 6) {
-                    unsigned char seqNumBytes[] = {data[40], data[41], data[42], data[43]};
-                    unsigned char ackNumBytes[] = {data[44], data[45], data[46], data[47]};
-                    unsigned char sourceIPBytes[] = {data[26], data[27], data[28], data[29]};
-                    unsigned char destIPBytes[] = {data[30], data[31], data[32], data[33]};
-                    string sourceIp = this->parseIP(sourceIPBytes);
-                    string destIp = this->parseIP(destIPBytes);
-                    auto it = tcpSeqNums.find(sourceIp);
-                    if (it != tcpSeqNums.end()) {
-                        it->second.push_back(parseNumberFromBytes(seqNumBytes, 4));
-                    } else {
-                        vector<unsigned int> new_vector;
-                        new_vector.push_back(parseNumberFromBytes(seqNumBytes, 4));
-                        tcpSeqNums.insert(pair<string, vector<unsigned int>>(sourceIp, new_vector));
-                    }
-                }
-        }
-    }
-    vector<bool> trace;
-    if (protocol == ICMP) {
-        trace = findMissingSeqNums(seqNums);
-    } else {
-        trace = findDuplicateSeqNums(tcpSeqNums);
-    }
+    vector<bool> trace = this->readPcapFile(filename, protocol);
     this->wrtieTraceInFile(outputFile, trace);
+
+    return trace;
 }
 
 unsigned int Pingparser::parseSequenzNumberFromPing(string line) {
@@ -164,7 +106,6 @@ string Pingparser::parseIP(unsigned char *bytes) {
     }
     return ip;
 }
-
 
 vector<bool> Pingparser::findDuplicateSeqNums(const map<string, vector<unsigned int>> &seqNums) {
     vector<bool> packetloss;
@@ -194,4 +135,74 @@ vector<bool> Pingparser::findDuplicateSeqNums(const map<string, vector<unsigned 
     }
 
     return packetloss;
+}
+
+vector<bool> Pingparser::readPingFile(const string &filename, unsigned int packetNumber) {
+    fstream fileStream;
+    fileStream.open(filename.c_str(), ios::in);
+    vector<unsigned int> sequenzNumbers;
+
+    for (string line; getline(fileStream, line);) { //Grab all lines
+        if (line.find("icmp_seq=") != string::npos) { //search for the sequence number
+            sequenzNumbers.push_back(parseSequenzNumberFromPing(line)); //parse string to int
+        }
+    }
+    fileStream.close();
+    vector<bool> calculatedLosses = findMissingSeqNums(sequenzNumbers);
+
+    if (calculatedLosses.size() < packetNumber) { //detection if the last packages that were sent are lost
+        int endLosses = packetNumber - calculatedLosses.size();
+        for (int i = 0; i < endLosses; i++) {
+            calculatedLosses.push_back(false);
+        }
+    }
+    return calculatedLosses;
+}
+
+vector<bool> Pingparser::readPcapFile(const string &filename, Protocol protocol) {
+    vector<unsigned int> seqNums;
+    char errbuff[PCAP_ERRBUF_SIZE];
+    pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
+    struct pcap_pkthdr *header;
+    const u_char *data;
+    map<string, vector<unsigned int>> tcpSeqNums;
+
+    while (pcap_next_ex(pcap, &header, &data) >= 0) {
+        if (header->len != header->caplen) {
+            printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
+        }
+
+        //Wenn Bits 35 = 0 && 28 = 15 && 39 = 75, dann ICMP.
+        //Wenn Bit 34 = 0 dann ICMP-Response
+        switch (protocol) {
+            case ICMP:
+                if (data[34] == 0 && data[35] == 0 && data[38] == 15 && data[39] == 75) {
+                    unsigned char seqNumBytes[] = {data[40], data[41]};
+                    seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
+                }
+            case TCP:
+                if (data[25] == 6) {
+                    unsigned char seqNumBytes[] = {data[40], data[41], data[42], data[43]};
+                    unsigned char sourceIPBytes[] = {data[26], data[27], data[28], data[29]};
+                    unsigned char destIPBytes[] = {data[30], data[31], data[32], data[33]};
+                    string sourceIp = this->parseIP(sourceIPBytes);
+                    string destIp = this->parseIP(destIPBytes);
+                    auto it = tcpSeqNums.find(sourceIp);
+                    if (it != tcpSeqNums.end()) {
+                        it->second.push_back(parseNumberFromBytes(seqNumBytes, 4));
+                    } else {
+                        vector<unsigned int> new_vector;
+                        new_vector.push_back(parseNumberFromBytes(seqNumBytes, 4));
+                        tcpSeqNums.insert(pair<string, vector<unsigned int>>(sourceIp, new_vector));
+                    }
+                }
+        }
+    }
+    vector<bool> trace;
+    if (protocol == ICMP) {
+        trace = findMissingSeqNums(seqNums);
+    } else {
+        trace = findDuplicateSeqNums(tcpSeqNums);
+    }
+    return trace;
 }

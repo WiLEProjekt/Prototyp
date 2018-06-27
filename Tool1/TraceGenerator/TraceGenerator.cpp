@@ -9,11 +9,18 @@
 #include "Pingparser.h"
 #include <random>
 
-ExtractParameter
-TraceGenerator::extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin) {
+ExtractParameter TraceGenerator::extractModelParameterFromPing(const string &filename, unsigned int packetCount,
+                                                               string &packetlossModelName) {
     std::transform(packetlossModelName.begin(), packetlossModelName.end(), packetlossModelName.begin(), ::tolower);
     PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
-    PacketLossToParameterParser packetLossToParameterParser(packetLossModel, filename);
+    vector<bool> parsedFile = Pingparser().readPingFile(filename, packetCount);
+
+    return this->extractModelParameter(packetLossModel, parsedFile, 0);
+}
+
+ExtractParameter
+TraceGenerator::extractModelParameter(PacketLossModelType packetLossModel, vector<bool> parsedFile, unsigned int gMin) {
+    PacketLossToParameterParser packetLossToParameterParser(packetLossModel, parsedFile);
 
     ExtractParameter extractParameter{};
     if (gMin != 0) {
@@ -21,7 +28,7 @@ TraceGenerator::extractModelParameter(const string &filename, string &packetloss
     } else {
         extractParameter = packetLossToParameterParser.parseParameter();
     }
-    float * parameter = extractParameter.parameter;
+    float *parameter = extractParameter.parameter;
     if (packetLossModel == MARKOV) {
         cout << "p13 " << parameter[0] << endl;
         cout << "p31 " << parameter[1] << endl;
@@ -38,6 +45,24 @@ TraceGenerator::extractModelParameter(const string &filename, string &packetloss
     return extractParameter;
 }
 
+ExtractParameter
+TraceGenerator::extractModelParameter(const string &filename, string &fileType, string &packetlossModelName,
+                                      unsigned int gMin) {
+    std::transform(packetlossModelName.begin(), packetlossModelName.end(), packetlossModelName.begin(), ::tolower);
+    std::transform(fileType.begin(), fileType.end(), fileType.begin(), ::tolower);
+    PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
+
+    vector<bool> parsedFile;
+
+    if (strcmp(fileType.c_str(), "icmp") == 0) {
+        parsedFile = Pingparser().readPcapFile(filename, ICMP);
+    } else if (strcmp(fileType.c_str(), "tcp") == 0) {
+        parsedFile = Pingparser().readPcapFile(filename, TCP);
+    }
+
+    return extractModelParameter(packetLossModel, parsedFile, gMin);
+}
+
 TraceGenerator::TraceGenerator(int argc, char **argv) {
     if (argc < 2) {
         this->printError();
@@ -47,30 +72,56 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         this->printModels();
         return;
     } else if (strcmp(argv[1], "-extract") == 0) {
-        string filename = argv[2];
-        string packetlossModelName = argv[3];
+        string fileType = argv[2];
+        string filename = argv[3];
+        string packetlossModelName = argv[4];
         ExtractParameter parameter{};
-        if (argc > 4) {
-            unsigned int gMin = atoi(argv[4]);
-            parameter = this->extractModelParameter(filename, packetlossModelName, gMin);
+        if (strcmp(fileType.c_str(), "ping") == 0) {
+            if (argc > 5) {
+                parameter = this->extractModelParameterFromPing(filename, atol(argv[5]), packetlossModelName);
+            }
+        }
+        if (argc > 5) {
+            unsigned int gMin = atoi(argv[5]);
+            parameter = this->extractModelParameter(filename, fileType, packetlossModelName, gMin);
         } else {
-            parameter = this->extractModelParameter(filename, packetlossModelName, 0);
+            parameter = this->extractModelParameter(filename, fileType, packetlossModelName, 0);
         }
         delete[] (parameter.parameter);
     } else if (strcmp(argv[1], "-import") == 0) {
-        string filename = argv[2];
-        string packetlossModelName = argv[3];
-        string outputFile = argv[4];
-        PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
         unsigned int gMin = 0;
         unsigned int seed = time(0);
-        if (argc > 5) {
-            gMin = atoi(argv[5]);
+        ExtractParameter extractParameter;
+
+        string fileType = argv[2];
+        string filename = argv[3];
+        string packetlossModelName = argv[4];
+        string outputFile = argv[5];
+        PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
+        if (strcmp(fileType.c_str(), "ping") == 0) {
+            if (argc > 5) {
+                unsigned int packetCount = atol(argv[3]);
+                filename = argv[4];
+                packetlossModelName = argv[5];
+                outputFile = argv[6];
+
+                if (argc > 7) {
+                    gMin = atoi(argv[7]);
+                }
+                if (argc > 8) {
+                    seed = atol(argv[8]);
+                }
+                extractParameter = this->extractModelParameterFromPing(filename, packetCount, packetlossModelName);
+            }
+        } else {
+            if (argc > 6) {
+                gMin = atoi(argv[6]);
+            }
+            if (argc > 7) {
+                seed = atol(argv[7]);
+            }
+            extractParameter = this->extractModelParameter(filename, fileType, packetlossModelName, gMin);
         }
-        if (argc > 6) {
-            seed = atol(argv[6]);
-        }
-        ExtractParameter extractParameter = this->extractModelParameter(filename, packetlossModelName, gMin);
 
 
         BasePacketlossModel *model;
@@ -248,9 +299,11 @@ void TraceGenerator::printError() {
     cout << "\tTraceGenerator -gen [outputfile] [model] [args...]"
          << "\tgenerates a trace with Model [model] and arguments [args] in file [outputfile]\n"
          << "\tTraceGenerator -showmodel\tshows all Models\n"
-         << "\tTraceGenerator -extract [filename] [modelname] ([gMin])"
+         << "\tTraceGenerator -extract [tcp/icmp] [filename] [modelname] ([gMin])"
+         << "\tTraceGenerator -extract ping [packetCount] [filename] [modelname] ([gMin])"
          << "\textracts parameter of trace-file [filename] for the model [modelname]\n"
-         << "\tTraceGenerator -import [filename] [modelname] [outputfile] ([gMin]) ([seed])"
+         << "\tTraceGenerator -import [icmp/tcp] [filename] [modelname] [outputfile] ([gMin]) ([seed])"
+         << "\tTraceGenerator -import ping [packetCount] [filename] [modelname] [outputfile] ([gMin]) ([seed])"
          << "\textracts parameter of trace-file [filename] for model [modelname] and generates a new trace in [outputfile]\n"
          << "\tTraceGenerator -parse [args]" << endl;
 }

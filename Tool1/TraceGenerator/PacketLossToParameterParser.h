@@ -22,7 +22,7 @@ struct ExtractParameter {
 class PacketLossToParameterParser {
 private:
     PacketLossModelType packetLossModel;
-    string filename;
+    vector<bool> trace;
 
     /**
      * Parses a 01-trace to parameter for a 4-state-markov model
@@ -75,6 +75,14 @@ public:
      * @param filename the input filename
      */
     PacketLossToParameterParser(PacketLossModelType packetLossModel, string filename);
+
+    /**
+     * Constructor
+     * @param packetLossModelType the packetloss-model
+     * @param trace the trace
+     */
+    PacketLossToParameterParser(PacketLossModelType packetLossModelType, vector<bool> trace) : packetLossModel(
+            packetLossModelType), trace(trace) {};
 
     /**
      * Parses the parameter from the 01-trace

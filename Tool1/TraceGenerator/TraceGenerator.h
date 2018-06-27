@@ -44,8 +44,14 @@ private:
      * @param gMin the burst size
      * @return the parameter for the model
      */
-    ExtractParameter extractModelParameter(const string &filename, string &packetlossModelName, unsigned int gMin);
+    ExtractParameter
+    extractModelParameter(const string &filename, string &fileType, string &packetlossModelName, unsigned int gMin);
 
+    ExtractParameter
+    extractModelParameter(PacketLossModelType packetLossModel, vector<bool> parsedFile, unsigned int gMin);
+
+    ExtractParameter
+    extractModelParameterFromPing(const string &filename, unsigned int packetCount, string &packetlossModelName);
     /**
     * Returns the Protocol with the name @param proto
     * @param proto the name of the protocol

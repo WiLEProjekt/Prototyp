@@ -5,16 +5,15 @@
 #include <map>
 
 PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModelType packetLossModel, string filename) {
-    this->filename = filename;
+    this->trace = this->readFile(filename);
     this->packetLossModel = packetLossModel;
+    if (trace.empty()) {
+        cout << "file " << filename << " not found or is empty" << endl;
+        throw invalid_argument("file " + filename + " not found or is empty");
+    }
 }
 
 ExtractParameter PacketLossToParameterParser::parseParameter(unsigned int gMin) {
-    vector<bool> trace = this->readFile(this->filename);
-    if (trace.empty()) {
-        cout << "file " << this->filename << " not found or is empty" << endl;
-        throw invalid_argument("file " + this->filename + " not found or is empty");
-    }
     float *parameter;
     switch (packetLossModel) {
         case BERNOULLI:
