@@ -13,7 +13,7 @@ protected:
     vector<bool> buildTrace() override;
 
 private:
-    float p13, p14, p23, p31, p32, p41;
+    float p13, p14, p23, p31, p32, p41 = 1;
 
 public:
     /**
