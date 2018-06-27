@@ -183,9 +183,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         auto seed = static_cast<unsigned int>(atol(argv[4]));
         long numPackets = atol(argv[5]);
 
-        if (strcmp(modelname.c_str(), "real") == 0) {
-
-        } else if (strcmp(modelname.c_str(), "markov") == 0) {
+        if (strcmp(modelname.c_str(), "markov") == 0) {
             if (argc != 11) {
                 this->printModels();
                 return;
@@ -327,7 +325,6 @@ void TraceGenerator::printParseArgs() {
 
 void TraceGenerator::printModels() {
     cout << "Tracegenerator [outputfile]\n"
-         << "\treal [filename]\n"
          << "\tGilbertElliot\t<seed [1-" << numeric_limits<unsigned int>::max() << "]> <number_of_packets [1-"
          << numeric_limits<long>::max() << "]> <param p [0-1]> <param r [0-1]> <param k [0-1]> <param h [0-1]>\n"
          << "\tGilbert\t\t\t<seed [1-" << numeric_limits<unsigned int>::max() << "]> <number_of_packets [1-"
