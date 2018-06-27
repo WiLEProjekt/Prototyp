@@ -72,32 +72,41 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         this->printModels();
         return;
     } else if (strcmp(argv[1], "-extract") == 0) {
+        if (argc < 5) {
+            this->printError();
+            return;
+        }
         string fileType = argv[2];
         string filename = argv[3];
         string packetlossModelName = argv[4];
         ExtractParameter parameter{};
         if (strcmp(fileType.c_str(), "ping") == 0) {
             if (argc > 5) {
-                parameter = this->extractModelParameterFromPing(filename, atol(argv[5]), packetlossModelName);
+                filename = argv[4];
+                packetlossModelName = argv[5];
+                parameter = this->extractModelParameterFromPing(filename, atol(argv[3]), packetlossModelName);
             }
-        }
-        if (argc > 5) {
-            unsigned int gMin = atoi(argv[5]);
-            parameter = this->extractModelParameter(filename, fileType, packetlossModelName, gMin);
         } else {
-            parameter = this->extractModelParameter(filename, fileType, packetlossModelName, 0);
+            if (argc > 5) {
+                unsigned int gMin = atoi(argv[5]);
+                parameter = this->extractModelParameter(filename, fileType, packetlossModelName, gMin);
+            } else {
+                parameter = this->extractModelParameter(filename, fileType, packetlossModelName, 0);
+            }
         }
         delete[] (parameter.parameter);
     } else if (strcmp(argv[1], "-import") == 0) {
         unsigned int gMin = 0;
         unsigned int seed = time(0);
         ExtractParameter extractParameter;
-
+        if (argc < 6) {
+            this->printError();
+            return;
+        }
         string fileType = argv[2];
         string filename = argv[3];
         string packetlossModelName = argv[4];
         string outputFile = argv[5];
-        PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
         if (strcmp(fileType.c_str(), "ping") == 0) {
             if (argc > 5) {
                 unsigned int packetCount = atol(argv[3]);
@@ -124,6 +133,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         }
 
 
+        PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
         BasePacketlossModel *model;
         if(packetLossModel == MARKOV) {
             model = new MarkovModel(extractParameter.packetCount, seed, extractParameter.parameter);
@@ -136,7 +146,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         TraceSaver::writeTraceToFile(trace, outputFile);
     } else if (strcmp(argv[1], "-parse") == 0) {
         if(argc < 3){
-            this->printError();
+            this->printParseArgs();
             return ;
         }
         if (strcmp(argv[2], "-ping") == 0) {
@@ -284,7 +294,7 @@ PacketLossModelType TraceGenerator::getPacketLossModelFromString(string modelnam
         packetLossModel = GILBERT;
     } else if (strcmp(modelname.c_str(), "simplegilbert") == 0) {
         packetLossModel = SIMPLE_GILBERT;
-    } else if (strcmp(modelname.c_str(), "bernouli") == 0) {
+    } else if (strcmp(modelname.c_str(), "bernoulli") == 0) {
         packetLossModel = BERNOULLI;
     } else if (strcmp(modelname.c_str(), "markov") == 0) {
         packetLossModel = MARKOV;
@@ -300,9 +310,11 @@ void TraceGenerator::printError() {
          << "\tgenerates a trace with Model [model] and arguments [args] in file [outputfile]\n"
          << "\tTraceGenerator -showmodel\tshows all Models\n"
          << "\tTraceGenerator -extract [tcp/icmp] [filename] [modelname] ([gMin])"
+         << "\textracts parameter of a tcp or icmp pcap-file [filename] for the model [modelname]\n"
          << "\tTraceGenerator -extract ping [packetCount] [filename] [modelname] ([gMin])"
-         << "\textracts parameter of trace-file [filename] for the model [modelname]\n"
+         << "\textracts parameter of ping-file [filename] for the model [modelname]\n"
          << "\tTraceGenerator -import [icmp/tcp] [filename] [modelname] [outputfile] ([gMin]) ([seed])"
+         << "\textracts parameter of tcp or icmp pcap-file [filename] and generates a new trace with [model] in [outputfile]\n"
          << "\tTraceGenerator -import ping [packetCount] [filename] [modelname] [outputfile] ([gMin]) ([seed])"
          << "\textracts parameter of trace-file [filename] for model [modelname] and generates a new trace in [outputfile]\n"
          << "\tTraceGenerator -parse [args]" << endl;
