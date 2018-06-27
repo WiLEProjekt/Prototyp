@@ -7,10 +7,12 @@ Für den Buildprozess wird cmake genutzt.
 
 ## Aufrufe 
 ./TraceGenerator 
+
 zeigt alle möglichen Parameterangaben an.
 
 ### Optionen
 Im folgenden ist ein Trace eine Datei, die nur aus 0 (Paketverlust) und 1 (Kein Packetverlust) besteht.
+
 Das Programm lässt sich mit folgenden Optionen ausführen:
 #### -gen
 -gen [outputfile] [model] [args...]
