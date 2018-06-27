@@ -374,7 +374,6 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
     float r = (float)badGoodStateTrans/(float)transinbadstate;
     //cout << "p: " << p << endl;
     //cout << "r: " << r << endl;
-    //BIS HIER GEHTS
 
     //calculate k, h
     int rcvinGoodState=0;
@@ -447,11 +446,11 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
         cout << gapindices[i] << endl;
     }*/
 
-
+/*
     cout << "startend" << endl;
     for(int i = 0; i<bursts.size(); i++){
         cout << bursts[i] << endl;
-    }
+    }*/
     return new float[4]{p, r, k, h};
 }
 
