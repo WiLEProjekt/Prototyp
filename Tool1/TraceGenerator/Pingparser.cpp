@@ -214,6 +214,7 @@ vector<bool> Pingparser::readPcapFile(const string &filename, Protocol protocol)
                     break;
             }
         }
+        pcap_close(pcap);
         vector<bool> trace;
         if (protocol == ICMP) {
             trace = findMissingSeqNums(seqNums);
