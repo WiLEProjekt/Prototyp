@@ -306,7 +306,6 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
     }
 
     vector<int> bursts; //startindex and endindex
-    bool start=false;
     for(int i = 0; i<gapindices.size(); i++){
         if(i==0){
             bursts.push_back(gapindices[i]);
@@ -448,10 +447,10 @@ float *PacketLossToParameterParser::parseGilbertElliot(vector<bool> trace, unsig
     }*/
 
 
-    cout << "startend" << endl;
+    /*cout << "startend" << endl;
     for(int i = 0; i<bursts.size(); i++){
         cout << bursts[i] << endl;
-    }
+    }*/
     return new float[4]{p, r, k, h};
 }
 
