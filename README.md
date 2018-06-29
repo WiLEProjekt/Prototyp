@@ -48,6 +48,9 @@ Wandelt eine Pinglog-Datei [filename] mit [packetCount] vielen Packeten in eine 
 
 Wandelt eine .pcap-Datei [filename] in eine Trace-Datei [outputfile] um. [tcp/icmp] gibt an, ob tcp- oder icmp-Pakete untersucht werden sollen.
 
+#### ANMERKUNG
+TCP IST NUR KONZEPTIONELL IMPLEMENTIERT, NOCH NICHT GETESTET.
+
 ### Wichtige Beispiele
 #### Trace aus Modellparameter als Eingabe generieren
 ./TraceGenerator -gen [outputfile] [modelname] [seed] [number of packets] [p] [r] [k] [h]
