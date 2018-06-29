@@ -144,6 +144,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
         delete[] (extractParameter.parameter);
         this->printPacketloss(trace);
         TraceSaver::writeTraceToFile(trace, outputFile);
+        delete (model);
     } else if (strcmp(argv[1], "-parse") == 0) {
         if(argc < 3){
             this->printParseArgs();
@@ -171,7 +172,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
             this->printParseArgs();
         }
     } else if (strcmp(argv[1], "-gen") == 0) {
-        if (argc < 4) {
+        if (argc < 6) {
             this->printModels();
             return;
         }
@@ -193,7 +194,6 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 float p32 = atof(argv[8]);
                 float p23 = atof(argv[9]);
                 float p14 = atof(argv[10]);
-                float p41 = 1.0;
                 model = new MarkovModel(seed, numPackets, p13, p31, p32, p23, p14);
             }
         } else if (strcmp(modelname.c_str(), "gilbertelliot") == 0) {
@@ -272,9 +272,9 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
 
         if (model != nullptr) {
             vector<bool> trace = model->buildTrace();
-            delete (model);
             this->printPacketloss(trace);
             TraceSaver::writeTraceToFile(trace, outputFile);
+            delete (model);
         } else {
             printModels();
         }
