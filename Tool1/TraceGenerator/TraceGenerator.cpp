@@ -297,7 +297,7 @@ PacketLossModelType TraceGenerator::getPacketLossModelFromString(string modelnam
     } else if (strcmp(modelname.c_str(), "markov") == 0) {
         packetLossModel = MARKOV;
     } else {
-        printModels();
+        printError();
         throw invalid_argument("Model " + modelname + " is not defined");
     }
     return packetLossModel;
