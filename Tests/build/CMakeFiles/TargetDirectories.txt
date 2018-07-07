@@ -1,3 +1,0 @@
-/home/dominic/Tests/build/CMakeFiles/edit_cache.dir
-/home/dominic/Tests/build/CMakeFiles/rebuild_cache.dir
-/home/dominic/Tests/build/CMakeFiles/Tests.dir
