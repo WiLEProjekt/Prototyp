@@ -28,10 +28,12 @@ vector<bool> readFile(string filename) {
 void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float h, vector<vector<float> > &avgburstszs) {
     vector<bool> trace;
     vector<int> burstsizes;
+    vector<int> goodsizes;
     bool good = true; // 1 = good state, 0 = bad state
     bool send = true; // 0 = loss, 1 = successfully send, or no loss
     int temp = 0;
-    int losscounter=0;
+    int losscounter = 0;
+    int receivecounter = 0;
     for (long i = 0; i < packetnumber + 1; i++) {
         //generate Trace
         if (good) { //in good state
@@ -56,10 +58,13 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
                 losscounter++;
                 temp--;
             }else if(trace[i-1] && trace[i-2]){
+                receivecounter++;
                 temp++;
             }else{
                 if(temp < 0){
-                    burstsizes.push_back(fabs(temp));
+                    burstsizes.push_back(temp*(-1));
+                }else{
+                    goodsizes.push_back(temp);
                 }
                 temp = 0;
                 if(!trace[i-1]){
@@ -67,6 +72,7 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
                     temp--;
                 }
                 else if(trace[i-1]) {
+                    receivecounter++;
                     temp++;
                 }
             }
@@ -76,34 +82,40 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
                 temp--;
             }
             else if(trace[i-1]){
+                receivecounter++;
                 temp++;
             }
         }
     }
     vector<float> params;
-
     float lossrate = (float)losscounter/trace.size()*100;
-    float avgBstSize=(float)losscounter/burstsizes.size();
-    //cout << losscounter << " " << avgBstSize << endl;
+    float avgBstSize = (float)losscounter/burstsizes.size();
+    float avgGoodSize = (float)receivecounter/goodsizes.size();
     params.push_back(lossrate);
     params.push_back(avgBstSize);
+    params.push_back(avgGoodSize);
     avgburstszs.push_back(params);
 }
 
-void calcLoss(vector<bool> &trace, float &result, float &burstsize) {
+void calcLoss(vector<bool> &trace, float &result, float &burstsize, float &goodsize) {
     vector<int> burstsizes;
+    vector<int> goodsizes;
     int temp = 0;
     int losscounter = 0;
+    int receivecounter = 0;
     for (int i = 0; i < trace.size(); i++) {
         if(i > 0){
             if(!trace[i] && !trace[i-1]){
                 losscounter++;
                 temp--;
             }else if(trace[i] && trace[i-1]){
+                receivecounter++;
                 temp++;
             }else{
                 if(temp < 0){
-                    burstsizes.push_back(fabs(temp));
+                    burstsizes.push_back((temp)*(-1));
+                }else{
+                    goodsizes.push_back(temp);
                 }
                 temp = 0;
                 if(!trace[i]){
@@ -111,6 +123,7 @@ void calcLoss(vector<bool> &trace, float &result, float &burstsize) {
                     temp--;
                 }
                 else if(trace[i]) {
+                    receivecounter++;
                     temp++;
                 }
             }
@@ -120,12 +133,14 @@ void calcLoss(vector<bool> &trace, float &result, float &burstsize) {
                 temp--;
             }
             else if(trace[i]){
+                receivecounter++;
                 temp++;
             }
         }
     }
     result = (float) losscounter / trace.size() * 100;
     burstsize = (float) losscounter/burstsizes.size();
+    goodsize = (float) receivecounter/goodsizes.size();
 }
 
 int main(int argc, char **argv) {
@@ -139,8 +154,8 @@ int main(int argc, char **argv) {
     } else {
         string filename = argv[1];
         vector<bool> origTrace = readFile(filename);
-        float origLoss, origburstsize;
-        calcLoss(origTrace, origLoss, origburstsize); //Calculate lossrate of the original Trace
+        float origLoss, origburstsize, origgoodsize;
+        calcLoss(origTrace, origLoss, origburstsize, origgoodsize); //Calculate lossrate of the original Trace
         vector<vector<float> > possibleParams;
         vector<vector<float> > avgburstsizes;
         for (int p = 1; p < 51; p++) {
@@ -158,24 +173,26 @@ int main(int argc, char **argv) {
                         params.push_back(hf);
                         possibleParams.push_back(params);
                     }
-
                 }
             }
         }
+        //PERFORMANCE VERBESSERUNG: VIELLEICHT ITERATIV, ERST NUR 20000 PAKETE TESTEN, DANN DIE BESTEN 20ERGEBNISSE NEHMEN UND NOCHMAL MIT 200000 PAKETEN TESTEN
         //cout << "paramsize: " << possibleParams.size() << endl;
         for(int i = 0; i<possibleParams.size(); i++) {
-            createGilbertElliotTrace(200000, possibleParams[i][0], possibleParams[i][1], 1.0, possibleParams[i][2], avgburstsizes);
+            createGilbertElliotTrace(20000, possibleParams[i][0], possibleParams[i][1], 1.0, possibleParams[i][2], avgburstsizes);
         }
+
+
         float lowestdiff = 1000;
         int lowestindex=0;
         for(int i = 0; i<avgburstsizes.size(); i++){
-            if(fabs(avgburstsizes[i][1]-origburstsize)<lowestdiff){
-                lowestdiff=fabs(avgburstsizes[i][1]-origburstsize);
+            if((fabs(avgburstsizes[i][1]-origburstsize) + fabs(avgburstsizes[i][2]-origgoodsize))<lowestdiff){
+                lowestdiff=fabs(avgburstsizes[i][1]-origburstsize)+ fabs(avgburstsizes[i][2]-origgoodsize);
                 lowestindex=i;
             }
         }
         cout << "found parameters: p: " << possibleParams[lowestindex][0] << " r: " << possibleParams[lowestindex][1] << " h: " << possibleParams[lowestindex][2] << endl;
-        cout << "original Lossrate: " << origLoss << " original avg Burstsize: " << origburstsize << endl;
+        cout << "original Lossrate: " << origLoss << " original avg Burstsize: " << origburstsize << " original good size: " << origgoodsize << endl;
         cout << "found Lossrate: " << avgburstsizes[lowestindex][0] << " found avg Burstsize: " << avgburstsizes[lowestindex][1] << endl;
     }
     time1 = clock()-tstart1; //Zeitmessung beenden
