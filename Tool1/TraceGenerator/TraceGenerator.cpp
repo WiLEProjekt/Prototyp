@@ -5,7 +5,7 @@
 #include "PaketlossModel/MarkovModel.h"
 #include "PaketlossModel/GilbertElliotModel.h"
 #include "TraceSaver.h"
-#include "PacketLossToParameterParser.h"
+#include "PacketlossParameterParser/PacketLossToParameterParser.h"
 #include "Pingparser.h"
 #include <random>
 

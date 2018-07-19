@@ -25,43 +25,6 @@ private:
     vector<bool> trace;
 
     /**
-     * Parses a 01-trace to parameter for a 4-state-markov model
-     * @param trace the 01-trace
-     * @param gMin the burst-size
-     * @return the parameter
-     */
-    float *parseMarkov(vector<bool> trace, unsigned int gMin);
-
-    /**
-     * Parses a 01-trace to parameter for a Bernoulli model
-     * @param trace the 01-trace
-     * @return the parameter
-     */
-    float *parseBernoulli(vector<bool> trace);
-
-    /**
-     * Parses a 01-trace to parameter for a Simple Gilbert model
-     * @param trace the 01-trace
-     * @return the paramter
-     */
-    float *parseSimpleGilbert(vector<bool> trace);
-
-    /**
-     * Parses a 01-trace to parameter for a Gilbert model
-     * @param trace the 01-trace
-     * @return the paramter
-     */
-    float *parseGilbert(vector<bool> trace);
-
-    /**
-     * Parses a 01-trace to parameter for a Gilbert-Elliot model
-     * @param trace the 01-trace
-     * @param gMin the burst-size
-     * @return the parameter
-     */
-    float *parseGilbertElliot(vector<bool> trace, unsigned int gMin);
-
-    /**
      * reads a 01-trace-file
      * @param filename the filename
      * @return the 01-trace

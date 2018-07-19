@@ -47,6 +47,9 @@ public:
      * @return a loss trace
      */
     virtual vector<bool> buildTrace() = 0;
+
+    void calculateBursts(vector<bool> trace, unsigned long i, unsigned long &losscounter, unsigned long &receivecounter,
+                         long &temp, vector<unsigned long> &burstsizes, vector<unsigned long> &goodsizes);
 };
 
 

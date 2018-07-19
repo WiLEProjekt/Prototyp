@@ -5,6 +5,7 @@
 #include <string>
 #include <math.h>
 #include <time.h>
+#include <cstring>
 
 using namespace std;
 mt19937 generator; //Mersenne Twister Engine
@@ -143,57 +144,103 @@ void calcLoss(vector<bool> &trace, float &result, float &burstsize, float &goods
     goodsize = (float) receivecounter/goodsizes.size();
 }
 
-int main(int argc, char **argv) {
-    double time1=0.0, tstart1;
-    tstart1 = clock(); //Zeitmessung starten
-    generator.seed(1);
-    uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
-    distribution = *dist;
-    if (argc != 2) {
-        cout << "usage: ./main filename" << endl;
-    } else {
-        string filename = argv[1];
-        vector<bool> origTrace = readFile(filename);
-        float origLoss, origburstsize, origgoodsize;
-        calcLoss(origTrace, origLoss, origburstsize, origgoodsize); //Calculate lossrate of the original Trace
-        vector<vector<float> > possibleParams;
-        vector<vector<float> > avgburstsizes;
-        for (int p = 1; p < 51; p++) {
-            for (int r = 50; r < 101; r++) {
-                for (int h = 1; h < 51; h++) {
-                    float pf = (float) p / 100;
-                    float rf = (float) r / 100;
-                    //float kf = (float) k / 100;
-                    float hf = (float) h / 100;
-                    float theoreticalLoss = (1-hf)*(pf/(pf+rf))*100;
-                    if(fabs(theoreticalLoss-origLoss)<0.1){
+void checkResult(vector<vector<float>> avgburstsizes, float origburstsize, vector<vector<float>> possibleParams, float origLoss, float origgoodsize){
+    float lowestdiff = 1000;
+    int lowestindex=0;
+    for(int i = 0; i<avgburstsizes.size(); i++){
+        if((fabs(avgburstsizes[i][1]-origburstsize) + fabs(avgburstsizes[i][2]-origgoodsize))<lowestdiff){
+            lowestdiff=fabs(avgburstsizes[i][1]-origburstsize)+ fabs(avgburstsizes[i][2]-origgoodsize);
+            lowestindex=i;
+        }
+    }
+
+    cout << "found parameters: p: " << possibleParams[lowestindex][0] << " r: " << possibleParams[lowestindex][1] << " h: " << possibleParams[lowestindex][2] << endl;
+    cout << "original Lossrate: " << origLoss << " original avg Burstsize: " << origburstsize << " original good size: " << origgoodsize << endl;
+    cout << "found Lossrate: " << avgburstsizes[lowestindex][0] << " found avg Burstsize: " << avgburstsizes[lowestindex][1] << endl;
+}
+
+void generateMarkov(vector<bool> origTrace){
+    const float STEP_SIZE = 0.01f;
+    float origLoss, origburstsize, origgoodsize;
+    calcLoss(origTrace, origLoss, origburstsize, origgoodsize); //Calculate lossrate of the original Trace
+    vector<vector<float> > possibleParams;
+    vector<vector<float> > avgburstsizes;
+    for(float p14 = 0; p14 < 1f; p14 += STEP_SIZE){
+        for(float p13 = 0; p13 < 1f-p14; p13 += STEP_SIZE){
+            for(float p32 = 0; p32 < 1f; p32 += STEP_SIZE){
+                for(float p31 = 0; p31 < 1f - p32; p31 += STEP_SIZE){
+                    for(float p23 = 0; p23 < 1f; p23 += STEP_SIZE){
                         vector<float> params;
-                        params.push_back(pf);
-                        params.push_back(rf);
-                        params.push_back(hf);
+                        params.push_back(p14);
+                        params.push_back(p13);
+                        params.push_back(p32);
+                        params.push_back(p31);
+                        params.push_back(p23);
                         possibleParams.push_back(params);
                     }
                 }
             }
         }
-        //PERFORMANCE VERBESSERUNG: VIELLEICHT ITERATIV, ERST NUR 20000 PAKETE TESTEN, DANN DIE BESTEN 20ERGEBNISSE NEHMEN UND NOCHMAL MIT 200000 PAKETEN TESTEN
-        //cout << "paramsize: " << possibleParams.size() << endl;
-        for(int i = 0; i<possibleParams.size(); i++) {
-            createGilbertElliotTrace(20000, possibleParams[i][0], possibleParams[i][1], 1.0, possibleParams[i][2], avgburstsizes);
-        }
+    }
 
+    for(int i = 0; i< possibleParams.size(); i++){
+        createMarkovTrace(200000, possibleParams[i][], )
+    }
 
-        float lowestdiff = 1000;
-        int lowestindex=0;
-        for(int i = 0; i<avgburstsizes.size(); i++){
-            if((fabs(avgburstsizes[i][1]-origburstsize) + fabs(avgburstsizes[i][2]-origgoodsize))<lowestdiff){
-                lowestdiff=fabs(avgburstsizes[i][1]-origburstsize)+ fabs(avgburstsizes[i][2]-origgoodsize);
-                lowestindex=i;
+    checkResult(avgburstsizes,origburstsize, possibleParams, origLoss, origgoodsize);
+}
+
+void generateGilbert(vector<bool> origTrace){
+    float origLoss, origburstsize, origgoodsize;
+    calcLoss(origTrace, origLoss, origburstsize, origgoodsize); //Calculate lossrate of the original Trace
+    vector<vector<float> > possibleParams;
+    vector<vector<float> > avgburstsizes;
+    for (int p = 1; p < 51; p++) {
+        for (int r = 50; r < 101; r++) {
+            for (int h = 1; h < 51; h++) {
+                float pf = (float) p / 100;
+                float rf = (float) r / 100;
+                float hf = (float) h / 100;
+                float theoreticalLoss = (1-hf)*(pf/(pf+rf))*100;
+                if(fabs(theoreticalLoss-origLoss)<0.1){
+                    vector<float> params;
+                    params.push_back(pf);
+                    params.push_back(rf);
+                    params.push_back(hf);
+                    possibleParams.push_back(params);
+                }
             }
         }
-        cout << "found parameters: p: " << possibleParams[lowestindex][0] << " r: " << possibleParams[lowestindex][1] << " h: " << possibleParams[lowestindex][2] << endl;
-        cout << "original Lossrate: " << origLoss << " original avg Burstsize: " << origburstsize << " original good size: " << origgoodsize << endl;
-        cout << "found Lossrate: " << avgburstsizes[lowestindex][0] << " found avg Burstsize: " << avgburstsizes[lowestindex][1] << endl;
+    }
+
+    //PERFORMANCE VERBESSERUNG: VIELLEICHT ITERATIV, ERST NUR 20000 PAKETE TESTEN, DANN DIE BESTEN 20ERGEBNISSE NEHMEN UND NOCHMAL MIT 200000 PAKETEN TESTEN
+    for(int i = 0; i<possibleParams.size(); i++) {
+        createGilbertElliotTrace(20000, possibleParams[i][0], possibleParams[i][1], 1.0, possibleParams[i][2], avgburstsizes);
+    }
+
+    checkResult(avgburstsizes,origburstsize, possibleParams, origLoss, origgoodsize);
+}
+
+int main(int argc, char **argv) {
+    double time1, tstart1;
+    tstart1 = clock(); //Zeitmessung starten
+    generator.seed(1);
+    uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
+    distribution = *dist;
+    if (argc != 3) {
+        cout << "usage: ./main filename [gilbert/gilbertelliot/markov]" << endl;
+    } else {
+        string filename = argv[1];
+        vector<bool> origTrace = readFile(filename);
+
+        if(strcmp(argv[2], "gilbert") == 0) {
+            generateGilbert(origTrace);
+        } else if(strcmp(argv[2], "gilbertelliot") == 0){
+
+        } else if(strcmp(argv[2], "markov") == 0){
+            generateMarkov(origTrace);
+        }
+
     }
     time1 = clock()-tstart1; //Zeitmessung beenden
     time1 = time1/CLOCKS_PER_SEC; //Auf Sekunden skalieren
