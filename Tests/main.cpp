@@ -158,7 +158,7 @@ void checkResult(vector<vector<float>> avgburstsizes, float origburstsize, vecto
     cout << "original Lossrate: " << origLoss << " original avg Burstsize: " << origburstsize << " original good size: " << origgoodsize << endl;
     cout << "found Lossrate: " << avgburstsizes[lowestindex][0] << " found avg Burstsize: " << avgburstsizes[lowestindex][1] << endl;
 }
-
+/*
 void generateMarkov(vector<bool> origTrace){
     const float STEP_SIZE = 0.01f;
     float origLoss, origburstsize, origgoodsize;
@@ -184,12 +184,12 @@ void generateMarkov(vector<bool> origTrace){
     }
 
     for(int i = 0; i< possibleParams.size(); i++){
-        createMarkovTrace(200000, possibleParams[i][], )
+        //createMarkovTrace(200000, possibleParams[i][], )
     }
 
     checkResult(avgburstsizes,origburstsize, possibleParams, origLoss, origgoodsize);
 }
-
+*/
 void generateGilbert(vector<bool> origTrace){
     float origLoss, origburstsize, origgoodsize;
     calcLoss(origTrace, origLoss, origburstsize, origgoodsize); //Calculate lossrate of the original Trace
@@ -227,11 +227,73 @@ int main(int argc, char **argv) {
     generator.seed(1);
     uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
     distribution = *dist;
-    if (argc != 3) {
+    if (argc != 2) {
         cout << "usage: ./main filename [gilbert/gilbertelliot/markov]" << endl;
     } else {
         string filename = argv[1];
         vector<bool> origTrace = readFile(filename);
+        float origLoss, origburstsize, origgoodsize;
+        calcLoss(origTrace, origLoss, origburstsize, origgoodsize); //Calculate lossrate and burstsize of the original Trace
+        cout << origburstsize << endl;
+        vector<vector<float> > possibleParams;
+        vector<vector<float> > avgburstsizes;
+        for (int p = 1; p < 51; p++) {
+            for (int r = 50; r < 101; r++) {
+                for (int h = 1; h < 51; h++) {
+                    float pf = (float) p / 100;
+                    float rf = (float) r / 100;
+                    //float kf = (float) k / 100;
+                    float hf = (float) h / 100;
+                    float theoreticalLoss = (1-hf)*(pf/(pf+rf))*100;
+                    float theoreticalavgBurstLength = 1/(1-(1-rf)*(1-hf));
+                    float avgBurstDiff = fabs(theoreticalavgBurstLength-origburstsize);
+                    if(fabs(theoreticalLoss-origLoss)<0.1 && avgBurstDiff < 0.05){
+                        vector<float> params;
+                        params.push_back(pf);
+                        params.push_back(rf);
+                        params.push_back(hf);
+                        params.push_back(theoreticalLoss);
+                        params.push_back(theoreticalavgBurstLength);
+                        params.push_back(avgBurstDiff);
+                        possibleParams.push_back(params);
+                    }
+                }
+            }
+        }
+
+        //Filter 100 best fitting parameter from possibleParams
+        vector<vector<float> > top100;
+        for(int a = 0; a<100; a++){
+            int minindex = 0;
+            for(int i = 0; i<possibleParams.size(); i++){
+                if(possibleParams[i][5]<possibleParams[minindex][5]){
+                    minindex = i;
+                }
+            }
+            vector<float>tmp;
+            tmp.push_back(possibleParams[minindex][0]);
+            tmp.push_back(possibleParams[minindex][1]);
+            tmp.push_back(possibleParams[minindex][2]);
+            top100.push_back(tmp);
+            possibleParams.erase(possibleParams.begin()+minindex);
+        }
+        //Generate for those 100 parameters a trace which is as long as the initial input trace
+        for(int i = 0; i<top100.size(); i++){
+            createGilbertElliotTrace(origTrace.size(), top100[i][0], top100[i][1], 1.0, top100[i][2], avgburstsizes);
+        }
+        //cout << possibleParams[minindex][0] << " " << possibleParams[minindex][1] << " " << possibleParams[minindex][2] << endl;
+
+
+        //TODO: calculate Kolmogorov-Smirnov Test, choost the one with highest p-value
+
+
+        /* OLD VERSION
+        //PERFORMANCE VERBESSERUNG: VIELLEICHT ITERATIV, ERST NUR 20000 PAKETE TESTEN, DANN DIE BESTEN 20ERGEBNISSE NEHMEN UND NOCHMAL MIT 200000 PAKETEN TESTEN
+        //cout << "paramsize: " << possibleParams.size() << endl;
+        for(int i = 0; i<possibleParams.size(); i++) {
+            createGilbertElliotTrace(20000, possibleParams[i][0], possibleParams[i][1], 1.0, possibleParams[i][2], avgburstsizes);
+        }
+
 
         if(strcmp(argv[2], "gilbert") == 0) {
             generateGilbert(origTrace);
@@ -241,6 +303,9 @@ int main(int argc, char **argv) {
             generateMarkov(origTrace);
         }
 
+        cout << "found parameters: p: " << possibleParams[lowestindex][0] << " r: " << possibleParams[lowestindex][1] << " h: " << possibleParams[lowestindex][2] << endl;
+        cout << "original Lossrate: " << origLoss << " original avg Burstsize: " << origburstsize << " original good size: " << origgoodsize << endl;
+        cout << "found Lossrate: " << avgburstsizes[lowestindex][0] << " found avg Burstsize: " << avgburstsizes[lowestindex][1] << endl;*/
     }
     time1 = clock()-tstart1; //Zeitmessung beenden
     time1 = time1/CLOCKS_PER_SEC; //Auf Sekunden skalieren
