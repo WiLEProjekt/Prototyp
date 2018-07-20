@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
         vector<bool> origTrace = readFile(filename);
         float origLoss, origburstsize, origgoodsize;
         calcLoss(origTrace, origLoss, origburstsize, origgoodsize); //Calculate lossrate and burstsize of the original Trace
-        cout << origburstsize << endl;
+        //cout << origburstsize << endl;
         vector<vector<float> > possibleParams;
         vector<vector<float> > avgburstsizes;
         for (int p = 1; p < 51; p++) {
@@ -262,8 +262,8 @@ int main(int argc, char **argv) {
         }
 
         //Filter 100 best fitting parameter from possibleParams
-        vector<vector<float> > top100;
-        for(int a = 0; a<100; a++){
+        vector<vector<float> > top50;
+        for(int a = 0; a<50; a++){
             int minindex = 0;
             for(int i = 0; i<possibleParams.size(); i++){
                 if(possibleParams[i][5]<possibleParams[minindex][5]){
@@ -274,12 +274,13 @@ int main(int argc, char **argv) {
             tmp.push_back(possibleParams[minindex][0]);
             tmp.push_back(possibleParams[minindex][1]);
             tmp.push_back(possibleParams[minindex][2]);
-            top100.push_back(tmp);
+            top50.push_back(tmp);
             possibleParams.erase(possibleParams.begin()+minindex);
         }
         //Generate for those 100 parameters a trace which is as long as the initial input trace
-        for(int i = 0; i<top100.size(); i++){
-            createGilbertElliotTrace(origTrace.size(), top100[i][0], top100[i][1], 1.0, top100[i][2], avgburstsizes);
+        for(int i = 0; i<top50.size(); i++){
+            //cout << top50[i][0] << " " << top50[i][1] << " " << top50[i][2] << endl;
+            createGilbertElliotTrace(origTrace.size(), top50[i][0], top50[i][1], 1.0, top50[i][2], avgburstsizes);
         }
         //cout << possibleParams[minindex][0] << " " << possibleParams[minindex][1] << " " << possibleParams[minindex][2] << endl;
 
