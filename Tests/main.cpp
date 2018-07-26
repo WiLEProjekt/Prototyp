@@ -169,8 +169,7 @@ void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
 //Two-sided Kolmogorov-Smirnov Test
 bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
     float alpha = 0.01; //significanceniveau
-    float criticalValue = sqrt((log(2/alpha))/2);
-    float multiplier = sqrt((float)(n*m)/(n+m));
+    float decider = sqrt(-0.5*log(alpha/2)*(n+m)/(n*m));
     float d = 0; //ks test value
 
     //bring both distribution functions to the same size by adding elements at the beginning and at the end
@@ -211,12 +210,14 @@ bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &gen
         }
     }
 
-    if((multiplier*d)<=criticalValue){ //nullhypothesis can not be refused
+    if(d<=decider){ //nullhypothesis can not be refused
+        cout << "Kritischer Wert: " << decider << " d: " << d << " m: " << m << " n: " << n <<endl;
         return true;
     }
     else{ //nullhypothesis refused
         return false;
     }
+
 }
 
 int main(int argc, char **argv) {
@@ -236,14 +237,9 @@ int main(int argc, char **argv) {
         sort(origSizes.begin(), origSizes.end());
         vector<vector<float> > origDistFunction;
         calcDistFunction(origSizes, origDistFunction);
-        //for(int i = 0; i<origDistFunction.size(); i++){
-        //    cout << origDistFunction[i][0] << " " << origDistFunction[i][1] << endl;
-        //}
 
-        //cout << origburstsize << endl;
         vector<vector<float> > possibleParams;
         vector<vector<float> > avgburstsizes;
-        //vector<vector<int> > generatedSizes;
         for (int p = 1; p < 51; p++) {
             for (int r = 50; r < 101; r++) {
                 for (int h = 1; h < 51; h++) {
