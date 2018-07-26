@@ -167,12 +167,12 @@ void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
 }
 
 //Two-sided Kolmogorov-Smirnov Test
-float kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
+bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
     float alpha = 0.01; //significanceniveau
     float criticalValue = sqrt((log(2/alpha))/2);
     float multiplier = sqrt((float)(n*m)/(n+m));
-    float d; //ks test value
-    cout << "old: " << origDistFunction.size() << " " << generatedDistFunction.size() << endl;
+    float d = 0; //ks test value
+
     //bring both distribution functions to the same size by adding elements at the beginning and at the end
     while(origDistFunction[0][0] > generatedDistFunction[0][0]){ //add elements at the beginning of origDistFunction
         vector<float> temp;
@@ -202,8 +202,21 @@ float kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &ge
         temp.push_back(1.0f);
         generatedDistFunction.push_back(temp);
     }
-    cout << origDistFunction.size() << " " << generatedDistFunction.size() << endl;
 
+    //calculate ks statistic
+    for(int i = 0; i<origDistFunction.size(); i++){
+        float dnew = fabs(origDistFunction[i][1]-generatedDistFunction[i][1]);
+        if(dnew > d){
+            d = dnew;
+        }
+    }
+
+    if((multiplier*d)<=criticalValue){ //nullhypothesis can not be refused
+        return true;
+    }
+    else{ //nullhypothesis refused
+        return false;
+    }
 }
 
 int main(int argc, char **argv) {
@@ -272,6 +285,7 @@ int main(int argc, char **argv) {
             possibleParams.erase(possibleParams.begin()+minindex);
         }
         //Generate for those 50 parameters a trace which is as long as the initial input trace
+        bool found = false;
         for(int i = 0; i<top50.size(); i++){
             //cout << top50[i][0] << " " << top50[i][1] << " " << top50[i][2] << endl;
             vector<int> generatedSizes;
@@ -280,17 +294,17 @@ int main(int argc, char **argv) {
             sort(generatedSizes.begin(), generatedSizes.end());
             vector<vector<float> > generatedDistFunction;
             calcDistFunction(generatedSizes, generatedDistFunction);
-            //TODO: calculate ks test
-            float ksvalue = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
-            //TODO: calculate p-value
-
+            //calculate ks test
+            bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
+            if(ksdecision){
+                cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
+                found = true;
+                break;
+            }
         }
-        //cout << possibleParams[minindex][0] << " " << possibleParams[minindex][1] << " " << possibleParams[minindex][2] << endl;
-
-
-
-
-
+        if(!found){
+            cout << "no fitting parameters for gilbert-model found" << endl;
+        }
     }
     time1 = clock()-tstart1; //Zeitmessung beenden
     time1 = time1/CLOCKS_PER_SEC; //Auf Sekunden skalieren
