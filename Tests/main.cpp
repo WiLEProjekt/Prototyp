@@ -166,7 +166,43 @@ void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
     }
 }
 
-float kstest(vector<vector<float> > &origDistFunction, vector<vector<float> > &generatedDistFunction){
+//Two-sided Kolmogorov-Smirnov Test
+float kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
+    float alpha = 0.01; //significanceniveau
+    float criticalValue = sqrt((log(2/alpha))/2);
+    float multiplier = sqrt((float)(n*m)/(n+m));
+    float d; //ks test value
+    cout << "old: " << origDistFunction.size() << " " << generatedDistFunction.size() << endl;
+    //bring both distribution functions to the same size by adding elements at the beginning and at the end
+    while(origDistFunction[0][0] > generatedDistFunction[0][0]){ //add elements at the beginning of origDistFunction
+        vector<float> temp;
+        float i = origDistFunction[0][0] - 1;
+        temp.push_back(i);
+        temp.push_back(0.0f);
+        origDistFunction.insert(origDistFunction.begin(), temp);
+    }
+    while(generatedDistFunction[0][0] > origDistFunction[0][0]){ //add elements at the beginning of generatedDistFunction
+        vector<float> temp;
+        float i = generatedDistFunction[0][0] - 1;
+        temp.push_back(i);
+        temp.push_back(0.0f);
+        generatedDistFunction.insert(generatedDistFunction.begin(), temp);
+    }
+    while(origDistFunction[origDistFunction.size()-1][0] < generatedDistFunction[generatedDistFunction.size()-1][0]){ //add elements at the end of origDistFunction
+        vector<float> temp;
+        float i = origDistFunction[origDistFunction.size()-1][0] + 1;
+        temp.push_back(i);
+        temp.push_back(1.0f);
+        origDistFunction.push_back(temp);
+    }
+    while(generatedDistFunction[generatedDistFunction.size()-1][0] < origDistFunction[origDistFunction.size()-1][0]){ //add elements at the end of generatedDistFunction
+        vector<float> temp;
+        float i = generatedDistFunction[generatedDistFunction.size()-1][0] + 1;
+        temp.push_back(i);
+        temp.push_back(1.0f);
+        generatedDistFunction.push_back(temp);
+    }
+    cout << origDistFunction.size() << " " << generatedDistFunction.size() << endl;
 
 }
 
@@ -191,7 +227,7 @@ int main(int argc, char **argv) {
         //    cout << origDistFunction[i][0] << " " << origDistFunction[i][1] << endl;
         //}
 
-        cout << origburstsize << endl;
+        //cout << origburstsize << endl;
         vector<vector<float> > possibleParams;
         vector<vector<float> > avgburstsizes;
         //vector<vector<int> > generatedSizes;
@@ -245,7 +281,7 @@ int main(int argc, char **argv) {
             vector<vector<float> > generatedDistFunction;
             calcDistFunction(generatedSizes, generatedDistFunction);
             //TODO: calculate ks test
-            float ksvalue = kstest(origDistFunction, generatedDistFunction);
+            float ksvalue = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
             //TODO: calculate p-value
 
         }
