@@ -27,7 +27,7 @@ vector<bool> readFile(string filename) {
     return trace;
 }
 
-void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float h, vector<vector<float> > &avgburstszs, vector<vector<int> > &genSizes) {
+void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float h, vector<vector<float> > &avgburstszs, vector<int> &genSizes) {
     vector<bool> trace;
     vector<int> burstsizes;
     vector<int> goodsizes;
@@ -66,10 +66,10 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
             }else{
                 if(temp < 0){
                     burstsizes.push_back(temp*(-1));
-                    overallSizes.push_back(temp);
+                    genSizes.push_back(temp);
                 }else{
                     goodsizes.push_back(temp);
-                    overallSizes.push_back(temp);
+                    genSizes.push_back(temp);
                 }
                 temp = 0;
                 if(!trace[i-1]){
@@ -101,7 +101,7 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
     params.push_back(avgGoodSize);
     avgburstszs.push_back(params);
     sort(overallSizes.begin(), overallSizes.end());
-    genSizes.push_back(overallSizes);
+    //genSizes.push_back(overallSizes);
 }
 
 void calcLoss(vector<bool> &trace, float &result, float &burstsize, float &goodsize, vector<int> &overallsizes) {
@@ -152,7 +152,21 @@ void calcLoss(vector<bool> &trace, float &result, float &burstsize, float &goods
     goodsize = (float) receivecounter/goodsizes.size();
 }
 
-void calcDistFunction(vector<int> &origSizes, vector<float> &origDistFunction){
+void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
+    float cumprob = 0;
+    for(int i = sizes[0]; i <= sizes[sizes.size()-1]; i++){
+        vector<float> temp;
+        int counter = count(sizes.begin(), sizes.end(), i);
+        float tmp = (float)i;
+        temp.push_back(tmp);
+        float prob = cumprob + (float)counter/sizes.size();
+        temp.push_back(prob);
+        cumprob = prob;
+        distFunction.push_back(temp);
+    }
+}
+
+float kstest(vector<vector<float> > &origDistFunction, vector<vector<float> > &generatedDistFunction){
 
 }
 
@@ -169,14 +183,18 @@ int main(int argc, char **argv) {
         vector<bool> origTrace = readFile(filename);
         float origLoss, origburstsize, origgoodsize;
         vector<int> origSizes;
-        sort(origSizes.begin(), origSizes.end());
         calcLoss(origTrace, origLoss, origburstsize, origgoodsize, origSizes); //Calculate lossrate and burstsize of the original Trace
-        vector<float> origDistFunction;
+        sort(origSizes.begin(), origSizes.end());
+        vector<vector<float> > origDistFunction;
         calcDistFunction(origSizes, origDistFunction);
+        //for(int i = 0; i<origDistFunction.size(); i++){
+        //    cout << origDistFunction[i][0] << " " << origDistFunction[i][1] << endl;
+        //}
+
         cout << origburstsize << endl;
         vector<vector<float> > possibleParams;
         vector<vector<float> > avgburstsizes;
-        vector<vector<int> > generatedSizes;
+        //vector<vector<int> > generatedSizes;
         for (int p = 1; p < 51; p++) {
             for (int r = 50; r < 101; r++) {
                 for (int h = 1; h < 51; h++) {
@@ -217,23 +235,26 @@ int main(int argc, char **argv) {
             top50.push_back(tmp);
             possibleParams.erase(possibleParams.begin()+minindex);
         }
-        //Generate for those 100 parameters a trace which is as long as the initial input trace
+        //Generate for those 50 parameters a trace which is as long as the initial input trace
         for(int i = 0; i<top50.size(); i++){
             //cout << top50[i][0] << " " << top50[i][1] << " " << top50[i][2] << endl;
+            vector<int> generatedSizes;
             createGilbertElliotTrace(origTrace.size(), top50[i][0], top50[i][1], 1.0, top50[i][2], avgburstsizes, generatedSizes);
+            //calculate distributionfunction
+            sort(generatedSizes.begin(), generatedSizes.end());
+            vector<vector<float> > generatedDistFunction;
+            calcDistFunction(generatedSizes, generatedDistFunction);
+            //TODO: calculate ks test
+            float ksvalue = kstest(origDistFunction, generatedDistFunction);
+            //TODO: calculate p-value
+
         }
         //cout << possibleParams[minindex][0] << " " << possibleParams[minindex][1] << " " << possibleParams[minindex][2] << endl;
 
 
-        //TODO: calculate distributionfunction
-        //TODO: calculate ks test
-        //TODO: calculate p-value
 
-        /*
-        //PERFORMANCE VERBESSERUNG: VIELLEICHT ITERATIV, ERST NUR 20000 PAKETE TESTEN, DANN DIE BESTEN 20ERGEBNISSE NEHMEN UND NOCHMAL MIT 200000 PAKETEN TESTEN
-        cout << "found parameters: p: " << possibleParams[lowestindex][0] << " r: " << possibleParams[lowestindex][1] << " h: " << possibleParams[lowestindex][2] << endl;
-        cout << "original Lossrate: " << origLoss << " original avg Burstsize: " << origburstsize << " original good size: " << origgoodsize << endl;
-        cout << "found Lossrate: " << avgburstsizes[lowestindex][0] << " found avg Burstsize: " << avgburstsizes[lowestindex][1] << endl;*/
+
+
     }
     time1 = clock()-tstart1; //Zeitmessung beenden
     time1 = time1/CLOCKS_PER_SEC; //Auf Sekunden skalieren
