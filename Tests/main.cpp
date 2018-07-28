@@ -104,7 +104,7 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
     //genSizes.push_back(overallSizes);
 }
 
-void calcLoss(vector<bool> &trace, float &result, float &burstsize, float &goodsize, vector<int> &overallsizes) {
+void calcLoss(vector<bool> &trace, float &lossrate, float &burstsize, float &goodsize, vector<int> &overallsizes) {
     vector<int> burstsizes;
     vector<int> goodsizes;
     int temp = 0;
@@ -147,7 +147,7 @@ void calcLoss(vector<bool> &trace, float &result, float &burstsize, float &goods
             }
         }
     }
-    result = (float) losscounter / trace.size() * 100;
+    lossrate = (float) losscounter / trace.size() * 100;
     burstsize = (float) losscounter/burstsizes.size();
     goodsize = (float) receivecounter/goodsizes.size();
 }
@@ -231,9 +231,9 @@ int main(int argc, char **argv) {
     } else {
         string filename = argv[1];
         vector<bool> origTrace = readFile(filename);
-        float origLoss, origburstsize, origgoodsize;
+        float origLoss, avgOrigburstsize, avgOriggoodsize;
         vector<int> origSizes;
-        calcLoss(origTrace, origLoss, origburstsize, origgoodsize, origSizes); //Calculate lossrate and burstsize of the original Trace
+        calcLoss(origTrace, origLoss, avgOrigburstsize, avgOriggoodsize, origSizes); //Calculate lossrate and burstsize of the original Trace
         sort(origSizes.begin(), origSizes.end());
         vector<vector<float> > origDistFunction;
         calcDistFunction(origSizes, origDistFunction);
@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
                     float hf = (float) h / 100;
                     float theoreticalLoss = (1-hf)*(pf/(pf+rf))*100;
                     float theoreticalavgBurstLength = 1/(1-(1-rf)*(1-hf));
-                    float avgBurstDiff = fabs(theoreticalavgBurstLength-origburstsize);
+                    float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
                     if(fabs(theoreticalLoss-origLoss)<0.1 && avgBurstDiff < 0.05){
                         vector<float> params;
                         params.push_back(pf);
