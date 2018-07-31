@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
     }
 
     int counter = 0;
-    char rcvmsg[1000];
+    char rcvmsg[1450];
     struct sockaddr_in from;
     unsigned int flen = sizeof (struct sockaddr_in);
     while(true){
@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
             break; //Dann Abbruch der Messung
         }else{
             counter++;
+            cout << rcv << endl;
         }
     }
     cout << "pakete empfangen: " << counter << endl;
