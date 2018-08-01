@@ -3,12 +3,22 @@
 #include <string>
 #include <arpa/inet.h>
 #include <time.h>
+#include <cstdint>
 
 using namespace std;
 
+uint64_t getTimens(){
+    struct timespec time;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &time);
+    uint64_t s = time.tv_sec;
+    uint64_t ns = time.tv_nsec;
+    uint64_t finaltime = s*1000000000+ns;
+    return finaltime;
+}
+
 void wait(int msec){ //wait for x milliseconds
-    clock_t goaltime = msec+clock();
-    while(goaltime>clock());
+    uint64_t starttime = getTimens();
+    while((getTimens()-starttime)/1000000 < msec);
 }
 
 int main(int argc, char **argv) {

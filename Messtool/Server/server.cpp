@@ -56,7 +56,6 @@ int main(int argc, char **argv) {
         if (rcv < 0) { //exit upload-measurement
             break;
         }else{
-            uint64_t time = getTimens();
             string payload = string(rcvmsg);
             int sequencenumber = stoi(payload);
             //cout << sequencenumber << endl;
@@ -64,19 +63,20 @@ int main(int argc, char **argv) {
             if(sequencenumber>oldsequencenumber){ //filter duplicates and reordered packets
                 oldsequencenumber = sequencenumber;
                 temp.push_back(sequencenumber);
+                uint64_t time = getTimens();
                 temp.push_back(time);
                 receivetimes.push_back(temp);
             }
 
         }
     }
-    //Calculate bandwidth in kbit/sec
+    //Calculate bandwidth in mbit/sec
     vector<int> bandwidths;
     int loop = 0;
     if(receivetimes.size() >1){
         while(loop<=receivetimes.size()-2){
             if((receivetimes[loop][0]%2) == 0 && (receivetimes[loop+1][0]%2) == 1 && (receivetimes[loop+1][0] == receivetimes[loop][0]+1)){//Packet Pair found
-                long double sizekb = (long double) size/125; //Convert byte into kilobit
+                long double sizekb = (long double) size/125000; //Convert byte into kilobit
                 long double time1 = (long double)receivetimes[loop+1][1]/1000000000;
                 long double time0 = (long double)receivetimes[loop][1]/1000000000;
                 long double bandwidth = sizekb/(time1-time0);
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
     }
 
     for(int i = 0; i<bandwidths.size();i++){
-        cout << bandwidths[i] << "kbit/s" << endl;
+        cout << bandwidths[i] << "Mbit/s" << endl;
     }
     return 0;
 }
