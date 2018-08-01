@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
         for(int b = 0; b<number.size(); b++){
             message.at(b) = number.at(b);
         }
-        cout << message.size() << endl;
+        cout << message.size() << " " << stoi(message) << endl;
         int snd = sendto(sock, message.c_str(), message.size(), 0, (struct sockaddr*) &dest, sizeof (struct sockaddr_in)); //Paket senden
         if (snd < 0) { //Wenn Sendefehler auftritt
             cout << "Sendefehler" << endl; //Abbruch
