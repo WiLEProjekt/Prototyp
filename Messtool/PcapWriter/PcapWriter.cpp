@@ -2,9 +2,18 @@
 // Created by drieke on 30.07.18.
 //
 
+#include <csignal>
+#include <unistd.h>
 #include "PcapWriter.h"
 
-int PcapWriter::writePcap(char * dev, char* outputFilename) {
+pcap_t *handle; /* Session handle */
+
+void terminate_process(int signum){
+    pcap_breakloop(handle);
+    pcap_close(handle);
+}
+
+int writePcap(char * dev, char* outputFilename) {
     char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
     struct bpf_program fp{};		/* The compiled filter */
     char filter_exp[] = "port 23";	/* The filter expression */
@@ -38,8 +47,9 @@ int PcapWriter::writePcap(char * dev, char* outputFilename) {
         exit(1);
     }
 
-    if ((pcap_loop(handle, 100, pcap_dump, (u_char *)pcapFile)) != 0) {
-        fprintf(stderr, "Error from pcap_loop(): %s\n", pcap_geterr(handle));
+    signal(SIGINT, terminate_process);
+    if ((pcap_loop(handle, -1, pcap_dump, (u_char *)pcapFile)) != 0) {
+        fprintf(stderr, "pcap_loop() canceled: %s\n", pcap_geterr(handle));
         exit(1);
     }
 
@@ -59,13 +69,26 @@ int PcapWriter::writePcap(char * dev, char* outputFilename) {
     return(0);
 }
 
+void secondThread(){
+    for(int i = 0; i < 10; i++) {
+        sleep(5);
+        cout << "jyp" << endl;
+    }
+}
+
 void PcapWriter::start(char *dev, char* outputFilename) {
-    /*thread pcapThread(writePcap, dev, outputFilename);
-    pcapThread.join();*/
-    this->writePcap(dev, outputFilename);
+    cout << "starting pcap" << endl;
+    thread pcapThread(writePcap, dev, outputFilename);
+    thread secondThreadThread(secondThread);
+    secondThreadThread.join();
+    pcapThread.join();
+    //this->writePcap(dev, outputFilename);
     cout << "Pcap started" << endl;
 }
 
-void PcapWriter::stop() {
-    pcap_breakloop(handle);
+
+int main(int argc, char **argv) {
+    PcapWriter *writer = new PcapWriter();
+    writer->start("enp0s3", "test.pcap");
+    cout << "lebt noch" << endl;
 }

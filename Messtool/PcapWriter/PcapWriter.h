@@ -15,8 +15,7 @@ using namespace std;
 
 class PcapWriter {
 private:
-    pcap_t *handle;			/* Session handle */
-    int writePcap(char * dev, char* outputFilename);
+    //int writePcap(char * dev, char* outputFilename);
 
 public:
     void start(char * dev, char* outputFilename);
