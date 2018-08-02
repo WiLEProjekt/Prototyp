@@ -1,3 +1,7 @@
+//
+// Created by dominic on 02.08.18.
+//
+
 #include <iostream>
 #include <sys/socket.h>
 #include <string>
@@ -22,13 +26,14 @@ void wait(int msec){ //wait for x milliseconds
 }
 
 int main(int argc, char **argv) {
-    if(argc < 4){
-        cout << "Usage: ./Client [Server-IP] [Server Port] [Number of Packet Pairs]" << endl;
+    if(argc < 5){
+        cout << "Usage: ./Client [Server-IP] [Server Port] [Number of Packet Pairs] [Packetsize in Byte]" << endl;
         return 0;
     }
     string destinationIP = argv[1];
     int port = atoi(argv[2]);
     int maxpackets = atoi(argv[3]);
+    int packetsize = atoi(argv[4]);
     int sock = socket(AF_INET, SOCK_DGRAM, 0); //IPv4, UDP, standard Protocoll Field in IP Header
     if (sock < 0) {
         cout << "Error while opening the Socket" << endl;
@@ -44,10 +49,10 @@ int main(int argc, char **argv) {
 
     //Upload Test using Packet Pair
     string message = "";
-    for(int i = 0; i<1450; i++){ //initialize message with dummy payload
+    for(int i = 0; i<packetsize; i++){ //initialize message with dummy payload
         message +="a";
     }
-    for(int i = 0; i< maxpackets; i++){
+    for(int i = 0; i < maxpackets*2; i++){
         string number = to_string(i);
         for(int b = 0; b<number.size(); b++){
             message.at(b) = number.at(b);
