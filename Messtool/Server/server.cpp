@@ -139,63 +139,64 @@ int main(int argc, char **argv) {
     if (socktimeout < 0) {
         return 0;
     }
-
-    //Bandwidth measurement using packet pair method
-    int size = 0;
-    vector<vector<uint64_t> > receivetimes; //[sequencenumber], [arrivaltime in ns]
-    char rcvmsg[30000];
-    struct sockaddr_in from;
-    unsigned int flen = sizeof (struct sockaddr_in);
-    int oldsequencenumber = -1;
     while(true){
-        vector<uint64_t> temp;
-        int rcv = recvfrom(sock, rcvmsg, sizeof(rcvmsg), 0, (struct sockaddr*) &from, &flen);
-        if (rcv < 0) { //exit upload-measurement
-            break;
-        }else{
-            string payload = string(rcvmsg);
-            int sequencenumber = stoi(payload);
-            //cout << sequencenumber << endl;
-            size = rcv;
-            if(sequencenumber>oldsequencenumber){ //filter duplicates and reordered packets
-                oldsequencenumber = sequencenumber;
-                temp.push_back(sequencenumber);
-                uint64_t time = getTimens();
-                temp.push_back(time);
-                receivetimes.push_back(temp);
-            }
-        }
-    }
-    //Calculate bandwidth in mbit/sec
-    vector<int> bandwidths;
-    int loop = 0;
-    if(receivetimes.size() >1){
-        while(loop<=receivetimes.size()-2){
-            if((receivetimes[loop][0]%2) == 0 && (receivetimes[loop+1][0]%2) == 1 && (receivetimes[loop+1][0] == receivetimes[loop][0]+1)){//Packet Pair found
-                long double sizekb = (long double) size/125; //Convert byte into kilobit
-                long double time1 = (long double)receivetimes[loop+1][1]/1000000000;
-                long double time0 = (long double)receivetimes[loop][1]/1000000000;
-                long double bandwidth = sizekb/(time1-time0);
-                int roundedbandwidth = (int) (bandwidth+0.5);
-                bandwidths.push_back(roundedbandwidth);
-                loop = loop + 2;
+        //Bandwidth measurement using packet pair method
+        int size = 0;
+        vector<vector<uint64_t> > receivetimes; //[sequencenumber], [arrivaltime in ns]
+        char rcvmsg[30000];
+        struct sockaddr_in from;
+        unsigned int flen = sizeof (struct sockaddr_in);
+        int oldsequencenumber = -1;
+        while(true){
+            vector<uint64_t> temp;
+            int rcv = recvfrom(sock, rcvmsg, sizeof(rcvmsg), 0, (struct sockaddr*) &from, &flen);
+            if (rcv < 0) { //exit upload-measurement
+                break;
             }else{
-                loop++;
+                string payload = string(rcvmsg);
+                int sequencenumber = stoi(payload);
+                //cout << sequencenumber << endl;
+                size = rcv;
+                if(sequencenumber>oldsequencenumber){ //filter duplicates and reordered packets
+                    oldsequencenumber = sequencenumber;
+                    temp.push_back(sequencenumber);
+                    uint64_t time = getTimens();
+                    temp.push_back(time);
+                    receivetimes.push_back(temp);
+                }
             }
         }
-    }else{
-        cout << "No packet pair found" << endl;
-        return 0;
+        //Calculate bandwidth in mbit/sec
+        vector<int> bandwidths;
+        int loop = 0;
+        if(receivetimes.size() >1){
+            while(loop<=receivetimes.size()-2){
+                if((receivetimes[loop][0]%2) == 0 && (receivetimes[loop+1][0]%2) == 1 && (receivetimes[loop+1][0] == receivetimes[loop][0]+1)){//Packet Pair found
+                    long double sizekb = (long double) size/125; //Convert byte into kilobit
+                    long double time1 = (long double)receivetimes[loop+1][1]/1000000000;
+                    long double time0 = (long double)receivetimes[loop][1]/1000000000;
+                    long double bandwidth = sizekb/(time1-time0);
+                    int roundedbandwidth = (int) (bandwidth+0.5);
+                    bandwidths.push_back(roundedbandwidth);
+                    loop = loop + 2;
+                }else{
+                    loop++;
+                }
+            }
+            writeBandwidths(bandwidths);
+            int median = calculateMedian(bandwidths);
+            //cout << "Median: " << median << " kbit/s" << " PacketPairs received: " << bandwidths.size() << endl;
+            //int estimatedBandwidth = calculateAvgBandwidth(bandwidths); OPTIONAL, ACCURACY NEEDS TO BE TESTED MORE
+            //cout << estimatedBandwidth << " kbit/s" << endl;
+
+            //Download Measurement with Packet Pair---------------------------------------------------------------------
+            //TODO: Payload zusammensetzen [Sequenznummer]aaaaaa...[upload-datenrate]
+            //TODO: Exact das gleiche Vorgehen wie hier jetzt auch schon, nur Server und Client switchen
+
+        }else{
+            cout << "No packet pair found" << endl;
+        }
     }
-    if(bandwidths.size()<1){
-        cout << "No packet apir found" << endl;
-        return 0;
-    }
-    writeBandwidths(bandwidths);
-    int median = calculateMedian(bandwidths);
-    cout << "Median: " << median << " kbit/s" << endl;
-    //int estimatedBandwidth = calculateAvgBandwidth(bandwidths); OPTIONAL, ACCURACY NEEDS TO BE TESTED MORE
-    //cout << estimatedBandwidth << " kbit/s" << endl;
 
     return 0;
 }
