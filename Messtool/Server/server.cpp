@@ -32,8 +32,30 @@ void writeBandwidths(vector<int> bandwidts){
     }
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------
+//Calculates the median
+//----------------------------------------------------------------------------------------------------------------------
+int calculateMedian(vector<int> bandwidths){
+    int median=0;
+    int pos = bandwidths.size()/2;
+    sort(bandwidths.begin(), bandwidths.end());
+    if(bandwidths.size()%2 == 0){ //even
+        int indice1 = bandwidths.size()/2-1;
+        int indice2 = bandwidths.size()/2;
+        median = 0.5*(bandwidths[indice1]+bandwidths[indice2]);
+    }else{ //odd
+        int indice = (bandwidths.size()+1)/2-1;
+        median = bandwidths[indice];
+    }
+    return median;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+//Adaptation from RANSAC
+//----------------------------------------------------------------------------------------------------------------------
 int calculateAvgBandwidth(vector<int> origbandwidths){
-    int epsilon = 3000; //+-5Mbit Schranken
+    int epsilon = 15000; //+-5Mbit Schranken
     vector<int> bandwidthswithoutduplicates = origbandwidths;
     sort(bandwidthswithoutduplicates.begin(), bandwidthswithoutduplicates.end());
     //for(int i = 0; i<bandwidthswithoutduplicates.size(); i++){
@@ -65,6 +87,18 @@ int calculateAvgBandwidth(vector<int> origbandwidths){
     }
     cout << "consensus: " << bandwidthswithoutduplicates[maxi] << endl;
 
+
+    //Calculate Median of best consensusset
+    vector<int> consensusset;
+    for(int i = 0; i<origbandwidths.size(); i++){
+        if((origbandwidths[i]<=(bandwidthswithoutduplicates[maxi]+epsilon)) && (origbandwidths[i] >= (bandwidthswithoutduplicates[maxi]-epsilon))){
+            consensusset.push_back(origbandwidths[i]);
+        }
+    }
+    int median = calculateMedian(consensusset);
+    return median;
+
+    /*ALternative to Median:
     //calculate mean value of best consensusset
     int overallbandwidth = 0;
     for(int i = 0; i<origbandwidths.size(); i++){
@@ -74,7 +108,9 @@ int calculateAvgBandwidth(vector<int> origbandwidths){
     }
     int meanbandwidth = overallbandwidth/consensus[maxi];
     return meanbandwidth;
+     */
 }
+
 
 int main(int argc, char **argv) {
     //Open Socket
@@ -155,10 +191,11 @@ int main(int argc, char **argv) {
         cout << "No packet apir found" << endl;
         return 0;
     }
-
-
-    int estimatedBandwidth = calculateAvgBandwidth(bandwidths);
-    cout << estimatedBandwidth << " kbit/s" << endl;
+    writeBandwidths(bandwidths);
+    int median = calculateMedian(bandwidths);
+    cout << "Median: " << median << " kbit/s" << endl;
+    //int estimatedBandwidth = calculateAvgBandwidth(bandwidths); OPTIONAL, ACCURACY NEEDS TO BE TESTED MORE
+    //cout << estimatedBandwidth << " kbit/s" << endl;
 
     return 0;
 }

@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
             break;
         }
         if((i%2) == 1){ //Wait for some time when a packet pair is sent to avoid buffer overflow
-            wait(50);
+            wait(40);
         }
     }
 
