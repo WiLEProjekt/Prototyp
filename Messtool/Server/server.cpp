@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <vector>
 #include <algorithm>
+#include <fstream>
 
 using namespace std;
 
@@ -21,10 +22,23 @@ uint64_t getTimens(){
     return finaltime;
 }
 
+void writeBandwidths(vector<int> bandwidts){
+    ofstream myfile ("bandwidths.txt");
+    if(myfile.is_open()){
+        for(int i = 0; i<bandwidts.size(); i++){
+            myfile << bandwidts[i] << endl;
+        }
+        myfile.close();
+    }
+}
+
 int calculateAvgBandwidth(vector<int> origbandwidths){
-    int epsilon = 5000; //+-5Mbit Schranken
+    int epsilon = 3000; //+-5Mbit Schranken
     vector<int> bandwidthswithoutduplicates = origbandwidths;
     sort(bandwidthswithoutduplicates.begin(), bandwidthswithoutduplicates.end());
+    //for(int i = 0; i<bandwidthswithoutduplicates.size(); i++){
+    //    cout << bandwidthswithoutduplicates[i] << endl;
+    //}
     vector<int>::iterator it;
     it = unique (bandwidthswithoutduplicates.begin(), bandwidthswithoutduplicates.end()); //erase duplicates
     bandwidthswithoutduplicates.resize( std::distance(bandwidthswithoutduplicates.begin(),it) );
@@ -49,6 +63,7 @@ int calculateAvgBandwidth(vector<int> origbandwidths){
             maxi = i;
         }
     }
+    cout << "consensus: " << bandwidthswithoutduplicates[maxi] << endl;
 
     //calculate mean value of best consensusset
     int overallbandwidth = 0;
@@ -89,7 +104,6 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-
     //Bandwidth measurement using packet pair method
     int size = 0;
     vector<vector<uint64_t> > receivetimes; //[sequencenumber], [arrivaltime in ns]
@@ -114,7 +128,6 @@ int main(int argc, char **argv) {
                 temp.push_back(time);
                 receivetimes.push_back(temp);
             }
-
         }
     }
     //Calculate bandwidth in mbit/sec
@@ -142,6 +155,7 @@ int main(int argc, char **argv) {
         cout << "No packet apir found" << endl;
         return 0;
     }
+
 
     int estimatedBandwidth = calculateAvgBandwidth(bandwidths);
     cout << estimatedBandwidth << " kbit/s" << endl;
