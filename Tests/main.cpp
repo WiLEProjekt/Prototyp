@@ -234,6 +234,7 @@ int main(int argc, char **argv) {
         float origLoss, avgOrigburstsize, avgOriggoodsize;
         vector<int> origSizes;
         calcLoss(origTrace, origLoss, avgOrigburstsize, avgOriggoodsize, origSizes); //Calculate lossrate and burstsize of the original Trace
+        cout << "avg burstsize: " << avgOrigburstsize << endl;
         sort(origSizes.begin(), origSizes.end());
         vector<vector<float> > origDistFunction;
         calcDistFunction(origSizes, origDistFunction);

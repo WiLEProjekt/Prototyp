@@ -1,7 +1,3 @@
-//
-// Created by dennis on 19.07.18.
-//
-
 #include "SimpleGilbertParser.h"
 
 float *SimpleGilbertParser::parseParameter(vector<bool> trace) {

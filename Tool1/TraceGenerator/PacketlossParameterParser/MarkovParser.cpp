@@ -1,7 +1,3 @@
-//
-// Created by dennis on 19.07.18.
-//
-
 #include "MarkovParser.h"
 #include "../PaketlossModel/MarkovModel.h"
 
@@ -141,16 +137,17 @@ float *MarkovParser::estimateParameter(vector<bool> trace, unsigned int gMin) {
 }
 
 float *MarkovParser::bruteForceParameter(vector<bool> trace) {
+    /*
     const float STEP_SIZE = 0.01f;
     float origLoss, origburstsize, origgoodsize;
     calcLoss(trace, origLoss, origburstsize, origgoodsize); //Calculate lossrate of the original Trace
     vector<vector<float> > possibleParams;
     vector<vector<float> > avgburstsizes;
-    for(float p14 = 0; p14 < 1f; p14 += STEP_SIZE){
-        for(float p13 = 0; p13 < 1f-p14; p13 += STEP_SIZE){
-            for(float p32 = 0; p32 < 1f; p32 += STEP_SIZE){
-                for(float p31 = 0; p31 < 1f - p32; p31 += STEP_SIZE){
-                    for(float p23 = 0; p23 < 1f; p23 += STEP_SIZE){
+    for(float p14 = 0; p14 < 1.0f; p14 += STEP_SIZE){
+        for(float p13 = 0; p13 < 1.0f-p14; p13 += STEP_SIZE){
+            for(float p32 = 0; p32 < 1.0f; p32 += STEP_SIZE){
+                for(float p31 = 0; p31 < 1.0f - p32; p31 += STEP_SIZE){
+                    for(float p23 = 0; p23 < 1.0f; p23 += STEP_SIZE){
                         vector<float> params;
                         params.push_back(p13);
                         params.push_back(p31);
@@ -170,5 +167,5 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
 
     vector<float> bestParams = checkResult(avgburstsizes,origburstsize, possibleParams, origLoss, origgoodsize);
 
-    return new float[5] {bestParams[0],bestParams[1],bestParams[2],bestParams[3],bestParams[4]};
+    return new float[5] {bestParams[0],bestParams[1],bestParams[2],bestParams[3],bestParams[4]};*/
 }

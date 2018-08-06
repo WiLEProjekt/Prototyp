@@ -1,7 +1,3 @@
-//
-// Created by dennis on 18.07.18.
-//
-
 #include <algorithm>
 #include "GilbertElliotParser.h"
 

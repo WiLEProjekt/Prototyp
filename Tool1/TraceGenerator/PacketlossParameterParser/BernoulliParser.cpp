@@ -1,7 +1,3 @@
-//
-// Created by dennis on 19.07.18.
-//
-
 #include "BernoulliParser.h"
 
 float *BernoulliParser::parseParameter(vector<bool> trace) {

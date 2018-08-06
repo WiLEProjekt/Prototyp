@@ -1,54 +1,123 @@
-//
-// Created by dennis on 19.07.18.
-//
-
 #include <cmath>
 #include "BruteForceParser.h"
 
 
-void BruteForceParser::calcLoss(vector<bool> &trace, float &result, float &burstsize, float &goodsize) {
+void calcLoss(vector<bool> &trace, float &lossrate, float &burstsize, float &goodsize, vector<int> &overallsizes) {
     vector<int> burstsizes;
     vector<int> goodsizes;
     int temp = 0;
     int losscounter = 0;
     int receivecounter = 0;
     for (int i = 0; i < trace.size(); i++) {
-        if (i > 0) {
-            if (!trace[i] && !trace[i - 1]) {
+        if(i > 0){
+            if(!trace[i] && !trace[i-1]){
                 losscounter++;
                 temp--;
-            } else if (trace[i] && trace[i - 1]) {
+            }else if(trace[i] && trace[i-1]){
                 receivecounter++;
                 temp++;
-            } else {
-                if (temp < 0) {
-                    burstsizes.push_back((temp) * (-1));
-                } else {
+            }else{
+                if(temp < 0){
+                    burstsizes.push_back((temp)*(-1));
+                    overallsizes.push_back(temp);
+                }else{
                     goodsizes.push_back(temp);
+                    overallsizes.push_back(temp);
                 }
                 temp = 0;
-                if (!trace[i]) {
+                if(!trace[i]){
                     losscounter++;
                     temp--;
-                } else if (trace[i]) {
+                }
+                else if(trace[i]) {
                     receivecounter++;
                     temp++;
                 }
             }
-        } else {
-            if (!trace[i]) {
+        }else{
+            if(!trace[i]){
                 losscounter++;
                 temp--;
-            } else if (trace[i]) {
+            }
+            else if(trace[i]){
                 receivecounter++;
                 temp++;
             }
         }
     }
-    result = (float) losscounter / trace.size() * 100;
-    burstsize = (float) losscounter / burstsizes.size();
-    goodsize = (float) receivecounter / goodsizes.size();
+    lossrate = (float) losscounter / trace.size() * 100;
+    burstsize = (float) losscounter/burstsizes.size();
+    goodsize = (float) receivecounter/goodsizes.size();
 }
+
+void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
+    float cumprob = 0;
+    for(int i = sizes[0]; i <= sizes[sizes.size()-1]; i++){
+        vector<float> temp;
+        int counter = count(sizes.begin(), sizes.end(), i);
+        float tmp = (float)i;
+        temp.push_back(tmp);
+        float prob = cumprob + (float)counter/sizes.size();
+        temp.push_back(prob);
+        cumprob = prob;
+        distFunction.push_back(temp);
+    }
+}
+
+//Two-sided Kolmogorov-Smirnov Test
+bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
+    float alpha = 0.01; //significanceniveau
+    float decider = sqrt(-0.5*log(alpha/2)*(n+m)/(n*m));
+    float d = 0; //ks test value
+
+    //bring both distribution functions to the same size by adding elements at the beginning and at the end
+    while(origDistFunction[0][0] > generatedDistFunction[0][0]){ //add elements at the beginning of origDistFunction
+        vector<float> temp;
+        float i = origDistFunction[0][0] - 1;
+        temp.push_back(i);
+        temp.push_back(0.0f);
+        origDistFunction.insert(origDistFunction.begin(), temp);
+    }
+    while(generatedDistFunction[0][0] > origDistFunction[0][0]){ //add elements at the beginning of generatedDistFunction
+        vector<float> temp;
+        float i = generatedDistFunction[0][0] - 1;
+        temp.push_back(i);
+        temp.push_back(0.0f);
+        generatedDistFunction.insert(generatedDistFunction.begin(), temp);
+    }
+    while(origDistFunction[origDistFunction.size()-1][0] < generatedDistFunction[generatedDistFunction.size()-1][0]){ //add elements at the end of origDistFunction
+        vector<float> temp;
+        float i = origDistFunction[origDistFunction.size()-1][0] + 1;
+        temp.push_back(i);
+        temp.push_back(1.0f);
+        origDistFunction.push_back(temp);
+    }
+    while(generatedDistFunction[generatedDistFunction.size()-1][0] < origDistFunction[origDistFunction.size()-1][0]){ //add elements at the end of generatedDistFunction
+        vector<float> temp;
+        float i = generatedDistFunction[generatedDistFunction.size()-1][0] + 1;
+        temp.push_back(i);
+        temp.push_back(1.0f);
+        generatedDistFunction.push_back(temp);
+    }
+
+    //calculate ks statistic
+    for(int i = 0; i<origDistFunction.size(); i++){
+        float dnew = fabs(origDistFunction[i][1]-generatedDistFunction[i][1]);
+        if(dnew > d){
+            d = dnew;
+        }
+    }
+
+    if(d<=decider){ //nullhypothesis can not be refused
+        cout << "Kritischer Wert: " << decider << " d: " << d << " m: " << m << " n: " << n <<endl;
+        return true;
+    }
+    else{ //nullhypothesis refused
+        return false;
+    }
+
+}
+
 
 vector<float> BruteForceParser::checkResult(vector<vector<float>> avgburstsizes, float origburstsize,
                                             vector<vector<float>> possibleParams, float origLoss, float origgoodsize) {

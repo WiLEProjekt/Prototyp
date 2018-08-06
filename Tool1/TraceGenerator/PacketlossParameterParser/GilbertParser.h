@@ -1,7 +1,3 @@
-//
-// Created by dennis on 19.07.18.
-//
-
 #ifndef TRACEGENERATOR_GILBERTPARSER_H
 #define TRACEGENERATOR_GILBERTPARSER_H
 
