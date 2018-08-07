@@ -1,4 +1,3 @@
-
 #include <stdexcept>
 #include <vector>
 #include "BasePacketlossModel.h"
@@ -7,9 +6,9 @@ float BasePacketlossModel::generateRandomNumber() {
     return(distribution(generator));
 }
 
-void BasePacketlossModel::calculateBursts(vector<bool> trace, int i, int &losscounter,
+//calculate burstsizes
+void BasePacketlossModel::calculateBursts(vector<bool> &trace, int &i, int &losscounter,
                                           int &receivecounter, int &temp, vector<int> &genSizes) {
-    //calculate burstsizes
     if(i > 1){
         if(!trace[i-1] && !trace[i-2]){
             losscounter++;
@@ -39,8 +38,4 @@ void BasePacketlossModel::calculateBursts(vector<bool> trace, int i, int &lossco
             temp++;
         }
     }
-    //return genSizes;
-
-
-
 }

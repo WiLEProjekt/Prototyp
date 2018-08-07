@@ -47,17 +47,19 @@ float *GilbertParser::bruteForceParameter(vector<bool> trace) {
 
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
+    cout << top50.size() << endl;
     for(int i = 0; i<1; i++){
         //cout << top50[i][0] << " " << top50[i][1] << " " << top50[i][2] << endl;
         vector<int> generatedSizes;
-        generatedSizes.clear();
         GilbertElliotModel(trace.size(), top50[i][0], top50[i][1], 1.0, top50[i][2]).buildTrace(generatedSizes);
         cout << generatedSizes.size() << endl;
         //calculate distributionfunction
+
         sort(generatedSizes.begin(), generatedSizes.end());
         vector<vector<float> > generatedDistFunction;
         calcDistFunction(generatedSizes, generatedDistFunction);
         //calculate ks test
+        /*
         bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
         if(ksdecision){
             cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
@@ -66,7 +68,7 @@ float *GilbertParser::bruteForceParameter(vector<bool> trace) {
             r=top50[i][1];
             h=top50[i][2];
             break;
-        }
+        }*/
     }
     if(!found){
         cout << "No matching parameters found" << endl;

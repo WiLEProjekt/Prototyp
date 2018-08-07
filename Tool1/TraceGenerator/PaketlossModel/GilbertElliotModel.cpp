@@ -31,6 +31,7 @@ vector<bool> GilbertElliotModel::buildTrace() {
 
 vector<bool> GilbertElliotModel::buildTrace(vector<int> &generatedSizes) {
     vector<bool> trace;
+    vector<int>gensizes;
     bool good = true; // 1 = good state, 0 = bad state
     bool send; // 0 = loss, 1 = successfully send, or no loss
     int temp = 0;
@@ -55,8 +56,10 @@ vector<bool> GilbertElliotModel::buildTrace(vector<int> &generatedSizes) {
         }
 
         //calculate burstsizes
-        vector<int>gensizes;
-        this->calculateBursts(trace, i, losscounter, receivecounter, temp, generatedSizes);
+        calculateBursts(trace, i, losscounter, receivecounter, temp, gensizes);
+    }
+    for(int i = 0; i<gensizes.size(); i++){
+        generatedSizes.push_back(gensizes[i]);
     }
     /*
     vector<float> params;
