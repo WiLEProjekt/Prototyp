@@ -46,16 +46,15 @@ vector<bool> MarkovModel::buildTrace() {
     return trace;
 }
 
-vector<bool> MarkovModel::buildTrace(vector<vector<float>> avgBurstSizes) {
+vector<int> MarkovModel::buildTrace2() {
     vector<bool> trace;
-    vector<unsigned long> burstsizes;
-    vector<unsigned long> goodsizes;
-    long temp = 0;
-    unsigned long losscounter = 0;
-    unsigned long receivecounter = 0;
+    vector<int> gensizes;
+    int temp = 0;
+    int losscounter = 0;
+    int receivecounter = 0;
     int state = 1;
 
-    for (unsigned long i = 0; i < numPackets + 1; i++) {
+    for (int i = 0; i < numPackets + 1; i++) {
         float randomValue = this->generateRandomNumber();
         bool value;
         switch (state) {
@@ -93,15 +92,8 @@ vector<bool> MarkovModel::buildTrace(vector<vector<float>> avgBurstSizes) {
         }
 
         //calculate burstsizes
-        //this->calculateBursts(trace, i, losscounter, receivecounter, temp, burstsizes, goodsizes);
+        calculateBursts(trace, i, losscounter, receivecounter, temp, gensizes);
     }
+    return(gensizes);
 
-    vector<float> params;
-    float lossrate = (float) losscounter / trace.size() * 100;
-    float avgBstSize = (float) losscounter / burstsizes.size();
-    float avgGoodSize = (float) receivecounter / goodsizes.size();
-    params.push_back(lossrate);
-    params.push_back(avgBstSize);
-    params.push_back(avgGoodSize);
-    avgBurstSizes.push_back(params);
 }

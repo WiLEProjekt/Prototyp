@@ -69,7 +69,7 @@ public:
             : BasePacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
 
 
-    vector<bool> buildTrace(vector<vector<float>> avgBurstSizes);
+    vector<int> buildTrace2();
 };
 
 

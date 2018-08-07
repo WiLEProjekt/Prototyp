@@ -54,7 +54,7 @@ float *GilbertParser::bruteForceParameter(vector<bool> trace) {
 
         bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
         if(ksdecision){
-            cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
+            //cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
             found = true;
             p=top50[i][0];
             r=top50[i][1];
