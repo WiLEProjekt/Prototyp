@@ -29,16 +29,14 @@ vector<bool> GilbertElliotModel::buildTrace() {
     return trace;
 }
 
-vector<bool> GilbertElliotModel::buildTrace(vector<vector<float>> &avgBurstSizes) {
+vector<bool> GilbertElliotModel::buildTrace(vector<int> &generatedSizes) {
     vector<bool> trace;
-    vector<unsigned long> burstsizes;
-    vector<unsigned long> goodsizes;
     bool good = true; // 1 = good state, 0 = bad state
     bool send; // 0 = loss, 1 = successfully send, or no loss
-    long temp = 0;
-    unsigned long losscounter = 0;
-    unsigned long receivecounter = 0;
-    for (unsigned long i = 0; i < this->numPackets + 1; i++) {
+    int temp = 0;
+    int losscounter = 0;
+    int receivecounter = 0;
+    for (int i = 0; i < this->numPackets + 1; i++) {
         //generate Trace
         if (good) { //in good state
             float randomNumberLossK = generateRandomNumber(); //Random Number that indicates if a packet is lost while being in a state
@@ -57,8 +55,10 @@ vector<bool> GilbertElliotModel::buildTrace(vector<vector<float>> &avgBurstSizes
         }
 
         //calculate burstsizes
-        this->calculateBursts(trace, i, losscounter, receivecounter, temp, burstsizes, goodsizes);
+        vector<int>gensizes;
+        this->calculateBursts(trace, i, losscounter, receivecounter, temp, generatedSizes);
     }
+    /*
     vector<float> params;
     float lossrate = (float) losscounter / trace.size() * 100;
     float avgBstSize = (float) losscounter / burstsizes.size();
@@ -66,7 +66,7 @@ vector<bool> GilbertElliotModel::buildTrace(vector<vector<float>> &avgBurstSizes
     params.push_back(lossrate);
     params.push_back(avgBstSize);
     params.push_back(avgGoodSize);
-    avgBurstSizes.push_back(params);
+    avgBurstSizes.push_back(params);*/
 }
 
 string GilbertElliotModel::checkParameter() {

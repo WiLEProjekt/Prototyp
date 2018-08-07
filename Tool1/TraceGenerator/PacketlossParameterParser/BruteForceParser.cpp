@@ -2,7 +2,7 @@
 #include "BruteForceParser.h"
 
 
-void calcLoss(vector<bool> &trace, float &lossrate, float &burstsize, float &goodsize, vector<int> &overallsizes) {
+void BruteForceParser::calcLoss(vector<bool> &trace, float &lossrate, float &burstsize, float &goodsize, vector<int> &overallsizes) {
     vector<int> burstsizes;
     vector<int> goodsizes;
     int temp = 0;
@@ -50,7 +50,7 @@ void calcLoss(vector<bool> &trace, float &lossrate, float &burstsize, float &goo
     goodsize = (float) receivecounter/goodsizes.size();
 }
 
-void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
+void BruteForceParser::calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
     float cumprob = 0;
     for(int i = sizes[0]; i <= sizes[sizes.size()-1]; i++){
         vector<float> temp;
@@ -64,8 +64,27 @@ void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction){
     }
 }
 
+//finds top x best matching parameters
+void BruteForceParser::findTopX(vector<vector<float> > &top, vector<vector<float> > &possibleParams, int x){
+    for(int a = 0; a<x; a++){
+        int minindex = 0;
+        for(int i = 0; i<possibleParams.size(); i++){
+            if(possibleParams[i][5]<possibleParams[minindex][5]){
+                minindex = i;
+            }
+        }
+        vector<float>tmp;
+        tmp.push_back(possibleParams[minindex][0]);
+        tmp.push_back(possibleParams[minindex][1]);
+        tmp.push_back(possibleParams[minindex][2]);
+        top.push_back(tmp);
+        possibleParams.erase(possibleParams.begin()+minindex);
+    }
+
+}
+
 //Two-sided Kolmogorov-Smirnov Test
-bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
+bool BruteForceParser::kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
     float alpha = 0.01; //significanceniveau
     float decider = sqrt(-0.5*log(alpha/2)*(n+m)/(n*m));
     float d = 0; //ks test value

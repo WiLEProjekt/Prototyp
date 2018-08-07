@@ -103,7 +103,7 @@ public:
         }
     }
 
-    vector<bool> buildTrace(vector<vector<float>> &avgBurstSizes);
+    vector<bool> buildTrace(vector<int> &generatedSizes);
 };
 
 

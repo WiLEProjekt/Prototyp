@@ -58,6 +58,8 @@ TraceGenerator::extractModelParameter(const string &filename, string &fileType, 
         parsedFile = Pingparser().readPcapFile(filename, ICMP);
     } else if (strcmp(fileType.c_str(), "tcp") == 0) {
         parsedFile = Pingparser().readPcapFile(filename, TCP);
+    }else{
+        parsedFile = Pingparser().readFile(filename);
     }
 
     return extractModelParameter(packetLossModel, parsedFile, gMin);
@@ -91,6 +93,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 unsigned int gMin = atoi(argv[5]);
                 parameter = this->extractModelParameter(filename, fileType, packetlossModelName, gMin);
             } else {
+                cout << filename << " " << fileType << " " << packetlossModelName << endl;
                 parameter = this->extractModelParameter(filename, fileType, packetlossModelName, 0);
             }
         }

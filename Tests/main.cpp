@@ -27,11 +27,8 @@ vector<bool> readFile(string filename) {
     return trace;
 }
 
-void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float h, vector<vector<float> > &avgburstszs, vector<int> &genSizes) {
+void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float h, vector<int> &genSizes) {
     vector<bool> trace;
-    vector<int> burstsizes;
-    vector<int> goodsizes;
-    vector<int> overallSizes;
     bool good = true; // 1 = good state, 0 = bad state
     bool send = true; // 0 = loss, 1 = successfully send, or no loss
     int temp = 0;
@@ -64,13 +61,7 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
                 receivecounter++;
                 temp++;
             }else{
-                if(temp < 0){
-                    burstsizes.push_back(temp*(-1));
-                    genSizes.push_back(temp);
-                }else{
-                    goodsizes.push_back(temp);
-                    genSizes.push_back(temp);
-                }
+                genSizes.push_back(temp);
                 temp = 0;
                 if(!trace[i-1]){
                     losscounter++;
@@ -92,16 +83,6 @@ void createGilbertElliotTrace(int packetnumber, float p, float r, float k, float
             }
         }
     }
-    vector<float> params;
-    float lossrate = (float)losscounter/trace.size()*100;
-    float avgBstSize = (float)losscounter/burstsizes.size();
-    float avgGoodSize = (float)receivecounter/goodsizes.size();
-    params.push_back(lossrate);
-    params.push_back(avgBstSize);
-    params.push_back(avgGoodSize);
-    avgburstszs.push_back(params);
-    sort(overallSizes.begin(), overallSizes.end());
-    //genSizes.push_back(overallSizes);
 }
 
 void calcLoss(vector<bool> &trace, float &lossrate, float &burstsize, float &goodsize, vector<int> &overallsizes) {
@@ -286,7 +267,7 @@ int main(int argc, char **argv) {
         for(int i = 0; i<top50.size(); i++){
             //cout << top50[i][0] << " " << top50[i][1] << " " << top50[i][2] << endl;
             vector<int> generatedSizes;
-            createGilbertElliotTrace(origTrace.size(), top50[i][0], top50[i][1], 1.0, top50[i][2], avgburstsizes, generatedSizes);
+            createGilbertElliotTrace(origTrace.size(), top50[i][0], top50[i][1], 1.0, top50[i][2], generatedSizes);
             //calculate distributionfunction
             sort(generatedSizes.begin(), generatedSizes.end());
             vector<vector<float> > generatedDistFunction;

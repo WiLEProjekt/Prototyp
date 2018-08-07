@@ -93,6 +93,7 @@ public:
     vector<bool> readPcapFile(const string &filename, Protocol protocol, string outputFile);
 
     vector<bool> readPcapFile(const string &filename, Protocol protocol);
+    vector<bool> readFile(string filename);
 };
 
 

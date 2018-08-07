@@ -93,7 +93,7 @@ vector<bool> MarkovModel::buildTrace(vector<vector<float>> avgBurstSizes) {
         }
 
         //calculate burstsizes
-        this->calculateBursts(trace, i, losscounter, receivecounter, temp, burstsizes, goodsizes);
+        //this->calculateBursts(trace, i, losscounter, receivecounter, temp, burstsizes, goodsizes);
     }
 
     vector<float> params;

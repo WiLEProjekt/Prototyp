@@ -48,8 +48,8 @@ public:
      */
     virtual vector<bool> buildTrace() = 0;
 
-    void calculateBursts(vector<bool> trace, unsigned long i, unsigned long &losscounter, unsigned long &receivecounter,
-                         long &temp, vector<unsigned long> &burstsizes, vector<unsigned long> &goodsizes);
+    void calculateBursts(vector<bool> trace, int i, int &losscounter, int &receivecounter,
+                         int &temp, vector<int> &genSizes);
 };
 
 
