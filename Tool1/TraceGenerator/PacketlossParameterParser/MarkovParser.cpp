@@ -137,6 +137,10 @@ float *MarkovParser::estimateParameter(vector<bool> trace, unsigned int gMin) {
 }
 
 float *MarkovParser::bruteForceParameter(vector<bool> trace) {
+    const float STEP_SIZE = 0.01f;
+
+
+
     /*
     const float STEP_SIZE = 0.01f;
     float origLoss, origburstsize, origgoodsize;

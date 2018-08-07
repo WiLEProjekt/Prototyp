@@ -103,7 +103,7 @@ public:
         }
     }
 
-    vector<bool> buildTrace(vector<int> &generatedSizes);
+    vector<int> buildTrace2();
 };
 
 
