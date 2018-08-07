@@ -1,8 +1,9 @@
 #include <algorithm>
 #include "GilbertElliotParser.h"
+#include "../PaketlossModel/GilbertElliotModel.h"
 
 float *GilbertElliotParser::parseParameter(vector<bool> trace, unsigned int gMin) {
-    return this->estimateParameter(trace, gMin);
+    return this->bruteForceParameter(trace);
 }
 
 float *GilbertElliotParser::estimateParameter(vector<bool> trace, unsigned int gMin) {
@@ -151,5 +152,69 @@ float *GilbertElliotParser::estimateParameter(vector<bool> trace, unsigned int g
 }
 
 float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
-    return nullptr;
+    float origLoss, avgOrigburstsize, avgOriggoodsize;
+    vector<int> origSizes;
+    calcLoss(trace, origLoss, avgOrigburstsize, avgOriggoodsize, origSizes); //Calculate lossrate and burstsize of the original Trace
+    sort(origSizes.begin(), origSizes.end());
+    vector<vector<float> > origDistFunction;
+    calcDistFunction(origSizes, origDistFunction);
+    vector<vector<float> > possibleParams;
+    for (int p = 1; p < 51; p++) {
+        for (int r = 50; r < 101; r++) {
+            for (int h = 1; h < 51; h++) {
+                for (int k = 50; k < 101; k++){
+                    float pf = (float) p / 100;
+                    float rf = (float) r / 100;
+                    float hf = (float) h / 100;
+                    float kf = (float) k / 100;
+                    float theoreticalLoss = ((1.0f-kf)*(rf/(pf+rf)))+((1-hf)*(pf/(pf+rf)));
+                    float theoreticalavgBurstLength = (1.0f/(1.0f-(1.0f-rf)*(1.0f-hf)))*(1.0f+(1.0f-kf));
+                    float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
+                    if(fabs(theoreticalLoss-origLoss)<0.1 && avgBurstDiff < 0.2){
+                        vector<float> params;
+                        params.push_back(pf);
+                        params.push_back(rf);
+                        params.push_back(kf);
+                        params.push_back(hf);
+                        possibleParams.push_back(params);
+                    }
+                }
+            }
+        }
+    }
+    float p=0, r=0, k=0, h=0;
+
+    //Filter 50 best fitting parameter from possibleParams
+    vector<vector<float> > top50;
+    findTopX(top50, possibleParams, 50);
+
+
+    //Generate for those 50 parameters a trace which is as long as the initial input trace
+    bool found = false;
+
+    for(int i = 0; i<top50.size(); i++){
+        vector<int> generatedSizes = GilbertElliotModel(trace.size(), top50[i][0], top50[i][1], top50[i][2], top50[i][3]).buildTrace2();
+        //calculate distributionfunction
+
+        sort(generatedSizes.begin(), generatedSizes.end());
+        vector<vector<float> > generatedDistFunction;
+        calcDistFunction(generatedSizes, generatedDistFunction);
+        //calculate ks test
+
+        bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
+        if(ksdecision){
+            //cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
+            found = true;
+            p=top50[i][0];
+            r=top50[i][1];
+            k=top50[i][2];
+            h=top50[i][3];
+            break;
+        }
+    }
+    if(!found){
+        cout << "No matching parameters found" << endl;
+    }
+
+    return new float[4] {p, r, k, h};
 }

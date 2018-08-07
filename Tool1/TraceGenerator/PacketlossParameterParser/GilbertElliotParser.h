@@ -2,10 +2,11 @@
 #define TRACEGENERATOR_GILBERTELLIOTPARSER_H
 
 #include <vector>
+#include "BruteForceParser.h"
 
 using namespace std;
 
-class GilbertElliotParser {
+class GilbertElliotParser : BruteForceParser{
 public:
 
     /**
