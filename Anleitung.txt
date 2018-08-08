@@ -1,0 +1,19 @@
+Schritt 1: 
+usb_modeswitch -> Automatisierung ausschalten
+(/etc/usb_modeswitch.conf) evtl. Berechtigung setzen (sudo chmod 666 /etc/usb_modeswitch.conf)
+
+Schritt 2:
+Stick anschließen
+
+Schritt 3:
+sudo usb_modeswitch -v 0x12d1 -p 0x1f01 -V 0x12d1 -P 0x14dc -M "55534243000000000000000000000011060000000000000000000000000000"
+
+==================
+Nun ist der Stick im Modem Modus über USB ansprechbar
+==================
+Schritt 4:
+sudo dmesg | tty
+-> der ttyUSB# sollte nun angezeigt werden. Dieser Port ist dem Modem nun zugewiesen.
+
+Schritt 5:
+sudo cat /dev/ttyUSB0 | grep HSCQ > "Ausgabedatei.txt"
