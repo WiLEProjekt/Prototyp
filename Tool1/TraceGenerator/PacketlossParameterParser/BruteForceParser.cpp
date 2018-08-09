@@ -65,7 +65,7 @@ void BruteForceParser::calcDistFunction(vector<int> &sizes, vector<vector<float>
 }
 
 //finds top x best matching parameters
-void BruteForceParser::findTopX(vector<vector<float> > &top, vector<vector<float> > &possibleParams, int x){
+void BruteForceParser::findTopX(vector<vector<float> > &top, vector<vector<float> > &possibleParams, int x, string model){
     for(int a = 0; a<x; a++){
         int minindex = 0;
         for(int i = 0; i<possibleParams.size(); i++){
@@ -74,9 +74,23 @@ void BruteForceParser::findTopX(vector<vector<float> > &top, vector<vector<float
             }
         }
         vector<float>tmp;
-        tmp.push_back(possibleParams[minindex][0]);
-        tmp.push_back(possibleParams[minindex][1]);
-        tmp.push_back(possibleParams[minindex][2]);
+        if(model.compare("Gilbert")==0){
+            tmp.push_back(possibleParams[minindex][3]);
+            tmp.push_back(possibleParams[minindex][4]);
+            tmp.push_back(possibleParams[minindex][5]);
+        }else if(model.compare("GilbertElliot")==0){
+            tmp.push_back(possibleParams[minindex][3]);
+            tmp.push_back(possibleParams[minindex][4]);
+            tmp.push_back(possibleParams[minindex][5]);
+            tmp.push_back(possibleParams[minindex][6]);
+        }else if(model.compare("Markov")==0){
+            tmp.push_back(possibleParams[minindex][3]);
+            tmp.push_back(possibleParams[minindex][4]);
+            tmp.push_back(possibleParams[minindex][5]);
+            tmp.push_back(possibleParams[minindex][6]);
+            tmp.push_back(possibleParams[minindex][7]);
+            tmp.push_back(possibleParams[minindex][1]);
+        }
         top.push_back(tmp);
         possibleParams.erase(possibleParams.begin()+minindex);
     }

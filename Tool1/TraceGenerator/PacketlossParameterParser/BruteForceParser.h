@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <string>
 
 using namespace std;
 
@@ -15,7 +16,7 @@ protected:
 
     bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n);
 
-    void findTopX(vector<vector<float> > &top, vector<vector<float> > &possibleParams, int x);
+    void findTopX(vector<vector<float> > &top, vector<vector<float> > &possibleParams, int x, string model);
 
     virtual vector<float>
     checkResult(vector<vector<float>> avgburstsizes, float origburstsize, vector<vector<float>> possibleParams,
