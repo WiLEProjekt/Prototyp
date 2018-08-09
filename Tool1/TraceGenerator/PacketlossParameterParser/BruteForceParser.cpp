@@ -128,7 +128,7 @@ bool BruteForceParser::kstest(vector<vector<float> > origDistFunction, vector<ve
     }
 
     if(d<=decider){ //nullhypothesis can not be refused
-        cout << "Kritischer Wert: " << decider << " d: " << d << " m: " << m << " n: " << n <<endl;
+        cout << "KS-Statistics: " << "Kritischer Wert: " << decider << " d: " << d << " m: " << m << " n: " << n <<endl;
         return true;
     }
     else{ //nullhypothesis refused
