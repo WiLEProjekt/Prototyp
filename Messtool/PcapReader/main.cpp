@@ -9,6 +9,11 @@ using namespace std;
 
 const unsigned int MAX_SEQ_NUM = 65535;
 
+struct results {
+    vector<struct timeval> delays;
+    vector<bool> loss;
+};
+
 unsigned int parseNumberFromBytes(const unsigned char *bytes, int length) {
     unsigned int number = 0;
     for (int i = length - 1; i >= 0; i--) {
@@ -32,13 +37,13 @@ string parseIP(unsigned char *bytes) {
 }
 
 int getSeqNum(const u_char *data) {
-    //TODO
-    return -1;
+    //Data start: 42
+    unsigned char seqNumBytes[] = {data[42], data[43]};
+    return parseNumberFromBytes(seqNumBytes, 2);
 }
 
 struct timeval findResponse(int seqNum, const map<int, struct timeval> &responseTimestamps) {
-    //TODO
-    return nullptr;
+    return responseTimestamps.at(seqNum);
 }
 
 vector<struct timeval>
@@ -61,8 +66,7 @@ vector<bool> findMissingSeqNums(vector<unsigned int> sequenzNumbers) {
     unsigned long packetCounter = 0;
     bool firstSeqNumRed = false;
 
-    for (unsigned long i = 0; i < sequenzNumbers.size(); i++) {
-        unsigned int seqNum = sequenzNumbers.at(i);
+    for (unsigned int seqNum : sequenzNumbers) {
         if (firstSeqNumRed) {
             int diff = seqNum - lastSeqNum;
             if (diff > 1) { //packets are lost in ascending order, maximum sequencenumber is not yet reached
@@ -96,10 +100,10 @@ vector<bool> findMissingSeqNums(vector<unsigned int> sequenzNumbers) {
 
 vector<bool> getLoss(vector<unsigned int> seqNums) {
     vector<bool> trace;
-    trace = findMissingSeqNums(seqNums);
+    trace = findMissingSeqNums(move(seqNums));
 }
 
-vector<struct timeval> readPcapFile(const string &filename, const string &sourceIp, const string &destIp) {
+struct results readPcapFile(const string &filename, const string &sourceIp, const string &destIp) {
     map<int, struct timeval> requestTimestamps;
     map<int, struct timeval> responseTimestamps;
     vector<unsigned int> seqNums;
@@ -130,8 +134,7 @@ vector<struct timeval> readPcapFile(const string &filename, const string &source
                 } else if (sourceIp == packetDest && destIp == packetSource) {
                     responseTimestamps[getSeqNum(data)] = header->ts;
                 }
-                //TODO: Richtige SeqNumBytes herrausfinden (40 und 42 sind für ICMP)
-                unsigned char seqNumBytes[] = {data[40], data[41]};
+                unsigned char seqNumBytes[] = {data[42], data[43]};
                 seqNums.push_back(parseNumberFromBytes(seqNumBytes, 2));
             }
         }
@@ -139,11 +142,25 @@ vector<struct timeval> readPcapFile(const string &filename, const string &source
 
         vector<struct timeval> delays = getDelays(requestTimestamps, responseTimestamps);
         vector<bool> lossTrace = getLoss(seqNums);
+        struct results result{};
+        result.delays = delays;
+        result.loss = lossTrace;
+
+        return result;
     }
 
+    return nullptr;
 }
 
-int main() {
-    std::cout << "Hello, World!" << std::endl;
+int main(int argc, char **argv) {
+    if (argc < 4) {
+        cout << "PcapReader [filename] [sourceIp] [destIp]";
+        return -1;
+    }
+    string filename = argv[1];
+    string sourceIp = argv[2];
+    string destIp = argv[3];
+    struct results result = readPcapFile(filename, sourceIp, destIp);
+    
     return 0;
 }
