@@ -181,21 +181,21 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
             }
         }
     }
-    cout << possibleParams.size() << endl;
+    /*cout << possibleParams.size() << endl;
     for(int i = 0; i<possibleParams.size(); i++){
         if(possibleParams[i][3] == 0.2){ //??????
             cout << "p13: " << possibleParams[i][3] << " p31: " << possibleParams[i][4] << " p32: " << possibleParams[i][5] << " p23: " << possibleParams[i][6] << " p14: " << possibleParams[i][7] << endl;
         }
     }
     //Filter 50 best fitting parameter from possibleParams
-    /*vector<vector<float> > top50;
+    vector<vector<float> > top50;
     findTopX(top50, possibleParams, 50, "Markov");
 
 
     for(int i = 0; i < top50.size(); i++){
         cout << "p13: " << top50[i][0] << " p31: " << top50[i][1] << " p32: " << top50[i][2] << " p23: " << top50[i][3] << " p14: " << top50[i][4] << " burstsize: " << top50[i][5] << endl;
     }*/
-/*
+
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
     for(int i = 0; i<possibleParams.size(); i++){
@@ -210,14 +210,14 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
         bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
         if(ksdecision){
             //cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
-            found = true;*/
+            found = true;
             /*
             p13_estimated=top50[i][0];
             p31_estimated=top50[i][1];
             p32_estimated=top50[i][2];
             p23_estimated=top50[i][3];
             p14_estimated=top50[i][4];*/
-           /* p13_estimated=possibleParams[i][3];
+            p13_estimated=possibleParams[i][3];
             p31_estimated=possibleParams[i][4];
             p32_estimated=possibleParams[i][5];
             p23_estimated=possibleParams[i][6];
@@ -227,14 +227,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
     }
     if(!found){
         cout << "No matching parameters found" << endl;
-    }*/
-
-    /*
-    for(int i = 0; i< possibleParams.size(); i++){
-        MarkovModel(20000, possibleParams[i][0], possibleParams[i][1], possibleParams[i][2], possibleParams[i][3], possibleParams[i][4]).buildTrace(avgburstsizes);
-    }*/
-
-    //vector<float> bestParams = checkResult(avgburstsizes,origburstsize, possibleParams, origLoss, origgoodsize);
+    }
 
     return new float[6] {p13_estimated, p31_estimated, p32_estimated, p23_estimated, p14_estimated, p41};
 }
