@@ -1,0 +1,9 @@
+- Kernel cannot contain a array with 200000 values ---> Find out what the max size of the kernel addr space is: stack-size is max 8192 or less depending on architecture
+
+
+
+Herausforderungen: 
+ Kernel space is rel small --> what is the correct size? 
+
+
+
