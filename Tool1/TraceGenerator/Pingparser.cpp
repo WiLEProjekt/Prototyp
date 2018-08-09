@@ -233,6 +233,6 @@ vector<bool> Pingparser::readFile(string filename) {
     while (file.get(c)) {
         trace.push_back(c != '0');
     }
-    trace.pop_back();
+    //trace.pop_back();
     return trace;
 }

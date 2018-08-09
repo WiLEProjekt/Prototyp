@@ -160,7 +160,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
                         float S1 = 1.0f/(1.0f+(p14/p41)+(p13/p31)+((p13*p32)/(p31*p23))); //Steady-State-Probability S1
                         float S3 = 1.0f/(1.0f+(p32/p23)+(p31/p13)+((p14*p31)/(p41*p13))); //Steady-State-Probability S3
                         float S2 = 1.0f/(1.0f+(p23/p32)+((p31*p23)/(p13*p32))+((p14*p31*p23)/(p41*p13*p32))); //Steady-State-Probability S2
-                        float theoreticalLoss = S4+S3*100;
+                        float theoreticalLoss = (S4+S3)*100;
                         float theoreticalavgBurstLength = (S4+S3)/(S1*(p14+p13)+S2*p23);
                         float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
                         if(fabs(theoreticalLoss-origLoss) < 0.1 && avgBurstDiff < 0.1){
@@ -170,6 +170,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
                             params.push_back(p32);
                             params.push_back(p23);
                             params.push_back(p14);
+                            params.push_back(avgBurstDiff);
                             possibleParams.push_back(params);
                         }
                     }
@@ -177,7 +178,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
             }
         }
     }
-
+    cout << possibleParams.size() << endl;
     //Filter 50 best fitting parameter from possibleParams
     vector<vector<float> > top50;
     findTopX(top50, possibleParams, 50);

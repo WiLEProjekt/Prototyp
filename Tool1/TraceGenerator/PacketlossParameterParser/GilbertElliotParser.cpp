@@ -159,6 +159,7 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
     vector<vector<float> > origDistFunction;
     calcDistFunction(origSizes, origDistFunction);
     vector<vector<float> > possibleParams;
+
     for (int p = 1; p < 51; p++) {
         for (int r = 50; r < 101; r++) {
             for (int h = 1; h < 51; h++) {
@@ -167,7 +168,7 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
                     float rf = (float) r / 100;
                     float hf = (float) h / 100;
                     float kf = (float) k / 100;
-                    float theoreticalLoss = ((1.0f-kf)*(rf/(pf+rf)))+((1-hf)*(pf/(pf+rf)));
+                    float theoreticalLoss = ((1.0f-kf)*(rf/(pf+rf)))+((1-hf)*(pf/(pf+rf)))*100;
                     float theoreticalavgBurstLength = (1.0f/(1.0f-(1.0f-rf)*(1.0f-hf)))*(1.0f+(1.0f-kf));
                     float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
                     if(fabs(theoreticalLoss-origLoss)<0.1 && avgBurstDiff < 0.2){
@@ -176,6 +177,8 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
                         params.push_back(rf);
                         params.push_back(kf);
                         params.push_back(hf);
+                        params.push_back(theoreticalLoss);
+                        params.push_back(avgBurstDiff);
                         possibleParams.push_back(params);
                     }
                 }
@@ -183,11 +186,9 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
         }
     }
     float p=0, r=0, k=0, h=0;
-
     //Filter 50 best fitting parameter from possibleParams
     vector<vector<float> > top50;
     findTopX(top50, possibleParams, 50);
-
 
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
