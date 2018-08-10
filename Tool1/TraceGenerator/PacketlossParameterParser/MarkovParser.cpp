@@ -141,7 +141,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
     float origLoss, avgOrigburstsize, avgOriggoodsize;
     vector<int> origSizes;
     calcLoss(trace, origLoss, avgOrigburstsize, avgOriggoodsize, origSizes); //Calculate lossrate and burstsize of the original Trace
-    cout << "burst size: " << avgOrigburstsize << endl;
+    cout << "burst size: " << avgOrigburstsize << " loss: " << origLoss << endl;
     sort(origSizes.begin(), origSizes.end());
     vector<vector<float> > origDistFunction;
     calcDistFunction(origSizes, origDistFunction);
@@ -152,11 +152,16 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
     float p23_estimated = -1.0f;
     float p14_estimated = -1.0f;
     float p41 = 1.0f;
-    for(float p14 = 0.01; p14 < 0.1; p14 += STEP_SIZE){
-        for(float p13 = 0.01; p13 < 1.0f-p14; p13 += STEP_SIZE){
-            for(float p32 = 0.01; p32 < 0.3; p32 += STEP_SIZE){
-                for(float p31 = 0.01; p31 <= 1.0f - p32; p31 += STEP_SIZE){
-                    for(float p23 = 0.8; p23 < 1.0f; p23 += STEP_SIZE){
+    for(int p14_i = 1; p14_i < 10; p14_i++){
+        for(int p13_i = 1; p13_i < 100-p14_i; p13_i++){
+            for(int p32_i = 1; p32_i < 30; p32_i++){
+                for(int p31_i = 1; p31_i <= 100 - p32_i; p31_i++){
+                    for(int p23_i = 80; p23_i < 100; p23_i++){
+                        float p14 = (float)p14_i/100;
+                        float p13 = (float)p13_i/100;
+                        float p32 = (float)p32_i/100;
+                        float p31 = (float)p31_i/100;
+                        float p23 = (float)p23_i/100;
                         float S4 = 1.0f/(1.0f+(p41/p14)+((p41*p13)/(p14*p31))+((p41*p13*p32)/(p14*p31*p23))); //Steady-State-Probability S4
                         float S1 = 1.0f/(1.0f+(p14/p41)+(p13/p31)+((p13*p32)/(p31*p23))); //Steady-State-Probability S1
                         float S3 = 1.0f/(1.0f+(p32/p23)+(p31/p13)+((p14*p31)/(p41*p13))); //Steady-State-Probability S3
@@ -164,7 +169,13 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
                         float theoreticalLoss = (S4+S3)*100;
                         float theoreticalavgBurstLength = (S4+S3)/(S1*(p14+p13)+(S2*p23));
                         float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
-                        if(fabs(theoreticalLoss-origLoss) < 0.1 && avgBurstDiff < 0.01){
+
+                        if(p13_i == 20 && p31_i ==70 && p32_i == 10 && p23_i == 90 && p14_i == 5){
+                            cout << p14 << " " << p13 << " " << p32 << " " << p31 << " " << p23 << endl;
+                            cout << "theo burst size: " << theoreticalavgBurstLength << " theo loss: " << theoreticalLoss << " avgBurstDiff: " << avgBurstDiff << endl;
+                        }
+
+                        if(fabs(theoreticalLoss-origLoss) < 0.1 && avgBurstDiff < 0.001){
                             vector<float> params;
                             params.push_back(theoreticalLoss);
                             params.push_back(theoreticalavgBurstLength);
@@ -181,12 +192,12 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
             }
         }
     }
-    /*cout << possibleParams.size() << endl;
-    for(int i = 0; i<possibleParams.size(); i++){
+    cout << possibleParams.size() << endl;
+   /* for(int i = 0; i<possibleParams.size(); i++){
         if(possibleParams[i][3] == 0.2){ //??????
             cout << "p13: " << possibleParams[i][3] << " p31: " << possibleParams[i][4] << " p32: " << possibleParams[i][5] << " p23: " << possibleParams[i][6] << " p14: " << possibleParams[i][7] << endl;
         }
-    }
+    }*/
     //Filter 50 best fitting parameter from possibleParams
     vector<vector<float> > top50;
     findTopX(top50, possibleParams, 50, "Markov");
@@ -194,7 +205,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
 
     for(int i = 0; i < top50.size(); i++){
         cout << "p13: " << top50[i][0] << " p31: " << top50[i][1] << " p32: " << top50[i][2] << " p23: " << top50[i][3] << " p14: " << top50[i][4] << " burstsize: " << top50[i][5] << endl;
-    }*/
+    }
 
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
@@ -211,12 +222,12 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
         if(ksdecision){
             //cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
             found = true;
-            /*
+
             p13_estimated=top50[i][0];
             p31_estimated=top50[i][1];
             p32_estimated=top50[i][2];
             p23_estimated=top50[i][3];
-            p14_estimated=top50[i][4];*/
+            p14_estimated=top50[i][4];
             p13_estimated=possibleParams[i][3];
             p31_estimated=possibleParams[i][4];
             p32_estimated=possibleParams[i][5];

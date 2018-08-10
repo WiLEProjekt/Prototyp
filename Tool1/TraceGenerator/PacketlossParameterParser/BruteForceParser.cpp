@@ -69,7 +69,7 @@ void BruteForceParser::findTopX(vector<vector<float> > &top, vector<vector<float
     for(int a = 0; a<x; a++){
         int minindex = 0;
         for(int i = 0; i<possibleParams.size(); i++){
-            if(possibleParams[i][5]<possibleParams[minindex][5]){
+            if(possibleParams[i][2]<possibleParams[minindex][2]){
                 minindex = i;
             }
         }
