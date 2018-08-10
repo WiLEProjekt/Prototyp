@@ -193,7 +193,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
         }
     }
     cout << possibleParams.size() << endl;
-   /* for(int i = 0; i<possibleParams.size(); i++){
+    /*for(int i = 0; i<possibleParams.size(); i++){
         if(possibleParams[i][3] == 0.2){ //??????
             cout << "p13: " << possibleParams[i][3] << " p31: " << possibleParams[i][4] << " p32: " << possibleParams[i][5] << " p23: " << possibleParams[i][6] << " p14: " << possibleParams[i][7] << endl;
         }
@@ -203,15 +203,15 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
     findTopX(top50, possibleParams, 50, "Markov");
 
 
-    for(int i = 0; i < top50.size(); i++){
-        cout << "p13: " << top50[i][0] << " p31: " << top50[i][1] << " p32: " << top50[i][2] << " p23: " << top50[i][3] << " p14: " << top50[i][4] << " burstsize: " << top50[i][5] << endl;
-    }
+    //for(int i = 0; i < top50.size(); i++){
+    //    cout << "p13: " << top50[i][0] << " p31: " << top50[i][1] << " p32: " << top50[i][2] << " p23: " << top50[i][3] << " p14: " << top50[i][4] << " burstsize: " << top50[i][5] << endl;
+    //}
 
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
     for(int i = 0; i<possibleParams.size(); i++){
         vector<int> generatedSizes = MarkovModel(trace.size(), possibleParams[i][3], possibleParams[i][4], possibleParams[i][5], possibleParams[i][6], possibleParams[i][7]).buildTrace2();
-
+        cout << generatedSizes.size() << endl; //Vermutlich bei Markov-Generierung ist was falsch
         //calculate distributionfunction
         sort(generatedSizes.begin(), generatedSizes.end());
         vector<vector<float> > generatedDistFunction;
