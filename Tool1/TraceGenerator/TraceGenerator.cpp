@@ -5,7 +5,7 @@
 #include "PaketlossModel/MarkovModel.h"
 #include "PaketlossModel/GilbertElliotModel.h"
 #include "TraceSaver.h"
-#include "PacketLossToParameterParser.h"
+#include "PacketlossParameterParser/PacketLossToParameterParser.h"
 #include "Pingparser.h"
 #include <random>
 
@@ -19,7 +19,7 @@ ExtractParameter TraceGenerator::extractModelParameterFromPing(const string &fil
 }
 
 ExtractParameter
-TraceGenerator::extractModelParameter(PacketLossModelType packetLossModel, vector<bool> parsedFile, unsigned int gMin) {
+TraceGenerator::extractModelParameter(PacketLossModelType packetLossModel, vector<bool> parsedFile, unsigned int gMin = 0) {
     PacketLossToParameterParser packetLossToParameterParser(packetLossModel, parsedFile);
 
     ExtractParameter extractParameter{};
@@ -46,8 +46,7 @@ TraceGenerator::extractModelParameter(PacketLossModelType packetLossModel, vecto
 }
 
 ExtractParameter
-TraceGenerator::extractModelParameter(const string &filename, string &fileType, string &packetlossModelName,
-                                      unsigned int gMin) {
+TraceGenerator::extractModelParameter(const string &filename, string &fileType, string &packetlossModelName, unsigned int gMin = 0) {
     std::transform(packetlossModelName.begin(), packetlossModelName.end(), packetlossModelName.begin(), ::tolower);
     std::transform(fileType.begin(), fileType.end(), fileType.begin(), ::tolower);
     PacketLossModelType packetLossModel = this->getPacketLossModelFromString(packetlossModelName);
@@ -58,6 +57,9 @@ TraceGenerator::extractModelParameter(const string &filename, string &fileType, 
         parsedFile = Pingparser().readPcapFile(filename, ICMP);
     } else if (strcmp(fileType.c_str(), "tcp") == 0) {
         parsedFile = Pingparser().readPcapFile(filename, TCP);
+    }else{
+        parsedFile = Pingparser().readFile(filename);
+        //cout << parsedFile.size() << " " << parsedFile[parsedFile.size()-1] << endl;
     }
 
     return extractModelParameter(packetLossModel, parsedFile, gMin);
@@ -91,6 +93,7 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
                 unsigned int gMin = atoi(argv[5]);
                 parameter = this->extractModelParameter(filename, fileType, packetlossModelName, gMin);
             } else {
+                //cout << filename << " " << fileType << " " << packetlossModelName << endl;
                 parameter = this->extractModelParameter(filename, fileType, packetlossModelName, 0);
             }
         }

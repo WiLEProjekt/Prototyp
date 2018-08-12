@@ -1,7 +1,5 @@
-
 #ifndef TRACEGENERATOR_MARKOVMODEL_H
 #define TRACEGENERATOR_MARKOVMODEL_H
-
 
 #include <vector>
 #include "BasePacketlossModel.h"
@@ -68,6 +66,8 @@ public:
     MarkovModel(unsigned int seed, long numPackets, float p13, float p31, float p32, float p23, float p14)
             : BasePacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
 
+
+    vector<int> buildTrace2();
 };
 
 

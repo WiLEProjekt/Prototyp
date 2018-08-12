@@ -102,6 +102,8 @@ public:
             throw invalid_argument("invalid Argument {" + invalidArgument + "}");
         }
     }
+
+    vector<int> buildTrace2();
 };
 
 
