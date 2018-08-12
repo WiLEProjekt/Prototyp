@@ -14,7 +14,7 @@ protected:
 
     void calcDistFunction(vector<int> &sizes, vector<vector<float> > &distFunction);
 
-    bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n);
+    bool kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, long m, long n);
 
     void findTopX(vector<vector<float> > &top, vector<vector<float> > &possibleParams, int x, string model);
 

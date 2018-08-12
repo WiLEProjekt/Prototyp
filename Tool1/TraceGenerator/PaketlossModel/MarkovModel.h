@@ -1,7 +1,5 @@
-
 #ifndef TRACEGENERATOR_MARKOVMODEL_H
 #define TRACEGENERATOR_MARKOVMODEL_H
-
 
 #include <vector>
 #include "BasePacketlossModel.h"

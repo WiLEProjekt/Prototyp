@@ -24,6 +24,7 @@ protected:
      */
     BasePacketlossModel(long numPackets) : numPackets(numPackets) {
         generator.seed(time(0));
+        //generator.seed(1);
         uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
         distribution = *dist;
         delete (dist);

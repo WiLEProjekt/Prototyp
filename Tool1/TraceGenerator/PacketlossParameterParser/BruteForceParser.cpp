@@ -98,7 +98,7 @@ void BruteForceParser::findTopX(vector<vector<float> > &top, vector<vector<float
 }
 
 //Two-sided Kolmogorov-Smirnov Test
-bool BruteForceParser::kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, int m, int n){
+bool BruteForceParser::kstest(vector<vector<float> > origDistFunction, vector<vector<float> > &generatedDistFunction, long m, long n){
     float alpha = 0.01; //significanceniveau
     float decider = sqrt(-0.5*log(alpha/2)*(n+m)/(n*m));
     float d = 0; //ks test value
