@@ -2,8 +2,9 @@
 // Created by drieke on 09.08.18.
 //
 
-#include "PcapWriter.h"
+
 #include "measureBandwidth.h"
+#include "PcapWriter.h"
 
 int main(int argc, char **argv) {
 

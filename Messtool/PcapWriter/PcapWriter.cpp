@@ -77,18 +77,17 @@ void secondThread(){
 }
 
 void PcapWriter::start(char *dev, char* outputFilename) {
-    cout << "starting pcap" << endl;
+    printf("PcapWriter started successfully\n");
     thread pcapThread(writePcap, dev, outputFilename);
     thread secondThreadThread(secondThread);
     secondThreadThread.join();
     pcapThread.join();
     //this->writePcap(dev, outputFilename);
-    cout << "Pcap started" << endl;
 }
 
-
+/*
 int main(int argc, char **argv) {
     PcapWriter *writer = new PcapWriter();
     writer->start("enp0s3", "test.pcap");
     cout << "lebt noch" << endl;
-}
+}*/

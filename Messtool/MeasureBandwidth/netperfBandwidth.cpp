@@ -1,22 +1,11 @@
-//
-// Created by drieke on 09.08.18.
-//
-#include "measureBandwidth.h"
+/**
+ * This class contains a throughput measurement based on netperf.
+ */
 
+#include "netperfBandwidth.h"
+#include "consts_and_utils/consts_and_utils.h"
 
-bool is_positiv_number(string str)
-{
-    regex db("([[:digit:]]+)(\\.(([[:digit:]]+)?))?");
-    if(regex_match(str,db))
-        return true;
-    else
-        return false;
-}
-
-/* Simple function to measure the throughput based on netperf. Netperf is started and the output is logged.
-* The troughput is written to a outputfile 'filename'. */
-
-void measureThroughput(const char* filename)
+int measureThroughputViaUDP_Stream(const char *filename, string netPerf)
 {
     std::ifstream infile;
     std::ofstream outfile;
@@ -25,8 +14,12 @@ void measureThroughput(const char* filename)
     std::string line;
     vector<string> substrings;
 
-    const char* c = "netperf -t UDP_STREAM -- -m 1024 >> netperf_bandwidth_logger.txt"; //TODO: start netem with correct param -> argv?
-    system(c);
+    const char* c = netPerf.c_str();
+    if (0 < system(c))
+    {
+        perror("Failure at starting netperf \n check netperf call\n");
+        return -1;
+    };
 
 
     infile.open("netperf_bandwidth_logger.txt");
@@ -49,7 +42,7 @@ void measureThroughput(const char* filename)
         throughput_recv =substrings[substrings.size() - 8];
     } else {
         puts("Extracting throughput failed");
-        goto end;
+        return -1;
     }
 
     /* delete netperf_bandwidth_logger.txt */
@@ -57,14 +50,15 @@ void measureThroughput(const char* filename)
     //	perror("Error deleting netperf_bandwidth_logger.txt\n");
 
     /* create output textfile */
+    //printf("filename: %s\n", filename);
     outfile.open(filename);
     outfile << "Throughput (send): " + throughput_recv + " 10^6bits/sec ";
     outfile << "Throughput (recv): " + throughput_send + " 10^6bits/sec\n";
     outfile.close();
 
-    puts("Throuput sucessfully written to file");
-    end:
-    return ;
+    //puts("Throuput sucessfully written to file");
+
+    return 0;
 }
 
 

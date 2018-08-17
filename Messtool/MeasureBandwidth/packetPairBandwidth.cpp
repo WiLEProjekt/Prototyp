@@ -1,0 +1,208 @@
+
+/** This class contains deprecated code for measuring bandwith with packet pair technique */
+
+
+#include "packetPairBandwidth.h"
+#include <algorithm>
+#include <iostream>
+
+using namespace std;
+
+uint64_t getTimens(){
+    struct timespec time;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &time);
+    uint64_t s = time.tv_sec;
+    uint64_t ns = time.tv_nsec;
+    uint64_t finaltime = s*1000000000+ns;
+    return finaltime;
+}
+
+void writeBandwidths(vector<int> bandwidts){
+    ofstream myfile ("bandwidths.txt");
+    if(myfile.is_open()){
+        for(int i = 0; i<bandwidts.size(); i++){
+            myfile << bandwidts[i] << endl;
+        }
+        myfile.close();
+    }
+}
+
+void wait(int msec){ //wait for x milliseconds
+    uint64_t starttime = getTimens();
+    while((getTimens()-starttime)/1000000 < msec);
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//Calculates the median
+//----------------------------------------------------------------------------------------------------------------------
+int calculateMedian(vector<int> bandwidths){
+    int median=0;
+    int pos = bandwidths.size()/2;
+    sort(bandwidths.begin(), bandwidths.end());
+    if(bandwidths.size()%2 == 0){ //even
+        int indice1 = bandwidths.size()/2-1;
+        int indice2 = bandwidths.size()/2;
+        median = 0.5*(bandwidths[indice1]+bandwidths[indice2]);
+    }else{ //odd
+        int indice = (bandwidths.size()+1)/2-1;
+        median = bandwidths[indice];
+    }
+    return median;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+//Adaptation from RANSAC
+//----------------------------------------------------------------------------------------------------------------------
+int calculateAvgBandwidth(vector<int> origbandwidths){
+    int epsilon = 15000; //+-5Mbit Schranken
+    vector<int> bandwidthswithoutduplicates = origbandwidths;
+    sort(bandwidthswithoutduplicates.begin(), bandwidthswithoutduplicates.end());
+    //for(int i = 0; i<bandwidthswithoutduplicates.size(); i++){
+    //    cout << bandwidthswithoutduplicates[i] << endl;
+    //}
+    vector<int>::iterator it;
+    it = unique (bandwidthswithoutduplicates.begin(), bandwidthswithoutduplicates.end()); //erase duplicates
+    bandwidthswithoutduplicates.resize( std::distance(bandwidthswithoutduplicates.begin(),it) );
+
+    vector<int> consensus;
+    for(int i = 0; i<bandwidthswithoutduplicates.size(); i++){
+        int adder = 0; //temporal variable to calculate consensusset
+        for(int o = 0; o<origbandwidths.size(); o++){
+            if((origbandwidths[o]<=(bandwidthswithoutduplicates[i]+epsilon)) && (origbandwidths[o] >= (bandwidthswithoutduplicates[i]-epsilon))){
+                adder++;
+            }
+        }
+        consensus.push_back(adder);
+    }
+
+    //find biggest consensusset
+    int max = 0;
+    int maxi = 0;
+    for(int i = 0; i<consensus.size(); i++){
+        if(consensus[i]>max){
+            max = consensus[i];
+            maxi = i;
+        }
+    }
+    cout << "consensus: " << bandwidthswithoutduplicates[maxi] << endl;
+
+
+    //Calculate Median of best consensusset
+    vector<int> consensusset;
+    for(int i = 0; i<origbandwidths.size(); i++){
+        if((origbandwidths[i]<=(bandwidthswithoutduplicates[maxi]+epsilon)) && (origbandwidths[i] >= (bandwidthswithoutduplicates[maxi]-epsilon))){
+            consensusset.push_back(origbandwidths[i]);
+        }
+    }
+    int median = calculateMedian(consensusset);
+    return median;
+
+    /*ALternative to Median:
+    //calculate mean value of best consensusset
+    int overallbandwidth = 0;
+    for(int i = 0; i<origbandwidths.size(); i++){
+        if((origbandwidths[i]<=(bandwidthswithoutduplicates[maxi]+epsilon)) && (origbandwidths[i] >= (bandwidthswithoutduplicates[maxi]-epsilon))){
+            overallbandwidth = overallbandwidth+origbandwidths[i];
+        }
+    }
+    int meanbandwidth = overallbandwidth/consensus[maxi];
+    return meanbandwidth;
+     */
+}
+
+
+/*  old packet pair code for server */
+
+/*
+int main(int argc, char **argv) {
+
+    //TODO: ip & port as inputparameters
+    // Acutual dummy port: 4722
+
+    while(true){
+        //Bandwidth measurement using packet pair method
+        int size = 0;
+        vector<vector<uint64_t> > receivetimes; //[sequencenumber], [arrivaltime in ns]
+        char rcvmsg[30000];
+        struct sockaddr_in from;
+        unsigned int flen = sizeof (struct sockaddr_in);
+        int oldsequencenumber = -1;
+        while(true){
+            vector<uint64_t> temp;
+            int rcv = recvfrom(sock, rcvmsg, sizeof(rcvmsg), 0, (struct sockaddr*) &from, &flen);
+            if (rcv < 0) { //exit upload-measurement
+                break;
+            }else{
+                string payload = string(rcvmsg);
+                int sequencenumber = stoi(payload);
+                //cout << sequencenumber << endl;
+                size = rcv;
+                if(sequencenumber>oldsequencenumber){ //filter duplicates and reordered packets
+                    oldsequencenumber = sequencenumber;
+                    temp.push_back(sequencenumber);
+                    uint64_t time = getTimens();
+                    temp.push_back(time);
+                    receivetimes.push_back(temp);
+                }
+            }
+        }
+        //Calculate bandwidth in mbit/sec
+        vector<int> bandwidths;
+        int loop = 0;
+        if(receivetimes.size() >1){
+            while(loop<=receivetimes.size()-2){
+                if((receivetimes[loop][0]%2) == 0 && (receivetimes[loop+1][0]%2) == 1 && (receivetimes[loop+1][0] == receivetimes[loop][0]+1)){//Packet Pair found
+                    long double sizekb = (long double) size/125; //Convert byte into kilobit
+                    long double time1 = (long double)receivetimes[loop+1][1]/1000000000;
+                    long double time0 = (long double)receivetimes[loop][1]/1000000000;
+                    long double bandwidth = sizekb/(time1-time0);
+                    int roundedbandwidth = (int) (bandwidth+0.5);
+                    bandwidths.push_back(roundedbandwidth);
+                    loop = loop + 2;
+                }else{
+                    loop++;
+                }
+            }
+            writeBandwidths(bandwidths);
+            int median = calculateMedian(bandwidths);
+            //cout << "Median: " << median << " kbit/s" << " PacketPairs received: " << bandwidths.size() << endl;
+            //int estimatedBandwidth = calculateAvgBandwidth(bandwidths); OPTIONAL, ACCURACY NEEDS TO BE TESTED MORE
+            //cout << estimatedBandwidth << " kbit/s" << endl;
+
+            //Download Measurement with Packet Pair---------------------------------------------------------------------
+            //TODO: Payload zusammensetzen [Sequenznummer]aaaaaa...[upload-datenrate]
+            //TODO: Exact das gleiche Vorgehen wie hier jetzt auch schon, nur Server und Client switchen
+
+        }else{
+            cout << "No packet pair found" << endl;
+        }
+    }
+
+    return 0;
+}
+*/
+
+
+/* old code of packet pait from client */
+
+/* //Upload Test using Packet Pair
+    string message = "";
+    for(int i = 0; i<packetsize; i++){ //initialize message with dummy payload
+        message +="a";
+    }
+    for(int i = 0; i < maxpackets*2; i++){
+        string number = to_string(i);
+        for(int b = 0; b<number.size(); b++){
+            message.at(b) = number.at(b);
+        }
+        cout << message.size() << " " << stoi(message) << endl;
+        int snd = sendto(sock, message.c_str(), message.size(), 0, (struct sockaddr*) &dest, sizeof (struct sockaddr_in)); //Paket senden
+        if (snd < 0) { //Wenn Sendefehler auftritt
+            cout << "Sendefehler" << endl; //Abbruch
+            break;
+        }
+        if((i%2) == 1){ //Wait for some time when a packet pair is sent to avoid buffer overflow
+            wait(40);
+        }
+    } */

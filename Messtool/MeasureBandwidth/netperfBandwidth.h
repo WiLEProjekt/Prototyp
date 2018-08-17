@@ -17,9 +17,15 @@
 
 using namespace std;
 
-bool is_positiv_number(string str);
+/**
+ * Simple function to measure the throughput based on netperf. Netperf is started and the output is logged.
+* The troughput is written to a outputfile 'filename'.
+ * @param filename the file containing the throughput
+ * @param netPerf the terminal call of netperf containg the parameters
+ * @return -1 if some error occured
+ */
 
-void measureThroughput(const char* filename);
+int measureThroughputViaUDP_Stream(const char *filename, string netperf);
 
 
 #endif //MESSTOOL_MEASUREBANDWIDTH_H

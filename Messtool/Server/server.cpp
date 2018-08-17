@@ -1,7 +1,9 @@
-//
-// Created by dominic on 02.08.18.
-//
+#include "server.h"
+#include "generateLoad/generateLoad.h"
+#include "consts_and_utils/consts_and_utils.h"
 
+
+#include <unistd.h>
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -10,193 +12,357 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <cstring>
+#include <wait.h>
 
 using namespace std;
 
-uint64_t getTimens(){
-    struct timespec time;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &time);
-    uint64_t s = time.tv_sec;
-    uint64_t ns = time.tv_nsec;
-    uint64_t finaltime = s*1000000000+ns;
-    return finaltime;
-}
+#include <sstream>
+#include <iterator>
+#include <regex>
 
-void writeBandwidths(vector<int> bandwidts){
-    ofstream myfile ("bandwidths.txt");
-    if(myfile.is_open()){
-        for(int i = 0; i<bandwidts.size(); i++){
-            myfile << bandwidts[i] << endl;
+
+
+
+/**
+ * Setup the udp socket and save setup data into the pointers sock and dest.
+ * @param sock stores the udp-socket
+ * @param port the destination port as integer
+ * @param timeoutServer the timeout of the socket (in seconds)
+ * @return if some error occure a -1 is returned
+ */
+int udp_setupConnection(int * sock, int port, int timeoutServer)
+{
+    //Open Socket
+    *sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (*sock < 0)
+    {
+        printf("udp_setupConnection - Errno: %i\n", errno);
+        return -1;
+    }
+    //set sockopt
+    struct timeval timeout;
+    timeout.tv_sec = timeoutServer;
+    timeout.tv_usec = 0;
+    if (0 > setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout)))
+    {
+        if (11 == errno)
+        {
+            return 0;
+        } else {
+            printf("udp_setupConnection - Errno: %i\n", errno);
+            return -1;
         }
-        myfile.close();
     }
+    //Own Address
+    struct sockaddr_in own_addr;
+    own_addr.sin_family = AF_INET;
+    own_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    own_addr.sin_port = htons(port);
+    //Bind own address to socket
+    if (0 > bind(*sock, (struct sockaddr *) &own_addr, sizeof (struct sockaddr_in)))
+    {
+        printf("udp_setupConnection - Errno: %i\n", errno);
+        return -1;
+    }
+    return 0;
 }
 
+/**
+ * A function receives packets via udp and echo it back the sender.
+ * @param udp_sock the udp_socket
+ * @return
+ */
 
-//----------------------------------------------------------------------------------------------------------------------
-//Calculates the median
-//----------------------------------------------------------------------------------------------------------------------
-int calculateMedian(vector<int> bandwidths){
-    int median=0;
-    int pos = bandwidths.size()/2;
-    sort(bandwidths.begin(), bandwidths.end());
-    if(bandwidths.size()%2 == 0){ //even
-        int indice1 = bandwidths.size()/2-1;
-        int indice2 = bandwidths.size()/2;
-        median = 0.5*(bandwidths[indice1]+bandwidths[indice2]);
-    }else{ //odd
-        int indice = (bandwidths.size()+1)/2-1;
-        median = bandwidths[indice];
-    }
-    return median;
-}
+int udp_recvAndEcho(int *udp_sock)
+{
+    struct sockaddr_in addr;
+    socklen_t slen = (socklen_t) sizeof(addr);
+    char buf[PACKETSIZE];
 
-//----------------------------------------------------------------------------------------------------------------------
-//Adaptation from RANSAC
-//----------------------------------------------------------------------------------------------------------------------
-int calculateAvgBandwidth(vector<int> origbandwidths){
-    int epsilon = 15000; //+-5Mbit Schranken
-    vector<int> bandwidthswithoutduplicates = origbandwidths;
-    sort(bandwidthswithoutduplicates.begin(), bandwidthswithoutduplicates.end());
-    //for(int i = 0; i<bandwidthswithoutduplicates.size(); i++){
-    //    cout << bandwidthswithoutduplicates[i] << endl;
-    //}
-    vector<int>::iterator it;
-    it = unique (bandwidthswithoutduplicates.begin(), bandwidthswithoutduplicates.end()); //erase duplicates
-    bandwidthswithoutduplicates.resize( std::distance(bandwidthswithoutduplicates.begin(),it) );
-
-    vector<int> consensus;
-    for(int i = 0; i<bandwidthswithoutduplicates.size(); i++){
-        int adder = 0; //temporal variable to calculate consensusset
-        for(int o = 0; o<origbandwidths.size(); o++){
-            if((origbandwidths[o]<=(bandwidthswithoutduplicates[i]+epsilon)) && (origbandwidths[o] >= (bandwidthswithoutduplicates[i]-epsilon))){
-                adder++;
+    //keep listening for data
+    while(1)
+    {
+        if (0 > recvfrom(*udp_sock,buf,(size_t) (sizeof(buf)),0,(sockaddr *) &addr, (__socklen_t *) &slen))
+        {
+            if (11 == errno)
+            {
+                return 0;
+            } else {
+                printf("udp_recvAndEcho - Errno: %i\n", errno);
+                return -1;
             }
         }
-        consensus.push_back(adder);
-    }
-
-    //find biggest consensusset
-    int max = 0;
-    int maxi = 0;
-    for(int i = 0; i<consensus.size(); i++){
-        if(consensus[i]>max){
-            max = consensus[i];
-            maxi = i;
+        if (sendto(*udp_sock, buf, PACKETSIZE, 0, (struct sockaddr*) &addr, slen) == -1)
+        {
+            if (11 == errno)
+            {
+                return 0;
+            } else {
+                printf("udp_recvAndEcho - Errno: %i\n", errno);
+                return -1;
+            }
         }
     }
-    cout << "consensus: " << bandwidthswithoutduplicates[maxi] << endl;
-
-
-    //Calculate Median of best consensusset
-    vector<int> consensusset;
-    for(int i = 0; i<origbandwidths.size(); i++){
-        if((origbandwidths[i]<=(bandwidthswithoutduplicates[maxi]+epsilon)) && (origbandwidths[i] >= (bandwidthswithoutduplicates[maxi]-epsilon))){
-            consensusset.push_back(origbandwidths[i]);
-        }
-    }
-    int median = calculateMedian(consensusset);
-    return median;
-
-    /*ALternative to Median:
-    //calculate mean value of best consensusset
-    int overallbandwidth = 0;
-    for(int i = 0; i<origbandwidths.size(); i++){
-        if((origbandwidths[i]<=(bandwidthswithoutduplicates[maxi]+epsilon)) && (origbandwidths[i] >= (bandwidthswithoutduplicates[maxi]-epsilon))){
-            overallbandwidth = overallbandwidth+origbandwidths[i];
-        }
-    }
-    int meanbandwidth = overallbandwidth/consensus[maxi];
-    return meanbandwidth;
-     */
 }
 
+/**
+ * Creates a tco connection for a specific port and stores data in tcp_sock
+ * @param tcp_sock the tcp socket
+ * @param port the tcp port
+ * @return -1 if an error occur, else 0
+ */
 
-int main(int argc, char **argv) {
+int tcp_initializeConnectionServer(int* tcp_sock, int port)
+{
     //Open Socket
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-        return 0;
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        printf("tcp_initializeConnectionServer - Errno: %i\n", errno);
+        return -1;
     }
-
-    //Own Address
+    //set sockopt
+/*  struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    if (0 > setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout)))
+    {
+        printf("tcp_initializeConnectionServer - Errno: %i\n", errno);
+        return -1;
+    }
+*/
+    //address
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(4722);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    //Bind own address to socket
-    int bnd = bind(sock, (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
-    if (bnd < 0) {
-        return 0;
+    addr.sin_port = htons(port);
+    //bind own address to socket
+    if (0 > bind(sock, (struct sockaddr *) &addr, sizeof (struct sockaddr_in)))
+    {
+        printf("tcp_initializeConnectionServer - Errno: %i\n", errno);
+        return -1;
     }
-
-    //set timeout on receive function
-    struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-    int socktimeout = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout));
-    if (socktimeout < 0) {
-        return 0;
+    // listen for connections
+    if (listen(sock, 3) < 0)
+    {
+        printf("tcp_initializeConnectionServer - Errno: %i\n", errno);
+        return -1;
     }
-    while(true){
-        //Bandwidth measurement using packet pair method
-        int size = 0;
-        vector<vector<uint64_t> > receivetimes; //[sequencenumber], [arrivaltime in ns]
-        char rcvmsg[30000];
-        struct sockaddr_in from;
-        unsigned int flen = sizeof (struct sockaddr_in);
-        int oldsequencenumber = -1;
-        while(true){
-            vector<uint64_t> temp;
-            int rcv = recvfrom(sock, rcvmsg, sizeof(rcvmsg), 0, (struct sockaddr*) &from, &flen);
-            if (rcv < 0) { //exit upload-measurement
-                break;
-            }else{
-                string payload = string(rcvmsg);
-                int sequencenumber = stoi(payload);
-                //cout << sequencenumber << endl;
-                size = rcv;
-                if(sequencenumber>oldsequencenumber){ //filter duplicates and reordered packets
-                    oldsequencenumber = sequencenumber;
-                    temp.push_back(sequencenumber);
-                    uint64_t time = getTimens();
-                    temp.push_back(time);
-                    receivetimes.push_back(temp);
-                }
+    //accepts connection
+    int addrlen = sizeof(addr);
+    if ((*tcp_sock = accept(sock, (struct sockaddr *)&addr,
+                             (socklen_t*) &addrlen) ) < 0)
+    {
+        printf("tcp_initializeConnectionServer - Errno: %i\n", errno);
+        return -1;
+    }
+    return 0;
+}
+
+/**
+ * Free udp socket without close without closing socket before.
+ * @param udp_sock the udp socket
+ */
+
+void udp_closeConnection(int *udp_sock)
+{
+    free(udp_sock);
+}
+
+/**
+ * Free the tcp socket without closing socket before.
+ * @param tcp_sock the tcp socket
+ */
+
+void tcp_closeConnection(int *tcp_sock)
+{
+    free(tcp_sock);
+}
+
+/**
+ * Close tcp socket, free tcp pointer and kill a process child_pid
+ * @param child_pid the child pid
+ * @param tcp_sock the tcp socket
+ */
+
+void kill_child_end_tcp(pid_t child_pid, int* tcp_sock)
+{
+    close(*tcp_sock);
+    free(tcp_sock);
+    kill(child_pid, SIGINT); /* ends PcapWriter Process and its threads*/
+    printf("child killed\n");
+}
+
+/**
+ * Receive some measurement parameters via tcp. PArameters are checked and then saved into check_params. Return
+ * -1 if parameters are invalid or some other error occured.
+ * @param tcp_sock the tcp socket
+ * @param checked_params a vector for the parameter 'timeout', 'direction' and 'measurment id'
+ * @return -1 if parameters are invalid or soem other error occured
+ */
+
+int tcp_recvMeasurementParameters(int* tcp_sock, vector<string>* checked_params)
+{
+    /*
+     * Expected Parameter: |[measurementId]|[direction]|[timeout]|
+     * Delimiter is '|'
+     * Example: |lte_osna_stadt_17082018_114759|b|12|
+     */
+
+    bool params_ok = false;
+    char recvmsg[PACKETSIZE];
+    vector<string> recv_params;
+    while(not params_ok)    {
+
+        memset(recvmsg,0, sizeof(recvmsg));
+        if (0 > read( *tcp_sock , recvmsg, sizeof(recvmsg))) // this is a blocking call
+        {
+            printf("tcp_recvMeasurmentParams - error: %i\n", errno);
+            tcp_closeConnection(tcp_sock);
+            return -1;
+        }
+
+        vector<string> recv_params = split(recvmsg,'|');
+
+        //for(std::vector<string>::iterator it = recv_params.begin(); it != recv_params.end(); ++it) {
+        //   cout << *it << endl;
+        //}
+
+        //TODO: check measurementId (must be in format [TECH_TOWN_AREA_DATE_TIME]
+        //TODO: check direction (must be 'b' or 'u'
+        //TODO: check Timeout (must be int number)
+
+        params_ok = true;
+
+
+        if (params_ok)
+        {
+            for (int i=0; i<recv_params.size(); i++)
+                (*checked_params).push_back(recv_params[i]);
+
+            char ackMsg[PACKETSIZE] = "ack";
+            if (0 > send(*tcp_sock , ackMsg , strlen(ackMsg) , 0 ))
+            {
+                printf("tcp_recvMeasurmentParams - error: %i\n", errno);
+                tcp_closeConnection(tcp_sock);
+                return -1;
+            }
+            return 0;
+
+        } else {
+            // if params are incorrect, deny measurement and wait for new params
+            char ackMsg[PACKETSIZE] = "denied";
+            if (0 > send(*tcp_sock , ackMsg , strlen(ackMsg) , 0 ))
+            {
+                printf("tcp_recvMeasurmentParams - error: %i\n", errno);
+                tcp_closeConnection(tcp_sock);
+                return -1;
             }
         }
-        //Calculate bandwidth in mbit/sec
-        vector<int> bandwidths;
-        int loop = 0;
-        if(receivetimes.size() >1){
-            while(loop<=receivetimes.size()-2){
-                if((receivetimes[loop][0]%2) == 0 && (receivetimes[loop+1][0]%2) == 1 && (receivetimes[loop+1][0] == receivetimes[loop][0]+1)){//Packet Pair found
-                    long double sizekb = (long double) size/125; //Convert byte into kilobit
-                    long double time1 = (long double)receivetimes[loop+1][1]/1000000000;
-                    long double time0 = (long double)receivetimes[loop][1]/1000000000;
-                    long double bandwidth = sizekb/(time1-time0);
-                    int roundedbandwidth = (int) (bandwidth+0.5);
-                    bandwidths.push_back(roundedbandwidth);
-                    loop = loop + 2;
-                }else{
-                    loop++;
-                }
-            }
-            writeBandwidths(bandwidths);
-            int median = calculateMedian(bandwidths);
-            //cout << "Median: " << median << " kbit/s" << " PacketPairs received: " << bandwidths.size() << endl;
-            //int estimatedBandwidth = calculateAvgBandwidth(bandwidths); OPTIONAL, ACCURACY NEEDS TO BE TESTED MORE
-            //cout << estimatedBandwidth << " kbit/s" << endl;
+    }
+}
 
-            //Download Measurement with Packet Pair---------------------------------------------------------------------
-            //TODO: Payload zusammensetzen [Sequenznummer]aaaaaa...[upload-datenrate]
-            //TODO: Exact das gleiche Vorgehen wie hier jetzt auch schon, nur Server und Client switchen
-
-        }else{
-            cout << "No packet pair found" << endl;
-        }
+int main(int argc, char **argv)
+{
+    if(argc < 4){
+        cout << "Usage: ./Server [TCP-Port] [UDP-Port] [device]" << endl;
+        // Example ./Server 8080 8081 lo
+        return -1;
     }
 
+    int tcp_port = atoi(argv[1]);
+    int udp_port = atoi(argv[2]);
+    char* local_dev = argv[3];
+
+    /* init tcp connection */
+    int* tcp_sock = (int *) malloc(sizeof(int));
+    if (0 > tcp_initializeConnectionServer(tcp_sock, tcp_port))
+    {
+        printf("tcp_initializeConnectionServer - error: %i\n", errno);
+        tcp_closeConnection(tcp_sock);
+        return -1;
+    }
+    printf("TCP socket was created successfully\n");
+    vector<string>* params = new vector<string>(0);
+    if (0 > tcp_recvMeasurementParameters(tcp_sock, params))
+    {
+        printf("tcp_recvMeasurementParameters - error: %i\n", errno);
+        tcp_closeConnection(tcp_sock);
+        return -1;
+    }
+    printf("Received measurement parameters successfully\n");
+/*
+    for(vector<string>::iterator it = (*params).begin(); it != (*params).end(); ++it) {
+        cout << *it << endl;
+    }
+*/
+    string measurementid = params->at(1);
+    char direction = (params->at(2)).c_str()[0];
+    int timeoutServer = atoi((params->at(3)).c_str());
+
+    /* make writeable directory at SERVER_LOCATION */
+    string dirpath = SERVER_LOCATION;
+    dirpath = dirpath + "/" + measurementid;
+    if (0 > makeDirectoryForMeasurement(dirpath))
+    {
+        printf("makeDirectoryForMeasurement - error: directory creation failed\n");
+        tcp_closeConnection(tcp_sock);
+        return -1;
+    }
+    printf("Creation of measurement directory successfull (%s)\n", dirpath.c_str());
+
+    pid_t child_pcap = fork();
+    if (child_pcap == 0)
+    {
+        /* child does not have to listen what the tcp_socket has to say ;) */
+        tcp_closeConnection(tcp_sock);
+
+        string pcapfile = dirpath;
+        pcapfile = pcapfile + "/" + measurementid + ".pcap";
+        PcapWriter *writer = new PcapWriter();
+        writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, the will be closed by SIGINT */
+    } else {
+
+        printf("child pid: %i\n", child_pcap);
+        if (direction == 'b') // b for bidirectional, meaning receiving-and-echo pattern
+        {
+            /*
+             * BIDIRECTIONAL MEASURMENT via udp
+             * Each received packet will be send back to the client with the identical payload.
+             */
+
+            /* init udp connection */
+            int *udp_sock = (int *) malloc(sizeof(int));
+            struct sockaddr_in *clientAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
+            if (0 > udp_setupConnection(udp_sock, udp_port, timeoutServer))
+            {
+                printf("udp_setupConnection - error: %i\n", errno);
+                close(*udp_sock);
+                udp_closeConnection(udp_sock);
+                kill_child_end_tcp(child_pcap, tcp_sock);
+                return -1;
+            }
+            printf("UDP socket created successfully\n");
+            printf("Receive a generated load of via UDP on port %i until udp socket hits a timeout (%i seconds)\n", udp_port, timeoutServer);
+
+            /* echo each received packet back to client immediately */
+            if (0 > udp_recvAndEcho(udp_sock))
+            {
+                printf("udp_recvAndEcho - error: %i\n", errno);
+                close(*udp_sock);
+                udp_closeConnection(udp_sock);
+                kill_child_end_tcp(child_pcap, tcp_sock);
+                return -1;
+            }
+            printf("Load simulation finished successfully\n");
+
+            /*
+             * clean up the processes, threads, mallocs,...
+             * udp_sock is closed by timeout in send and recv which results closing the udp_socket
+             */
+            kill_child_end_tcp(child_pcap, tcp_sock);
+        }
+    }
     return 0;
 }
