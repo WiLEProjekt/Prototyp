@@ -46,5 +46,36 @@ int udp_generateLoad(int* sock, struct sockaddr_in * dest, char* measurementid, 
     }
 
     return 0;
+
 }
 
+
+int iperf_generateLoadServer(int port, int intervall)
+{
+    string iperf_s = "iperf -p ";
+    iperf_s = iperf_s + to_string(port) + " -s -u  -i " + to_string(intervall) + ">> iperf_server_logg.txt";
+    printf("Server iperf: %s \n", iperf_s.c_str());
+
+    if ( 0 > system(iperf_s.c_str()))
+    {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+
+int iperf_generateLoadClient(string ipDest, int port, int bandwidth, char bw_unit)
+{
+    // iperf -c 131.173.33.228 -p 6666 -u -b 1m -d
+    string iperf_c = "iperf -c ";
+    iperf_c = iperf_c + ipDest + " -p " + to_string(port) + " -u -d -b " + to_string(bandwidth) + bw_unit + " >> iperf_client_logg.txt";
+
+    if ( 0 > system(iperf_c.c_str()))
+    {
+        return -1;
+    } else {
+        return 0;
+    }
+
+}

@@ -21,6 +21,8 @@ using namespace std;
 #include <iterator>
 #include <regex>
 
+#include "generateLoad/generateLoad.h"
+
 
 
 
@@ -298,71 +300,44 @@ int main(int argc, char **argv)
     }
 */
     string measurementid = params->at(1);
-    char direction = (params->at(2)).c_str()[0];
-    int timeoutServer = atoi((params->at(3)).c_str());
 
-    /* make writeable directory at SERVER_LOCATION */
-    string dirpath = SERVER_LOCATION;
-    dirpath = dirpath + "/" + measurementid;
-    if (0 > makeDirectoryForMeasurement(dirpath))
-    {
-        printf("makeDirectoryForMeasurement - error: directory creation failed\n");
-        tcp_closeConnection(tcp_sock);
-        return -1;
-    }
-    printf("Creation of measurement directory successfull (%s)\n", dirpath.c_str());
 
-    pid_t child_pcap = fork();
-    if (child_pcap == 0)
-    {
-        /* child does not have to listen what the tcp_socket has to say ;) */
-        tcp_closeConnection(tcp_sock);
 
-        string pcapfile = dirpath;
-        pcapfile = pcapfile + "/" + measurementid + ".pcap";
-        PcapWriter *writer = new PcapWriter();
-        writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, the will be closed by SIGINT */
-    } else {
 
-        printf("child pid: %i\n", child_pcap);
-        if (direction == 'b') // b for bidirectional, meaning receiving-and-echo pattern
-        {
-            /*
-             * BIDIRECTIONAL MEASURMENT via udp
-             * Each received packet will be send back to the client with the identical payload.
-             */
+//    char direction = (params->at(2)).c_str()[0];
+//    int timeoutServer = atoi((params->at(3)).c_str());
 
-            /* init udp connection */
-            int *udp_sock = (int *) malloc(sizeof(int));
-            struct sockaddr_in *clientAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
-            if (0 > udp_setupConnection(udp_sock, udp_port, timeoutServer))
-            {
-                printf("udp_setupConnection - error: %i\n", errno);
-                close(*udp_sock);
-                udp_closeConnection(udp_sock);
-                kill_child_end_tcp(child_pcap, tcp_sock);
-                return -1;
-            }
-            printf("UDP socket created successfully\n");
-            printf("Receive a generated load of via UDP on port %i until udp socket hits a timeout (%i seconds)\n", udp_port, timeoutServer);
+      /* make writeable directory at SERVER_LOCATION */
+      string dirpath = SERVER_LOCATION;
+      dirpath = dirpath + "/" + measurementid;
+      if (0 > makeDirectoryForMeasurement(dirpath))
+      {
+          printf("makeDirectoryForMeasurement - error: directory creation failed\n");
+          tcp_closeConnection(tcp_sock);
+          return -1;
+      }
+      printf("Creation of measurement directory successfull (%s)\n", dirpath.c_str());
 
-            /* echo each received packet back to client immediately */
-            if (0 > udp_recvAndEcho(udp_sock))
-            {
-                printf("udp_recvAndEcho - error: %i\n", errno);
-                close(*udp_sock);
-                udp_closeConnection(udp_sock);
-                kill_child_end_tcp(child_pcap, tcp_sock);
-                return -1;
-            }
-            printf("Load simulation finished successfully\n");
+      pid_t child_pcap = fork();
+      if (child_pcap == 0)
+      {
+          /* child does not have to listen what the tcp_socket has to say ;) */
+          tcp_closeConnection(tcp_sock);
 
-            /*
-             * clean up the processes, threads, mallocs,...
-             * udp_sock is closed by timeout in send and recv which results closing the udp_socket
-             */
-            kill_child_end_tcp(child_pcap, tcp_sock);
-        }
-    }
-    return 0;
+          string pcapfile = dirpath;
+          pcapfile = pcapfile + "/" + measurementid + ".pcap";
+          PcapWriter *writer = new PcapWriter();
+          writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, the will be closed by SIGINT */
+      } else {
+
+                iperf_generateLoadServer(udp_port,1);
+
+//            /*
+//             * clean up the processes, threads, mallocs,...
+//             * udp_sock is closed by timeout in send and recv which results closing the udp_socket
+//             */
+              kill_child_end_tcp(child_pcap, tcp_sock);
+      }
+
+      return 0;
 }

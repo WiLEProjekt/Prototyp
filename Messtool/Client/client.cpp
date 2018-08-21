@@ -316,44 +316,21 @@ int main(int argc, char **argv) {
         sleep(5); // TODO: hopefully child starts living before then (is almost always the case)
         printf("child_pcap pid: %i\n", child_pcap);
 
-        if (direction.compare("b") == 0)
-        {
-            /*
-             * BIRECTIONAL MEASURMENT via udp
-             * The server echos each packet.
-             */
+        iperf_generateLoadClient(destIp,udp__port,1,'m');
 
-            // setup udp connection
-            int *udp_sock = (int *) malloc(sizeof(int));
-            struct sockaddr_in * udp_dest = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
-            if (0 > udp_setupConnection(udp_sock, udp_dest, destIp,udp__port,udp_socket_timeout))
-            {
-                udp_freePointer(udp_sock,udp_dest);
-                return -1;
-            }
-            printf("UDP Connection established successfully\n");
-            printf("Start generation a load of %f 10^6 bits/sec for %i seconds. Then wait "
-                   "wait %i seconds for timeout...\n", dummyload, simulateLoadSeconds, udp_socket_timeout);
+        /*
+         * clean up the processes, threads, mallocs,...
+         * udp_sock is closed by timeout in send and recv which results closing the udp_socket
+         */
+        close(*tcp_sock);
+        tcp_freePointer(tcp_sock,tcp_dest);
+        kill(child_pcap, SIGINT); /* ends PcapWriter Process and its threads*/
 
-            /* generate load and receive echo */
-            char* c = stringToChar(measurementid);
-            thread udp_sendLoad (udp_generateLoad, udp_sock,udp_dest, c,dummyload, simulateLoadSeconds);
-            thread udp_recvPackets (udp_listen4data, udp_sock);
-            udp_recvPackets.detach();
-            udp_sendLoad.join();
-            printf("Load simulation finished successfully\n");
 
-            /*
-             * clean up the processes, threads, mallocs,...
-             * udp_sock is closed by timeout in send and recv which results closing the udp_socket
-             */
-            close(*tcp_sock);
-            tcp_freePointer(tcp_sock,tcp_dest);
-            kill(child_pcap, SIGINT); /* ends PcapWriter Process and its threads*/
 
-            //TODO: extract signal strength data from signal strength document
-            //TODO: and terminate module (e.g. "system(sudo rmmod example_module);")
-        }
+        //TODO: extract signal strength data from signal strength document
+        //TODO: and terminate module (e.g. "system(sudo rmmod example_module);")
+
     }
     return 0;
 }

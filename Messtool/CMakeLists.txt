@@ -19,10 +19,9 @@ SET(CMAKE_CXX_FLAGS -pthread)
 add_executable(oldExecutable
         Auswertung/R-Script.R
         Auswertung/Rplot5000PP.svg
-        cmake-build-debug/cmake_install.cmake
+
         cmake-build-debug/CMakeCache.txt
-        cmake-build-debug/Makefile
-        cmake-build-debug/Messtool.cbp
+
         PcapWriter/CMakeLists.txt
         PcapWriter/FindPCAP.cmake
         PcapWriter/main.cpp
@@ -35,10 +34,9 @@ add_executable(Client
         Client/client.cpp
         Client/CMakeLists.txt
         Client/FindPCAP.cmake
-        cmake-build-debug/cmake_install.cmake
+
         cmake-build-debug/CMakeCache.txt
-        cmake-build-debug/Makefile
-        cmake-build-debug/Messtool.cbp
+
         PcapWriter/CMakeLists.txt
         PcapWriter/FindPCAP.cmake
         PcapWriter/PcapWriter.cpp
@@ -48,10 +46,9 @@ add_executable(Client
 add_executable(Server
         Auswertung/R-Script.R
         Auswertung/Rplot5000PP.svg
-        cmake-build-debug/cmake_install.cmake
+
         cmake-build-debug/CMakeCache.txt
-        cmake-build-debug/Makefile
-        cmake-build-debug/Messtool.cbp
+
         PcapWriter/CMakeLists.txt
         PcapWriter/FindPCAP.cmake
         PcapWriter/PcapWriter.cpp
@@ -64,10 +61,8 @@ add_executable(Server
 add_executable(PcapWriter
         Auswertung/R-Script.R
         Auswertung/Rplot5000PP.svg
-        cmake-build-debug/cmake_install.cmake
         cmake-build-debug/CMakeCache.txt
-        cmake-build-debug/Makefile
-        cmake-build-debug/Messtool.cbp
+
         PcapWriter/CMakeLists.txt
         PcapWriter/FindPCAP.cmake
         PcapWriter/PcapWriter.cpp

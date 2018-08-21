@@ -23,4 +23,9 @@
  */
 int udp_generateLoad(int* sock, struct sockaddr_in * dest, char* measurementid, double load, int sec);
 
+int iperf_generateLoadServer(int port, int intervall);
+
+int iperf_generateLoadClient(string ipDest, int port, int bandwidth, char bw_unit);
+
+
 #endif //MESSTOOL_GENERATELOAD_H
