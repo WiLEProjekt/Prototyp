@@ -53,7 +53,7 @@ int udp_generateLoad(int* sock, struct sockaddr_in * dest, char* measurementid, 
 int iperf_generateLoadServer(int port, int intervall)
 {
     string iperf_s = "iperf -p ";
-    iperf_s = iperf_s + to_string(port) + " -s -u  -i " + to_string(intervall) + ">> iperf_server_logg.txt";
+    iperf_s = iperf_s + to_string(port) + " -s -u  -i " + to_string(intervall) + " >> iperf_server_logg.txt";
     printf("Server iperf: %s \n", iperf_s.c_str());
 
     if ( 0 > system(iperf_s.c_str()))

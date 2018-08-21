@@ -5,7 +5,9 @@
 #include "netperfBandwidth.h"
 #include "consts_and_utils/consts_and_utils.h"
 
-int measureThroughputViaUDP_Stream(const char *filename, string netPerf)
+
+
+int measureThroughputViaUDP_Stream(const char *filename, string netPerf, double* upload_bw, double* download_bw)
 {
     std::ifstream infile;
     std::ofstream outfile;
@@ -40,6 +42,8 @@ int measureThroughputViaUDP_Stream(const char *filename, string netPerf)
     {
         throughput_send = substrings[substrings.size() - 3 ];
         throughput_recv =substrings[substrings.size() - 8];
+        *download_bw = atof(throughput_recv.c_str());
+        *upload_bw = atof(throughput_send.c_str());
     } else {
         puts("Extracting throughput failed");
         return -1;

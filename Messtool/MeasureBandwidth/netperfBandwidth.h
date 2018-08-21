@@ -14,6 +14,7 @@
 #include <regex> /* check is value is double */
 #include <cstring>
 #include <string.h>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -25,7 +26,7 @@ using namespace std;
  * @return -1 if some error occured
  */
 
-int measureThroughputViaUDP_Stream(const char *filename, string netperf);
+int measureThroughputViaUDP_Stream(const char *filename, string netperf, int* upload_bw, int* download_bw);
 
 
 #endif //MESSTOOL_MEASUREBANDWIDTH_H

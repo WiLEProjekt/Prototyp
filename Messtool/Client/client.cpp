@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <string>
 #include <cstring>
+#include <algorithm>
 #include <signal.h> // signal child process
 #include <time.h> // sleep function
 
@@ -204,7 +205,58 @@ int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId, string
             return 0;
         }
     }
+}
 
+/**
+ * This function transmits relevant parameter data from client to server via a tcp connection. The data is delimited by '|'.
+ * Example: lte_osna_stadt_16082018_011623|b|10
+ * @param tcp_sock tcp connection socket
+ * @param measurementId unique measurement id
+ * @return -1 if parameter transmission failed
+ */
+int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId)
+{
+    bool trans_sucessfull = false;
+    string params = "|" + measurementId + "|";
+    while (not trans_sucessfull)
+    {
+        char sendmsg[PACKETSIZE];
+        memset(sendmsg,0, sizeof(sendmsg));
+        memcpy(sendmsg,params.c_str(),strlen(params.c_str()));
+        if (0 > send(*tcp_sock , sendmsg , strlen(sendmsg) , 0 ))
+        {
+            return -1;
+        }
+        char recvmsg[PACKETSIZE];
+        memset(recvmsg,0, sizeof(sendmsg));
+        read(*tcp_sock , recvmsg , strlen(recvmsg));
+        if (strcmp(recvmsg, "ack"))
+        {
+            return 0;
+        }
+    }
+}
+
+
+/**
+ * TODO:
+ */
+int tcp_signalServerToCleanUp(int* tcp_sock)
+{
+    bool trans_sucessfull = false;
+    string params = "cleanUp";
+    while (not trans_sucessfull)
+    {
+        char sendmsg[PACKETSIZE];
+        memset(sendmsg,0, sizeof(sendmsg));
+        memcpy(sendmsg,params.c_str(),strlen(params.c_str()));
+        if (0 > send(*tcp_sock , sendmsg , strlen(sendmsg) , 0 ))
+        {
+            printf("errno %i\n", errno);
+            return -1;
+        }
+    }
+    return 0;
 }
 
 /**
@@ -214,19 +266,17 @@ int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId, string
  */
 
 int main(int argc, char **argv) {
-    if(argc < 8){
+    if(argc < 5){
         cout << "Usage: ./Client [TECHNOLOGIE_ORT_REGION] [direction] [Server-IP] [TCP-Port] [UDP-Port] [UDP_timeout] [local_device]" << endl;
         // Example ./Client lte_osna_stadt b 127.0.0.1 8080 8081 20 lo
         return 0;
     }
 
     string measurementid = argv[1]; /* is shared with server via tcp */
-    string direction = argv[2]; // b for bidirectional measurement, u for unidirectional measurement
-    string destIp = argv[3];
-    int tcp__port = atoi(argv[4]);
-    int udp__port = atoi(argv[5]);
-    int udp_socket_timeout = atoi(argv[6]); /* is shared with server via udp */
-    char* local_dev =argv[7]; /* only on client computer valid */
+    string destIp = argv[2];
+    int tcp__port = atoi(argv[3]);
+    int udp__port = atoi(argv[4]);
+    char* local_dev =argv[5]; /* only on client computer valid */
 
     /* append current system date and time to generate unique measurement id */
     time_t rawtime;
@@ -240,23 +290,11 @@ int main(int argc, char **argv) {
     printf("********************************************************************\n");
     printf("*****************************Parameters*****************************\n");
     printf("Measurement id: %s\n", measurementid.c_str());
-    printf("Echo packets: %s\n", direction.c_str() );
     printf("Destination ip: %s\n", destIp.c_str() );
     printf("TCP port: %i\n", tcp__port );
     printf("UDP port: %i\n", udp__port );
-    printf("UDP socket timeout: %i\n", udp_socket_timeout);
     printf("Local device: %s\n", local_dev);
     printf("*********************************************************************\n");
-
-    double dummyload = 8;           //TODO: give this variable more sense
-    int simulateLoadSeconds = 10;   //TODO: give this variable more sense
-
-    // start netperf-server on Server for BW measurement
-    if (0 > netPerf_startOnServer())
-    {
-        perror("measure bandwidth: failed \n");
-        return -1;
-    };
 
     /* create tcp connection to send some measurement parameters to server*/
     int *tcp_sock =(int*) malloc(sizeof(int) * 1);
@@ -268,7 +306,7 @@ int main(int argc, char **argv) {
         return -1;
     }
     printf("TCP Connection established successfully\n");
-    if (0 > tcp_sendParametersForMeasurement(tcp_sock, measurementid, direction, udp_socket_timeout))
+    if (0 > tcp_sendParametersForMeasurement(tcp_sock, measurementid))
     {
         printf("tcp_sendParametersForMeasurement - error: %s\n", strerror(errno));
         tcp_freePointer(tcp_sock,tcp_dest);
@@ -293,8 +331,10 @@ int main(int argc, char **argv) {
     /* measure bandwidth with saturated load*/
     string bw_file = dirpath;
     bw_file = bw_file + "/" + measurementid + "_throughput.txt";
-    string netperf_params = "netperf -H 127.0.0.1 -t UDP_STREAM -- -R 1 >> netperf_bandwidth_logger.txt"; //TODO: Does this parameter make sense?
-    if (0 > measureThroughputViaUDP_Stream(bw_file.c_str(), netperf_params))
+    string netperf_params = "netperf -H ";
+    netperf_params = netperf_params + destIp + " -t UDP_STREAM -- -R 1 >> netperf_bandwidth_logger.txt";
+    double download_bw = 0.0, upload_bw = 0.0;
+    if (0 > measureThroughputViaUDP_Stream(bw_file.c_str(), netperf_params, &download_bw,&upload_bw ))
     {
         perror("measureThroughputViaUDP_Stream - error: failure at measuring bandwidth\n");
         return -1;
@@ -313,10 +353,16 @@ int main(int argc, char **argv) {
         writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, thos will be closed by SIGINT */
     } else {
 
-        sleep(5); // TODO: hopefully child starts living before then (is almost always the case)
+        /* child does not have to listen what the tcp_socket has to say ;) */
+        tcp_freePointer(tcp_sock, tcp_dest);
         printf("child_pcap pid: %i\n", child_pcap);
+        printf("client_parent pid: %i\n", getpid());
 
-        iperf_generateLoadClient(destIp,udp__port,1,'m');
+        int d = (fmin(download_bw,upload_bw) / 2);
+        if ( 0 > iperf_generateLoadClient(destIp,udp__port,d,'m')) // m stands for mega bit per sec
+        {
+            return -1;
+        }
 
         /*
          * clean up the processes, threads, mallocs,...
@@ -325,12 +371,7 @@ int main(int argc, char **argv) {
         close(*tcp_sock);
         tcp_freePointer(tcp_sock,tcp_dest);
         kill(child_pcap, SIGINT); /* ends PcapWriter Process and its threads*/
-
-
-
-        //TODO: extract signal strength data from signal strength document
-        //TODO: and terminate module (e.g. "system(sudo rmmod example_module);")
-
+        printf("Measurment ended successfully\n");
     }
     return 0;
 }
