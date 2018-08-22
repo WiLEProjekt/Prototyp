@@ -1,7 +1,7 @@
 #include "server.h"
 #include "generateLoad/generateLoad.h"
 #include "consts_and_utils/consts_and_utils.h"
-
+#include "generateLoad/generateLoad.h"
 
 #include <unistd.h>
 #include <iostream>
@@ -14,86 +14,12 @@
 #include <fstream>
 #include <cstring>
 #include <wait.h>
-
-using namespace std;
-
 #include <sstream>
 #include <iterator>
 #include <regex>
 
-#include "generateLoad/generateLoad.h"
+using namespace std;
 
-
-/**
- * Setup the udp socket and save setup data into the pointers sock and dest.
- * @param sock stores the udp-socket
- * @param port the destination port as integer
- * @param timeoutServer the timeout of the socket (in seconds)
- * @return if some error occure a -1 is returned
- */
-int udp_setupConnection(int *sock, int port, int timeoutServer) {
-    //Open Socket
-    *sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (*sock < 0) {
-        printf("udp_setupConnection - Errno: %i\n", errno);
-        return -1;
-    }
-    //set sockopt
-    struct timeval timeout;
-    timeout.tv_sec = timeoutServer;
-    timeout.tv_usec = 0;
-    if (0 > setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))) {
-        if (11 == errno) {
-            return 0;
-        } else {
-            printf("udp_setupConnection - Errno: %i\n", errno);
-            return -1;
-        }
-    }
-    //Own Address
-    struct sockaddr_in own_addr;
-    own_addr.sin_family = AF_INET;
-    own_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    own_addr.sin_port = htons(port);
-    //Bind own address to socket
-    if (0 > bind(*sock, (struct sockaddr *) &own_addr, sizeof(struct sockaddr_in))) {
-        printf("udp_setupConnection - Errno: %i\n", errno);
-        return -1;
-    }
-    return 0;
-}
-
-/**
- * A function receives packets via udp and echo it back the sender.
- * @param udp_sock the udp_socket
- * @return
- */
-
-int udp_recvAndEcho(int *udp_sock) {
-    struct sockaddr_in addr;
-    socklen_t slen = (socklen_t) sizeof(addr);
-    char buf[PACKETSIZE];
-
-    //keep listening for data
-    while (1) {
-        if (0 > recvfrom(*udp_sock, buf, (size_t) (sizeof(buf)), 0, (sockaddr *) &addr, (__socklen_t *) &slen)) {
-            if (11 == errno) {
-                return 0;
-            } else {
-                printf("udp_recvAndEcho - Errno: %i\n", errno);
-                return -1;
-            }
-        }
-        if (sendto(*udp_sock, buf, PACKETSIZE, 0, (struct sockaddr *) &addr, slen) == -1) {
-            if (11 == errno) {
-                return 0;
-            } else {
-                printf("udp_recvAndEcho - Errno: %i\n", errno);
-                return -1;
-            }
-        }
-    }
-}
 
 /**
  * Creates a tco connection for a specific port and stores data in tcp_sock
@@ -145,15 +71,6 @@ int tcp_initializeConnectionServer(int *tcp_sock, int port) {
 }
 
 /**
- * Free udp socket without close without closing socket before.
- * @param udp_sock the udp socket
- */
-
-void udp_closeConnection(int *udp_sock) {
-    free(udp_sock);
-}
-
-/**
  * Free the tcp socket without closing socket before.
  * @param tcp_sock the tcp socket
  */
@@ -168,27 +85,27 @@ void tcp_closeConnection(int *tcp_sock) {
  * @param tcp_sock the tcp socket
  */
 
-void kill_childs_end_tcp(pid_t child_pid, pid_t child_iperf, int *tcp_sock) {
+void kill_childs_end_tcp(pid_t child_pid, int *tcp_sock) {
     close(*tcp_sock);
     free(tcp_sock);
     kill(child_pid, SIGINT); /* ends PcapWriter Process and its threads*/
-    char* pkill= "sudo pkill iperf";  /* ends iperf Process and its threads*/
-    system(pkill);
+    string pkill= "sudo pkill iperf";  /* ends iperf Process*/
+    system(pkill.c_str());
 }
 
 /**
  * Receive some measurement parameters via tcp. PArameters are checked and then saved into check_params. Return
  * -1 if parameters are invalid or some other error occured.
  * @param tcp_sock the tcp socket
- * @param checked_params a vector for the parameter 'timeout', 'direction' and 'measurment id'
+ * @param checked_params a vector for the parameters
  * @return -1 if parameters are invalid or soem other error occured
  */
 
 int tcp_recvMeasurementParameters(int *tcp_sock, vector<string> *checked_params) {
     /*
-     * Expected Parameter: |[measurementId]|[direction]|[timeout]|
+     * Parameter: |[measurementId]|
      * Delimiter is '|'
-     * Example: |lte_osna_stadt_17082018_114759|b|12|
+     * Example: |lte_osna_stadt_17082018_114759|
      */
 
     bool params_ok = false;
@@ -211,11 +128,7 @@ int tcp_recvMeasurementParameters(int *tcp_sock, vector<string> *checked_params)
         //}
 
         //TODO: check measurementId (must be in format [TECH_TOWN_AREA_DATE_TIME]
-        //TODO: check direction (must be 'b' or 'u'
-        //TODO: check Timeout (must be int number)
-
         params_ok = true;
-
 
         if (params_ok) {
             for (int i = 0; i < recv_params.size(); i++)
@@ -241,25 +154,24 @@ int tcp_recvMeasurementParameters(int *tcp_sock, vector<string> *checked_params)
     }
 }
 
+/**
+ * Signal a server registered on a tcp socket to close connection and end or free its processes, threads and mallocs gracefully.
+ * @param tcp_sock the tcp connection
+ * @return -1 if some error occured, else 0
+ */
+
 int tcp_recvSignalServerToCleanUp(int *tcp_sock) {
     bool params_ok = false;
     char recvmsg[PACKETSIZE];
     vector<string> recv_params;
-    while (not params_ok) {
-
-        memset(recvmsg, 0, sizeof(recvmsg));
-        if (0 > read(*tcp_sock, recvmsg, sizeof(recvmsg))) // this is a blocking call
-        {
-            printf("tcp_recvSignalServerToCleanUp - error: %i\n", errno);
-            tcp_closeConnection(tcp_sock);
-            return -1;
-        }
-
-        if (strcmp(recvmsg, "cleanUp")) {
-            printf("clean up call recv\n");
-        }
-
+    memset(recvmsg, 0, sizeof(recvmsg));
+    if (0 > read(*tcp_sock, recvmsg, sizeof(recvmsg))) // this is a blocking call
+    {
+        printf("tcp_recvSignalServerToCleanUp - error: %i\n", errno);
+        tcp_closeConnection(tcp_sock);
+        return -1;
     }
+    return 0;
 }
 
 
@@ -314,8 +226,7 @@ int main(int argc, char **argv) {
         string pcapfile = dirpath;
         pcapfile = pcapfile + "/" + measurementid + ".pcap";
         PcapWriter *writer = new PcapWriter();
-        writer->start(local_dev,
-                      stringToChar(pcapfile)); /* some threads are started here, the will be closed by SIGINT */
+        writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, the will be closed by SIGINT */
     } else {
 
         pid_t child_iperf = fork();
@@ -323,22 +234,24 @@ int main(int argc, char **argv) {
             /* child does not have to listen what the tcp_socket has to say ;) */
             tcp_closeConnection(tcp_sock);
 
+            /* start server to receive load */
             iperf_generateLoadServer(udp_port, 1); //TODO: brauchen wir intervall 1?
+            printf("Started iperf server to get ready for measurement\n");
         } else {
-            printf("Child iperf: %i\n", child_iperf);
-            printf("Child pcap: %i\n", child_pcap);
-            sleep(30); //TODO: sleeptime netperf + iperf measurment time
+
+            if (0 > tcp_recvSignalServerToCleanUp(tcp_sock))
+            {
+                return -1;
+            }
+            printf("Recevied signal to close connections and clean up\n");
 
             /*
            * clean up the processes, threads, mallocs,...
            * udp_sock is closed by timeout in send and recv which results closing the udp_socket
            */
-            kill_childs_end_tcp(child_pcap, child_iperf, tcp_sock);
-
-            printf("Measurment ended successfully\n");
+            kill_childs_end_tcp(child_pcap, tcp_sock);
+            printf("Measurment completed successfully\n");
         }
-
-
     }
 
     return 0;

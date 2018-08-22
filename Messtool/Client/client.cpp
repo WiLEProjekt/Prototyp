@@ -17,77 +17,9 @@
 
 using namespace std;
 
-/**
- * start via ssh netperf-server on server for bandwidth measurement
- */
-int netPerf_startOnServer()
-{
-    //TODO: setup correct ssh-befehl
-    /*
-     * the username & pw might be problematic, because of no public key on server (probably).
-     * Might be becessary to start netperf-server by hand
-     */
-    //sth like: int err = system("ssh {user}@{host}");
-    return 0;
-}
 
-/**
- * free used udp pointer (socket will NOT be closed before freeing).
- * @param sock the udp-socket
- * @param dest the destination address (prob.ly some server)
- */
 
-void udp_freePointer(int* sock, struct sockaddr_in * dest)
-{
-    free(sock);
-    free(dest);
-}
 
-/**
- * Setup the udp socket and save setup data into the pointers sock and dest.
- * @param udp_sock stores the udp-socket
- * @param udp_dest stores the address of the destination
- * @param destIp the destination ip as string
- * @param port the destination port as integer
- * @return if some error occure a -1 is returnd
- */
-int udp_setupConnection(int * udp_sock, struct sockaddr_in * udp_dest, string destIp, int port, int udp_socket_timeout)
-{
-    *udp_sock = socket(AF_INET, SOCK_DGRAM, 0); //IPv4, UDP, standard Protocoll Field in IP Header
-    if (*udp_sock < 0) {
-        printf("Error while opening the udp socket\n");
-        udp_freePointer(udp_sock, udp_dest);
-        return -1;
-    }
-
-    //set sockopt
-    struct timeval timeout;
-    timeout.tv_sec = udp_socket_timeout;
-    timeout.tv_usec = 0;
-    if (0 > setsockopt(*udp_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout)))
-    {
-        udp_freePointer(udp_sock, udp_dest);
-        return -1;
-    }
-    if (0 > setsockopt(*udp_sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout)))
-    {
-        udp_freePointer(udp_sock, udp_dest);
-        return -1;
-    }
-
-    //Destination Address
-    (*udp_dest).sin_family = AF_INET;
-    (*udp_dest).sin_port = htons(port);
-    (*udp_dest).sin_addr.s_addr = inet_addr(destIp.c_str());
-    if((*udp_dest).sin_addr.s_addr < 0)
-    {
-        perror("Invalid address/ Address not supported\n");
-        udp_freePointer(udp_sock,udp_dest);
-        return -1;
-    }
-
-    return 0;
-}
 
 
 
@@ -143,37 +75,7 @@ int tcp_initializeConnectionClient(int* tcp_sock, struct sockaddr_in *tcp_destad
     return 0;
 }
 
-/**
- * Listen for data at a specific udp_socket until the socket-timeout cancels connection and free resources.
- * @param udp_sock the udp-socket
- * @return 0, if udp_sock is closed by timeout, else -1
- */
 
-int udp_listen4data(int* udp_sock)
-{
-    struct sockaddr_in *clientAddr;
-    socklen_t slen = (socklen_t) sizeof(clientAddr);
-    char buf[1440]; // TODO set packetsize
-
-    while(1)
-    {
-        if (0 > recvfrom(*udp_sock, buf, (size_t) (sizeof(buf)), 0, (sockaddr *) clientAddr, (__socklen_t *) &slen))
-        {
-            if (11 == errno) // timeout error
-            {
-                return 0;
-            } else {
-                printf("Errno %i\n", errno);
-                printf("Some error at receiving dataa\n");
-                fflush(stdout);
-                return -1;
-            }
-
-        }
-        //printf("Data: %s\n" , buf);
-        //fflush(stdout);
-    }
-}
 
 /**
  * This function transmits relevant parameter data from client to server via a tcp connection. The data is delimited by '|'.
@@ -239,31 +141,24 @@ int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId)
 
 
 /**
- * TODO:
+ * Signal server to end connection and clean up processes, threads and malloc gracefully.
+ * @param tcp_sock the tcp connection
+ * @return -1 if some error occures, else 0
  */
 int tcp_signalServerToCleanUp(int* tcp_sock)
 {
-    bool trans_sucessfull = false;
     string params = "cleanUp";
-    while (not trans_sucessfull)
+    char sendmsg[PACKETSIZE];
+    memset(sendmsg,0, sizeof(sendmsg));
+    memcpy(sendmsg,params.c_str(),strlen(params.c_str()));
+    if (0 > send(*tcp_sock , sendmsg , strlen(sendmsg) , 0 ))
     {
-        char sendmsg[PACKETSIZE];
-        memset(sendmsg,0, sizeof(sendmsg));
-        memcpy(sendmsg,params.c_str(),strlen(params.c_str()));
-        if (0 > send(*tcp_sock , sendmsg , strlen(sendmsg) , 0 ))
-        {
-            printf("errno %i\n", errno);
-            return -1;
-        }
+        printf("errno %i\n", errno);
+        return -1;
     }
     return 0;
 }
 
-/**
- * Annotation to parameters:
- * The standard netperf performance call lasts 10 seconds, so the timeout parameter should be higher than 10, so the server does not
- * close the udp_port before it is created for the generation of the .pcap file.
- */
 
 int main(int argc, char **argv) {
     if(argc < 5){
@@ -271,6 +166,7 @@ int main(int argc, char **argv) {
         // Example ./Client lte_osna_stadt b 127.0.0.1 8080 8081 20 lo
         return 0;
     }
+    // TODO: read parameters via -p annotation
 
     string measurementid = argv[1]; /* is shared with server via tcp */
     string destIp = argv[2];
@@ -353,16 +249,23 @@ int main(int argc, char **argv) {
         writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, thos will be closed by SIGINT */
     } else {
 
-        /* child does not have to listen what the tcp_socket has to say ;) */
-        tcp_freePointer(tcp_sock, tcp_dest);
-        printf("child_pcap pid: %i\n", child_pcap);
-        printf("client_parent pid: %i\n", getpid());
-
+        /* load generation via iperf */
+        printf("Start generation of load via iperf\n");
         int d = (fmin(download_bw,upload_bw) / 2);
-        if ( 0 > iperf_generateLoadClient(destIp,udp__port,d,'m')) // m stands for mega bit per sec
+        if ( 0 > iperf_generateLoadClient(destIp,udp__port,d,'m')) // m stands for mega bit per sec, this is a blocking call
         {
+            perror("iperf_generateLoadClient - error: failure at generating load\n");
             return -1;
         }
+        printf("Generation of load via iperf ended successfully\n");
+
+        /* signal server to close connection via tcp */
+        if (0 > tcp_signalServerToCleanUp(tcp_sock)) // this is a blocking call
+        {
+            perror("tcp_signalServerToCleanUp - error: failure at cleaning up\n");
+            return -1;
+        }
+        printf("Signal server to close connection ended successfully\n");
 
         /*
          * clean up the processes, threads, mallocs,...
@@ -371,7 +274,7 @@ int main(int argc, char **argv) {
         close(*tcp_sock);
         tcp_freePointer(tcp_sock,tcp_dest);
         kill(child_pcap, SIGINT); /* ends PcapWriter Process and its threads*/
-        printf("Measurment ended successfully\n");
+        printf("Measurment completed successfully\n");
     }
     return 0;
 }
