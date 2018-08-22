@@ -173,6 +173,7 @@ int tcp_recvSignalServerToCleanUp(int *tcp_sock) {
         tcp_closeConnection(tcp_sock);
         return -1;
     }
+    printf("recv Msg: %s\n", recvmsg);
     return 0;
 }
 
@@ -249,8 +250,6 @@ int main(int argc, char **argv) {
         {
             sleep(1);
         }
-        shmdt(mt_ptr); // detach pointer from shm
-        shmctl(shmid,IPC_RMID, NULL); // release shm
 
         /* because iperf_generateLoadServer is a blocking call a child process is created */
         pid_t child_iperf = fork();
@@ -259,9 +258,17 @@ int main(int argc, char **argv) {
             tcp_closeConnection(tcp_sock);
 
             /* start server to receive load */
+            (*mt_ptr).unlock();
             iperf_generateLoadServer(udp_port, 1); //TODO: brauchen wir intervall 1?
-            printf("Started iperf server to get ready for measurement\n");
         } else {
+
+            /* wait until child unlocks the mutex in the shm */
+            while (!(*mt_ptr).try_lock())
+            {
+                sleep(1);
+            }
+            shmdt(mt_ptr); // detach pointer from shm
+            shmctl(shmid,IPC_RMID, NULL); // release shm
 
             if (0 > tcp_recvSignalServerToCleanUp(tcp_sock)) // this is ablocking call
             {
