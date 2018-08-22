@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <signal.h> // signal child process
 #include <time.h> // sleep function
+#include <mutex>
+#include <sys/shm.h>
 
 
 using namespace std;
@@ -237,6 +239,17 @@ int main(int argc, char **argv) {
     }
     printf("Measuring throughput successfully (%s)\n", bw_file.c_str());
 
+    /* PcapWriter has to be started before parent and has to be forecefully terminated via SIGINT.
+     * So a shared memory contains a mutex which assures that parent will start after child_pcap started.
+     */
+
+    key_t key = ftok("shm_pcap_parent_racing_conditions", 84);
+    int shmid = shmget(key, sizeof(mutex), IPC_CREAT);
+    mutex *mt_ptr = (mutex *) shmat(shmid,0,0);
+    mutex mtx;
+    memcpy(mt_ptr, &mtx,sizeof(mtx));
+    (*mt_ptr).lock(); // lock mutex for child and parent
+
     pid_t child_pcap = fork();
     if (child_pcap == 0)
     {
@@ -246,8 +259,17 @@ int main(int argc, char **argv) {
         string pcapfile = dirpath;
         pcapfile = pcapfile + "/" + measurementid + ".pcap";
         PcapWriter *writer = new PcapWriter();
+        (*mt_ptr).unlock(); // child has started already
         writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, thos will be closed by SIGINT */
     } else {
+
+        /* wait until child unlocks the mutex in the shm */
+        while (!(*mt_ptr).try_lock())
+        {
+            sleep(1);
+        }
+        shmdt(mt_ptr); // detach pointer from shm
+        shmctl(shmid,IPC_RMID, NULL); // release shm
 
         /* load generation via iperf */
         printf("Start generation of load via iperf\n");

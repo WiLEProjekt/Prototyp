@@ -78,10 +78,11 @@ void secondThread(){
 
 void PcapWriter::start(char *dev, char* outputFilename) {
     printf("PcapWriter started successfully\n");
-    thread pcapThread(writePcap, dev, outputFilename);
-    thread secondThreadThread(secondThread);
-    secondThreadThread.join();
-    pcapThread.join();
+    writePcap(dev, outputFilename);
+    //thread pcapThread(writePcap, dev, outputFilename);
+    //thread secondThreadThread(secondThread);
+    //secondThreadThread.join();
+    //pcapThread.join();
     //this->writePcap(dev, outputFilename);
 }
 

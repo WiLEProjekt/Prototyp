@@ -19,8 +19,8 @@
 using namespace std;
 
 #define PACKETSIZE 1440 // TODO: What value makes sense?
-#define CLIENT_LOCATION "/home/lebrueggeman/Measurements/Client"
-#define SERVER_LOCATION "/home/lebrueggeman/Measurements/Server"
+#define CLIENT_LOCATION "/home/Measurements/Client"
+#define SERVER_LOCATION "/home/Measurements/Server"
 
 /**
  * Create a directory at a specific path 'dirpath'.

@@ -17,6 +17,8 @@
 #include <sstream>
 #include <iterator>
 #include <regex>
+#include <mutex>
+#include <sys/shm.h>
 
 using namespace std;
 
@@ -218,6 +220,18 @@ int main(int argc, char **argv) {
     }
     printf("Creation of measurement directory successfull (%s)\n", dirpath.c_str());
 
+    /* PcapWriter has to be started before parent and has to be forecefully terminated via SIGINT.
+     * So a shared memory contains a mutex which assures that parent will start after child_pcap started.
+     */
+
+    key_t key = ftok("shm_pcap_parent_racing_conditions", 84);
+    int shmid = shmget(key, sizeof(mutex), IPC_CREAT);
+    mutex *mt_ptr = (mutex *) shmat(shmid,0,0);
+    mutex mtx;
+    memcpy(mt_ptr, &mtx,sizeof(mtx));
+    (*mt_ptr).lock(); // lock mutex for child and parent
+
+
     pid_t child_pcap = fork();
     if (child_pcap == 0) {
         /* child does not have to listen what the tcp_socket has to say ;) */
@@ -226,9 +240,19 @@ int main(int argc, char **argv) {
         string pcapfile = dirpath;
         pcapfile = pcapfile + "/" + measurementid + ".pcap";
         PcapWriter *writer = new PcapWriter();
+        (*mt_ptr).unlock(); // child has started already
         writer->start(local_dev, stringToChar(pcapfile)); /* some threads are started here, the will be closed by SIGINT */
     } else {
 
+        /* wait until child unlocks the mutex in the shm */
+        while (!(*mt_ptr).try_lock())
+        {
+            sleep(1);
+        }
+        shmdt(mt_ptr); // detach pointer from shm
+        shmctl(shmid,IPC_RMID, NULL); // release shm
+
+        /* because iperf_generateLoadServer is a blocking call a child process is created */
         pid_t child_iperf = fork();
         if (child_iperf == 0) {
             /* child does not have to listen what the tcp_socket has to say ;) */
@@ -239,7 +263,7 @@ int main(int argc, char **argv) {
             printf("Started iperf server to get ready for measurement\n");
         } else {
 
-            if (0 > tcp_recvSignalServerToCleanUp(tcp_sock))
+            if (0 > tcp_recvSignalServerToCleanUp(tcp_sock)) // this is ablocking call
             {
                 return -1;
             }
