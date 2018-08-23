@@ -16,6 +16,9 @@ sudo apt install valgrind
 sudo apt-get install wireshark
 sudo apt-get install git-core
 
+# synchronization
+sudo apt install ptpd
+
 # create folders
 sudo mkdir /home/Measurements
 sudo chmod +x /home/Measurements/
