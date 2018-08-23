@@ -26,7 +26,7 @@ using namespace std;
  * @return -1 if some error occured
  */
 
-int measureThroughputViaUDP_Stream(const char *filename, string netperf, int* upload_bw, int* download_bw);
+int measureThroughputViaUDP_Stream(const char *filename, string netperf, double* upload_bw, double* download_bw);
 
 
 #endif //MESSTOOL_MEASUREBANDWIDTH_H

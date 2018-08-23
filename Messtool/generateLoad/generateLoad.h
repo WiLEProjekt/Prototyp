@@ -5,7 +5,7 @@
 #ifndef MESSTOOL_GENERATELOAD_H
 #define MESSTOOL_GENERATELOAD_H
 
-#include "consts_and_utils/consts_and_utils.h" /* for packetsize constant*/
+#include "../consts_and_utils/consts_and_utils.h" /* for packetsize constant*/
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <time.h> // sleep functions

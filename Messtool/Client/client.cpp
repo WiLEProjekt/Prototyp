@@ -1,7 +1,7 @@
-#include "MeasureBandwidth/netperfBandwidth.cpp"
-#include "generateLoad/generateLoad.h"
-#include "consts_and_utils/consts_and_utils.h"
-#include "PcapWriter/PcapWriter.h"
+#include "../MeasureBandwidth/netperfBandwidth.h"
+#include "../generateLoad/generateLoad.h"
+#include "../consts_and_utils/consts_and_utils.h"
+#include "../PcapWriter/PcapWriter.h"
 
 #include <iostream>
 #include <sys/socket.h>
@@ -18,12 +18,6 @@
 
 
 using namespace std;
-
-
-
-
-
-
 
 /**
  * Free used tcp pointer (socket will NOT be closed before).
@@ -232,7 +226,7 @@ int main(int argc, char **argv) {
     string netperf_params = "netperf -H ";
     netperf_params = netperf_params + destIp + " -t UDP_STREAM -- -R 1 >> netperf_bandwidth_logger.txt";
     double download_bw = 0.0, upload_bw = 0.0;
-    if (0 > measureThroughputViaUDP_Stream(bw_file.c_str(), netperf_params, &download_bw,&upload_bw ))
+    if (0 > measureThroughputViaUDP_Stream(bw_file.c_str(), netperf_params, &upload_bw, &download_bw))
     {
         perror("measureThroughputViaUDP_Stream - error: failure at measuring bandwidth\n");
         return -1;
