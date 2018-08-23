@@ -18,7 +18,7 @@
 
 using namespace std;
 
-#define PACKETSIZE 1440 // TODO: What value makes sense?
+#define PACKETSIZE 1440 //Brauchen wir nicht mehr!!!
 #define CLIENT_LOCATION "/home/Measurements/Client"
 #define SERVER_LOCATION "/home/Measurements/Server"
 
