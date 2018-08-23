@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/drieke/Dokumente/Neuester/Prototyp/Messtool/PcapReader/main.cpp
+iostream
+-
+pcap.h
+-
+sys/stat.h
+-
+cmath
+-
+vector
+-
+map
+-
+
