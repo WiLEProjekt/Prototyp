@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(Messtool)
+project(Messtool_Client)
 set(CMAKE_CXX_STANDARD 14)
 include(FindPCAP.cmake)
 include_directories(../consts_and_utils)

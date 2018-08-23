@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
-project(Messtool)
+project(Messtool_Server)
+set(CMAKE_CXX_STANDARD 14)
+include(FindPCAP.cmake)
+include_directories(../consts_and_utils)
+include_directories(../generateLoad)
+include_directories(../MeasureBandwidth)
+include_directories(../PcapWriter)
+find_package(Threads)
+set(CMAKE_CXX_FLAGS -pthread)
 
-set(CMAKE_CXX_STANDARD 11)
-
-add_executable(Server server.cpp)
+set(SOURCE_FILES server.cpp ../consts_and_utils/consts_and_utils.cpp ../consts_and_utils/consts_and_utils.h ../generateLoad/generateLoad.cpp ../generateLoad/generateLoad.h ../MeasureBandwidth/netperfBandwidth.cpp ../MeasureBandwidth/netperfBandwidth.h ../PcapWriter/PcapWriter.cpp ../PcapWriter/PcapWriter.h)
+add_executable(Server ${SOURCE_FILES})
+target_link_libraries(Server ${PCAP_LIBRARY})
