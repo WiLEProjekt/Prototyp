@@ -158,8 +158,8 @@ int tcp_signalServerToCleanUp(int* tcp_sock)
 
 int main(int argc, char **argv) {
     if(argc < 5){
-        cout << "Usage: ./Client [TECHNOLOGIE_ORT_REGION] [direction] [Server-IP] [TCP-Port] [UDP-Port] [UDP_timeout] [local_device]" << endl;
-        // Example ./Client lte_osna_stadt b 127.0.0.1 8080 8081 20 lo
+        cout << "Usage: ./Client [TECHNOLOGIE_ORT_REGION] [Server-IP] [TCP-Port] [UDP-Port] [local_device]" << endl;
+        // Example ./Client lte_osna_stadt 127.0.0.1 8080 8081 lo
         return 0;
     }
     // TODO: read parameters via -p annotation
