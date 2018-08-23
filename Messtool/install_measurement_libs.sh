@@ -19,6 +19,9 @@ sudo apt-get install git-core
 # synchronization
 sudo apt install ptpd
 
+# boost parameter
+sudo apt-get install libboost-all-dev
+
 # create folders
 sudo mkdir /home/Measurements
 sudo chmod +x /home/Measurements/
