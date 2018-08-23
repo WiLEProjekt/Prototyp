@@ -188,8 +188,6 @@ int main(int argc, char **argv) {
     }
     char* local_dev = new char[device.length() + 1]; /* only on client computer valid */
     strcpy(local_dev, device.c_str());
-    //delete[] local_dev;
-    cout << measurementid << destIp << tcp__port << udp__port << local_dev << endl;
 
     // TODO: read parameters via -p annotation
 
