@@ -130,7 +130,18 @@ vector<bool> getLoss(vector<unsigned int> seqNums, unsigned int lastSeqNum) {
     return trace;
 }
 
-struct results readPcapFile(const string &filename, const string &sourceIp, const string &destIp) {
+void printPacket(struct pcap_pkthdr *header, const u_char *data) {
+    for (u_int i = 0; (i < header->caplen); i++) {
+        // Start printing on the next after every 16 octets
+        if ((i % 16) == 0) printf("\n");
+
+        // Print each octet as hex (x), make sure there is always two characters (.2).
+        printf("%.2x ", data[i]);
+    }
+}
+
+struct results
+readPcapFile(const string &clientPcapFile, const string &serverPcapFile, const string &sourceIp, const string &destIp) {
     map<unsigned int, struct timeval> requestTimestamps;
     map<unsigned int, struct timeval> responseTimestamps;
     vector<unsigned int> seqNums;
@@ -142,12 +153,12 @@ struct results readPcapFile(const string &filename, const string &sourceIp, cons
 
     char *dev = pcap_lookupdev(errbuf);
     struct stat buffer{};
-    if (stat(filename.c_str(), &buffer) != 0) {
-        cout << "file " << filename << " not found" << endl;
+    if (stat(clientPcapFile.c_str(), &buffer) != 0) {
+        cout << "file " << clientPcapFile << " not found" << endl;
     } else {
         pcap_lookupnet(dev, &net, &mask, errbuf);
-        pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuf);
-        string filter = "udp && ip.dest == " + destIp + " && ip.src == " + sourceIp;
+        pcap_t *pcap = pcap_open_offline(clientPcapFile.c_str(), errbuf);
+        string filter = "udp and dst host " + destIp + " and src host " + sourceIp;
         pcap_compile(pcap, &fp, filter.c_str(), 0, net);
         pcap_setfilter(pcap, &fp);
         struct pcap_pkthdr *header;
@@ -158,42 +169,32 @@ struct results readPcapFile(const string &filename, const string &sourceIp, cons
                 printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
             }
 
-            unsigned char sourceIPBytes[] = {data[26], data[27], data[28], data[29]};
-            unsigned char destIPBytes[] = {data[30], data[31], data[32], data[33]};
-            string packetSource = parseIP(sourceIPBytes);
-            string packetDest = parseIP(destIPBytes);
-
-            //check if packet is ip (12 = 8, 13 = 0)
-            //if (data[12] == 8 && data[13] == 0) {
-            //check if packet is UDP (17)
-            //if (data[24] == 17) {
-            for (u_int i = 0; (i < header->caplen); i++) {
-                // Start printing on the next after every 16 octets
-                if ((i % 16) == 0) printf("\n");
-
-                // Print each octet as hex (x), make sure there is always two characters (.2).
-                printf("%.2x ", data[i]);
-            }
+            //printPacket(header, data);
 
             unsigned int seqNumber = getSeqNum(data);
             lastSeqNum = seqNumber;
-            unsigned char sourcePortBytes[] = {data[34], data[35]};
-            unsigned char destPortBytes[] = {data[36], data[37]};
-            int sourcePort = parseNumberFromBytes(sourcePortBytes, 2);
-            int destPort = parseNumberFromBytes(destPortBytes, 2);
-            if (sourceIp == packetSource && destIp == packetDest) {
-                if (destPort == 8081) {
-                    requestTimestamps[seqNumber] = header->ts;
-                }
-            } else if (sourceIp == packetDest && destIp == packetSource) {
-                if (sourcePort == 8081) {
-                    responseTimestamps[seqNumber] = header->ts;
-                    seqNums.push_back(seqNumber);
-                }
-            }
+            requestTimestamps[seqNumber] = header->ts;
+            seqNums.push_back(seqNumber);
         }
-        //  }
-        //}
+
+        pcap = pcap_open_offline(serverPcapFile.c_str(), errbuf);
+        filter = "udp and src host " + sourceIp + " and dst host " + destIp;
+        pcap_compile(pcap, &fp, filter.c_str(), 0, net);
+        pcap_setfilter(pcap, &fp);
+
+        while (pcap_next_ex(pcap, &header, &data) >= 0) {
+            if (header->len != header->caplen) {
+                printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
+            }
+
+            //printPacket(header, data);
+
+            unsigned int seqNumber = getSeqNum(data);
+            lastSeqNum = seqNumber;
+            responseTimestamps[seqNumber] = header->ts;
+            seqNums.push_back(seqNumber);
+        }
+
         pcap_close(pcap);
 
         vector<struct timeval> delays = getDelays(requestTimestamps, responseTimestamps);
@@ -212,13 +213,14 @@ struct results readPcapFile(const string &filename, const string &sourceIp, cons
 
 int main(int argc, char **argv) {
     if (argc < 4) {
-        cout << "PcapReader [filename] [sourceIp] [destIp]";
+        cout << "PcapReader [client.pcap] [server.pcap] [sourceIp] [destIp]";
         return -1;
     }
-    string filename = argv[1];
-    string sourceIp = argv[2];
-    string destIp = argv[3];
-    struct results result = readPcapFile(filename, sourceIp, destIp);
+    string clientPcapFile = argv[1];
+    string serverPcapFile = argv[2];
+    string sourceIp = argv[3];
+    string destIp = argv[4];
+    struct results result = readPcapFile(clientPcapFile, serverPcapFile, sourceIp, destIp);
 
     cout << "Delay:" << endl;
     for (struct timeval delay : result.delays) {
