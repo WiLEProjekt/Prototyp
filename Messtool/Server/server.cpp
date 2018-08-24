@@ -19,9 +19,10 @@
 #include <regex>
 #include <mutex>
 #include <sys/shm.h>
+#include <boost/program_options.hpp>
 
 using namespace std;
-
+using namespace boost::program_options;
 
 /**
  * Creates a tco connection for a specific port and stores data in tcp_sock
@@ -179,15 +180,31 @@ int tcp_recvSignalServerToCleanUp(int *tcp_sock) {
 
 
 int main(int argc, char **argv) {
-    if (argc < 4) {
-        cout << "Usage: ./Server [TCP-Port] [UDP-Port] [device]" << endl;
-        // Example ./Server 8080 8081 lo
-        return -1;
+    int tcp_port;
+    int udp_port;
+    string device;
+    options_description desc{"Options"};
+    desc.add_options()
+            ("help,h", "Help screen")
+            ("porttcp,t", value<int>(&tcp_port), "TCP-Port of the Server")
+            ("portudp,u", value<int>(&udp_port), "UDP-Port of the Server")
+            ("device,e", value<string>(&device), "Name of the networkdevice of your computer");
+    try{
+        variables_map vm;
+        store(parse_command_line(argc, argv, desc), vm);
+        notify(vm);
+        if(vm.count("help")){
+            cout << desc << endl;
+            return 0;
+        }else if(!(vm.count("porttcp") && vm.count("portudp") && vm.count("device"))){
+            cout << "Missing parameters. All parameters need to be provided." << endl;
+            return -1;
+        }
+    }catch(const error &ex){
+        cerr << ex.what() << endl;
     }
-
-    int tcp_port = atoi(argv[1]);
-    int udp_port = atoi(argv[2]);
-    char *local_dev = argv[3];
+    char* local_dev = new char[device.length() + 1]; /* only on client computer valid */
+    strcpy(local_dev, device.c_str());
 
     /* init tcp connection */
     int *tcp_sock = (int *) malloc(sizeof(int));

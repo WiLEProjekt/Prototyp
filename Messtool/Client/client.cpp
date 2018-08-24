@@ -15,9 +15,11 @@
 #include <time.h> // sleep function
 #include <mutex>
 #include <sys/shm.h>
+#include <boost/program_options.hpp>
 
 
 using namespace std;
+using namespace boost::program_options;
 
 /**
  * Free used tcp pointer (socket will NOT be closed before).
@@ -157,18 +159,37 @@ int tcp_signalServerToCleanUp(int* tcp_sock)
 
 
 int main(int argc, char **argv) {
-    if(argc < 5){
-        cout << "Usage: ./Client [TECHNOLOGIE_ORT_REGION] [Server-IP] [TCP-Port] [UDP-Port] [local_device]" << endl;
-        // Example ./Client lte_osna_stadt 127.0.0.1 8080 8081 lo
-        return 0;
+    options_description desc{"Options"};
+    string measurementid; /* is shared with server via tcp */
+    string destIp;
+    int tcp__port;
+    int udp__port;
+    string device; /* only on client computer valid */
+    desc.add_options()
+            ("help,h", "Help screen")
+            ("identifier,i", value<string>(&measurementid), "Technology_Place_Region")
+            ("destip,d", value<string>(&destIp), "IP-Address of the Server")
+            ("porttcp,t", value<int>(&tcp__port), "TCP-Port of the Server")
+            ("portudp,u", value<int>(&udp__port), "UDP-Port of the Server")
+            ("device,e", value<string>(&device), "Name of the networkdevice of your computer");
+    try{
+        variables_map vm;
+        store(parse_command_line(argc, argv, desc), vm);
+        notify(vm);
+        if(vm.count("help")){
+            cout << desc << endl;
+            return 0;
+        }else if(!(vm.count("identifier") && vm.count("destip") && vm.count("porttcp") && vm.count("portudp") && vm.count("device"))){
+            cout << "Missing parameters. All parameters need to be provided." << endl;
+            return -1;
+        }
+    }catch(const error &ex){
+        cerr << ex.what() << endl;
     }
-    // TODO: read parameters via -p annotation
+    char* local_dev = new char[device.length() + 1]; /* only on client computer valid */
+    strcpy(local_dev, device.c_str());
 
-    string measurementid = argv[1]; /* is shared with server via tcp */
-    string destIp = argv[2];
-    int tcp__port = atoi(argv[3]);
-    int udp__port = atoi(argv[4]);
-    char* local_dev =argv[5]; /* only on client computer valid */
+    // TODO: read parameters via -p annotation
 
     /* append current system date and time to generate unique measurement id */
     time_t rawtime;
