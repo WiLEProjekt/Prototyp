@@ -41,7 +41,7 @@ add_executable(Client
         PcapWriter/FindPCAP.cmake
         PcapWriter/PcapWriter.cpp
         PcapWriter/PcapWriter.h
-        CMakeLists.txt Client/client.h Server/server.h MeasureBandwidth/packetPairBandwidth.h MeasureBandwidth/packetPairBandwidth.cpp MeasureSignalstrength/measureSignalstrength.h MeasureSignalstrength/measureSignalStrength.cpp generateLoad/generateLoad.h generateLoad/generateLoad.cpp consts_and_utils/consts_and_utils.h consts_and_utils/consts_and_utils.cpp)
+        CMakeLists.txt packetpair/packetPairBandwidth.h packetpair/packetPairBandwidth.cpp MeasureSignalstrength/measureSignalstrength.h MeasureSignalstrength/measureSignalStrength.cpp generateLoad/generateLoad.h generateLoad/generateLoad.cpp consts_and_utils/consts_and_utils.h consts_and_utils/consts_and_utils.cpp)
 
 add_executable(Server
         Auswertung/R-Script.R
@@ -56,7 +56,7 @@ add_executable(Server
         Server/server.cpp
         Server/CMakeLists.txt
         CMakeLists.txt
-        Server/server.h generateLoad/generateLoad.h generateLoad/generateLoad.cpp consts_and_utils/consts_and_utils.h consts_and_utils/consts_and_utils.cpp)
+        generateLoad/generateLoad.h generateLoad/generateLoad.cpp consts_and_utils/consts_and_utils.h consts_and_utils/consts_and_utils.cpp)
 
 add_executable(PcapWriter
         Auswertung/R-Script.R

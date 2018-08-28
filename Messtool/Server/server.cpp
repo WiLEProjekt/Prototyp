@@ -1,7 +1,7 @@
-#include "server.h"
 #include "../generateLoad/generateLoad.h"
 #include "../consts_and_utils/consts_and_utils.h"
 #include "../generateLoad/generateLoad.h"
+#include <../PcapWriter/PcapWriter.h>
 
 #include <unistd.h>
 #include <iostream>
