@@ -410,39 +410,49 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				loss_type = NETEM_LOSS_TR;
 				
 				/* set trace parameter */
-				trace.trlen = getTraceLength(*argv);
+				trace.trlen = getTraceLength(*argv) + 1; /* + 1 because of first element flag */
 				if (-1 == trace.trlen) 
 				{
 					printf("Error while computing length of trace. Exiting...\n");
 					exit(1);
 				}
-				
+
 				/* create shared memory space */
-				key_t key = ftok("shmfile", 65); 
+				/* first element in shared memory is used as shmdt_lock, the rest are trace values*/
+				key_t key = ftok("shmloss", 42); 
 				int shmid = shmget(key,trace.trlen,IPC_CREAT); /* create shared memory */
 				trace.trloss = (__u8 *) shmat(shmid, 0, 0); /* attach pointer to shared */
+				*trace.trloss = 0; /* first element shmdt_lock, rest contains  */
+				trace.trloss++;
 				if (-1 == readTraceFile(*argv, trace.trloss) ) 
 				{
 					printf("Error while reading tracefile. Exiting...\n");
 					exit(1);
 				}
+				trace.trloss--;
+
+				printf("trace.trloss[0]: %i \n", trace.trloss[0] );
+				printf("trace.trloss[1]: %i \n", trace.trloss[1] );
+				printf("trace.trloss[2]: %i \n", trace.trloss[2] );
 				
 				/* parent and child share the defined shared memory. So parent finish this 
-				process and transfer the parameters. The child sleeps for some seconds 
-				(in which the kernel copies the data).By the time the child wakes up, the 
-				data was copied and it releases the shared memory.*/
+				process and transfer the parameters to the netem module. The child is responsible to free the shared 					memory (after the netem-module copied the data!). Because of the process communication between 
+				kernel and user space, it is not possible to use futex, pthread_mutex or kernel libraries like 					(linux/	mutex.h) to assure mutual exlcusion of the shared memory. Hence, there is no silver bullet 					solution... and an ugly hack provides a fitting solution:
+				Parent sets shmdt_lock = 0.
+				The child sleeps for 10 seconds, and checks if shmdt_lock == 1. Else sleep... */
 
 				pid_t pid = fork();	
 				if (pid == 0) // child
-				{
-					sleep(10); // in seconds
+				{	
+
+					printf("child id: %i \n", getpid()); /* TODO: only used to check whether the child defenitly terminates */
+					do {
+						sleep(10); // in seconds
+					} while (0 == *trace.trloss);
 					shmdt(trace.trloss); /* detach trloss */
 					shmctl(shmid, IPC_RMID, NULL); /* release shared memory */
 					exit(1);
 				}
-
-				//TODO: technically, it is possible, that two initializations of netem overwrite
-				// the shared memory or free the shared memory while it is in use --> unique id or kill the 					//child!
 				
 			} else {
 				fprintf(stderr, "Unknown loss parameter: %s\n",

@@ -318,7 +318,7 @@ static bool loss_event(struct netem_sched_data *q)
 		*/
 		return loss_gilb_ell(q);
 	case CLG_TRACE:
-				
+
 		if(q->clg.p==q->clg.trlen)
 		{
 			/* restart packet loss sequence at the beginning */
@@ -892,18 +892,27 @@ static int get_loss_clg(struct netem_sched_data *q, const struct nlattr *attr)
 
 			/* set parameter in netem_sched_data (contains relevant information)  */
 			q->loss_model = CLG_TRACE;
-			q->clg.trlen = tr->trlen;
+			q->clg.trlen = tr->trlen; 
 			q->clg.p = 0;	
 			
 			/* q->clg.trloss is freed in the destroy-function */
 			if (q->clg.trloss != NULL)
 				kfree(q->clg.trloss);
-			q->clg.trloss = kzalloc(sizeof(u8) * q->clg.trlen, GFP_KERNEL); 
+			q->clg.trloss = kzalloc(sizeof(u8) * q->clg.trlen, GFP_KERNEL);
 			if (copy_from_user(q->clg.trloss,(u8*) tr->trloss, q->clg.trlen))
 			{
 				pr_info("-EFAULT!\n");
 				return -EFAULT;
 			}
+
+
+			*q->clg.trloss = 1; /* set shmdt_lock to one, so child process free shared memory */
+			if (copy_to_user((u8*) tr->trloss, q->clg.trloss, 1))
+			{
+				pr_info("-EFAULT!\n");
+				return -EFAULT;
+			}
+			q->clg.trloss++; /* first element is not part of trace, but shmdt_flag */
 			break;
 		}
 
@@ -1037,6 +1046,8 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt,
 
 	if (tb[TCA_NETEM_SLOT])
 		get_slot(q, tb[TCA_NETEM_SLOT]);
+
+	pr_info("netem: change called\n");
 
 	return ret;
 }
