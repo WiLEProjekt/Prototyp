@@ -25,7 +25,9 @@ int udp_generateLoad(int* sock, struct sockaddr_in * dest, char* measurementid, 
 
 int iperf_generateLoadServer(int port, int intervall);
 
-int iperf_generateLoadClient(string ipDest, int port, int bandwidth, char bw_unit);
+int iperf_generateRRLoadClient(string ipDest, int port, int bandwidth, char bw_unit);
+
+int iperf_generateUnidirectionalLoadClient(string ipDest, int port, int bandwidth, char bw_unit);
 
 
 #endif //MESSTOOL_GENERATELOAD_H

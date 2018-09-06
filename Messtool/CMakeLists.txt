@@ -13,6 +13,8 @@ include_directories(Server)
 
 include(PcapWriter/FindPCAP.cmake)
 find_package(Threads)
+find_package(Boost)
+
 
 SET(CMAKE_CXX_FLAGS -pthread)
 
@@ -73,3 +75,16 @@ target_link_libraries(oldExecutable ${PCAP_LIBRARY})
 target_link_libraries(Client ${PCAP_LIBRARY})
 target_link_libraries(Server ${PCAP_LIBRARY})
 target_link_libraries(PcapWriter ${PCAP_LIBRARY})
+
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+IF (Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIR})
+    target_link_libraries(Client
+            ${Boost_FILESYSTEM_LIBRARY}
+            ${Boost_SYSTEM_LIBRARY}
+            )
+    target_link_libraries(Server
+            ${Boost_FILESYSTEM_LIBRARY}
+            ${Boost_SYSTEM_LIBRARY}
+            )
+endif()

@@ -19,9 +19,10 @@
 #include <regex>
 #include <mutex>
 #include <sys/shm.h>
-#include <boost/program_options.hpp>
+
 
 using namespace std;
+#include <boost/program_options.hpp>
 using namespace boost::program_options;
 
 /**
@@ -157,6 +158,21 @@ int tcp_recvMeasurementParameters(int *tcp_sock, vector<string> *checked_params)
     }
 }
 
+int tcp_recvSignalToStartIperfServer(int *tcp_sock) {
+    char recvmsg[PACKETSIZE];
+    vector<string> recv_params;
+    memset(recvmsg, 0, sizeof(recvmsg));
+    if (0 > read(*tcp_sock, recvmsg, sizeof(recvmsg))) // this is a blocking call
+    {
+        printf("tcp_recvSignalToStartIperfServer - error: %i\n", errno);
+        tcp_closeConnection(tcp_sock);
+        return -1;
+    }
+    printf("recv Msg: %s\n", recvmsg);
+    return 0;
+}
+
+
 /**
  * Signal a server registered on a tcp socket to close connection and end or free its processes, threads and mallocs gracefully.
  * @param tcp_sock the tcp connection
@@ -177,6 +193,8 @@ int tcp_recvSignalServerToCleanUp(int *tcp_sock) {
     printf("recv Msg: %s\n", recvmsg);
     return 0;
 }
+
+
 
 
 int main(int argc, char **argv) {

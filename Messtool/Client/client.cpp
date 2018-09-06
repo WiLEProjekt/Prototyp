@@ -137,6 +137,19 @@ int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId)
     }
 }
 
+int tcp_signalServerToStartIperfServer(int* tcp_sock)
+{
+    string params = "startIPerfServer";
+    char sendmsg[PACKETSIZE];
+    memset(sendmsg,0, sizeof(sendmsg));
+    memcpy(sendmsg,params.c_str(),strlen(params.c_str()));
+    if (0 > send(*tcp_sock , sendmsg , strlen(sendmsg) , 0 ))
+    {
+        printf("tcp_signalServerToStartIperfServer - errno: %i\n", errno);
+        return -1;
+    }
+    return 0;
+}
 
 /**
  * Signal server to end connection and clean up processes, threads and malloc gracefully.
@@ -151,7 +164,7 @@ int tcp_signalServerToCleanUp(int* tcp_sock)
     memcpy(sendmsg,params.c_str(),strlen(params.c_str()));
     if (0 > send(*tcp_sock , sendmsg , strlen(sendmsg) , 0 ))
     {
-        printf("errno %i\n", errno);
+        printf("tcp_signalServerToCleanUp - errno %i\n", errno);
         return -1;
     }
     return 0;
@@ -286,16 +299,25 @@ int main(int argc, char **argv) {
         shmdt(mt_ptr); // detach pointer from shm
         shmctl(shmid,IPC_RMID, NULL); // release shm
 
-        /* load generation via iperf */
+        /* load generation via iperf from this client to server */
         printf("Start generation of load via iperf\n");
         int d = (fmin(download_bw,upload_bw) / 2);
-        if ( 0 > iperf_generateLoadClient(destIp,udp__port,d,'m')) // m stands for mega bit per sec, this is a blocking call
+        if ( 0 > iperf_generateUnidirectionalLoadClient(destIp, udp__port, d, 'm')) // m stands for mega bit per sec, this is a blocking call
         {
-            perror("iperf_generateLoadClient - error: failure at generating load\n");
+            perror("iperf_generateRRLoadClient - error: failure at generating load\n");
             return -1;
         }
-        printf("Generation of load via iperf ended successfully\n");
+        printf("Generation of client-server-load via iperf ended successfully\n");
 
+        /* load generation via iperf from server to this client */
+/*        printf("Start iperf server for load generation\n");
+        if (0 > iperf_generateLoadServer(udp__port, 1))
+        {
+            perror("iperf_generateLoadServer - error: failure at generating load (start iperf server)\n");
+            return -1;
+        }
+        printf("Generation of server-client-load via iperf ended successfully\n");
+*/
         /* signal server to close connection via tcp */
         if (0 > tcp_signalServerToCleanUp(tcp_sock)) // this is a blocking call
         {
