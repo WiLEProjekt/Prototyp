@@ -245,6 +245,9 @@ int main(int argc, char **argv) {
     }
 */
     string measurementid = params->at(1);
+    string bandwidth = params->at(2);
+    printf("measurementid : %s\n", measurementid.c_str());
+    printf("bandwidth : %s\n", bandwidth.c_str());
 
     /* make writeable directory at SERVER_LOCATION */
     string dirpath = SERVER_LOCATION;
@@ -294,7 +297,7 @@ int main(int argc, char **argv) {
 
             /* start server to receive load */
             (*mt_ptr).unlock();
-            iperf_generateLoadServer(udp_port, 1); //TODO: brauchen wir intervall 1?
+            //iperf_generateLoadServer(udp_port, 1); //TODO: brauchen wir intervall 1?
         } else {
 
             /* wait until child unlocks the mutex in the shm */

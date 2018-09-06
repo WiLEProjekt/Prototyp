@@ -112,12 +112,13 @@ int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId, string
  * Example: lte_osna_stadt_16082018_011623|b|10
  * @param tcp_sock tcp connection socket
  * @param measurementId unique measurement id
+ * @param bandwidth download bandwidth
  * @return -1 if parameter transmission failed
  */
-int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId)
+int tcp_sendParametersForMeasurement(int* tcp_sock, string measurementId, int bandwidth)
 {
     bool trans_sucessfull = false;
-    string params = "|" + measurementId + "|";
+    string params = "|" + measurementId + "|" + to_string(bandwidth) + "|";
     while (not trans_sucessfull)
     {
         char sendmsg[PACKETSIZE];
@@ -232,13 +233,6 @@ int main(int argc, char **argv) {
         return -1;
     }
     printf("TCP Connection established successfully\n");
-    if (0 > tcp_sendParametersForMeasurement(tcp_sock, measurementid))
-    {
-        printf("tcp_sendParametersForMeasurement - error: %s\n", strerror(errno));
-        tcp_freePointer(tcp_sock,tcp_dest);
-        return -1;
-    }
-    printf("Parameter exchange between client and server successfull\n");
 
     /* make writeable directory at CLIENT_LOCATION */
     string dirpath = CLIENT_LOCATION;
@@ -253,7 +247,6 @@ int main(int argc, char **argv) {
     /* measure signal strength */
     //TODO: start logging signal strength stuff with module and write content to file
 
-
     /* measure bandwidth with saturated load*/
     string bw_file = dirpath;
     bw_file = bw_file + "/" + measurementid + "_throughput.txt";
@@ -266,6 +259,14 @@ int main(int argc, char **argv) {
         return -1;
     }
     printf("Measuring throughput successfully (%s)\n", bw_file.c_str());
+
+    if (0 > tcp_sendParametersForMeasurement(tcp_sock, measurementid, download_bw))
+    {
+        printf("tcp_sendParametersForMeasurement - error: %s\n", strerror(errno));
+        tcp_freePointer(tcp_sock,tcp_dest);
+        return -1;
+    }
+    printf("Parameter exchange between client and server successfull (measure-id and download bandwidth)\n");
 
     /* PcapWriter has to be started before parent and has to be forecefully terminated via SIGINT.
      * So a shared memory contains a mutex which assures that parent will start after child_pcap started.
