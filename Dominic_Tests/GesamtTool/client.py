@@ -11,6 +11,14 @@ def bandwidtUpload(): #open iperf server process for upload measurement
 def bandwidthDownload(): #open iperf server process for download measurement
     sub2 = subprocess.Popen("iperf -c 127.0.0.1 -p 5002 --reverse > cdownload.txt", shell=True)
 
+def readMeasurement(filename):
+    file = open(filename,"r")
+    lines = file.readlines()
+    file.close()
+    print(lines)
+    lastLine = lines[-1]
+    return(lastLine)
+
 
 if __name__ == "__main__":
     destIP = "127.0.0.1"
@@ -18,9 +26,9 @@ if __name__ == "__main__":
     beginMessage = "Start"
     stopMessage = "Stop"
 
-    ####
+    ####################################################################################################################
     #socket handling
-    ####
+    ####################################################################################################################
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
     tcpsock.send(beginMessage.encode())
@@ -38,3 +46,9 @@ if __name__ == "__main__":
         thread.join()
     tcpsock.send(stopMessage.encode())
     tcpsock.close()
+    #readMeasurement("cupload.txt")
+    #print(upload)
+    file = open("cupload", "r")
+    lines = file.readlines()
+    print(lines)
+

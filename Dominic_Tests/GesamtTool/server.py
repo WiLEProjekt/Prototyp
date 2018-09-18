@@ -14,7 +14,7 @@ def bandwidthDownload(): #open iperf server process for download measurement
     sub2 = subprocess.Popen(['iperf', '-s', '-p 5002', '--reverse'], stdout=subprocess.PIPE)
     downOutput = sub2.communicate()[0].decode()
 
-def tcpreceive(connection, address):
+def tcpreceive(connection, address): #2. argument needed cuz of python specialities
     data = connection.recv(2048).decode()
     if data == "Stop":
         os.system("pkill iperf")
