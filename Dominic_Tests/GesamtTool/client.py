@@ -2,6 +2,7 @@ import os
 import socket
 import threading
 from threading import Thread
+import time
 
 def download():
     os.system("iperf -c 127.0.0.1 -p 5001 --reverse > download.txt")
@@ -20,18 +21,31 @@ def calcBandwidthResult(lastFileLine):
     speed = float(lastFileLine[-16:-10]) #fetch result and convert it to a float
     entity = lastFileLine[-10:-1] #fetch entity in string format
     if entity == "Gbits/sec":
-        value = speed*1000
-    elif entity == "Kbits/sec":
-        value = speed/1000
-    elif entity == "Mbits/sec":
-        value = speed
-    elif entity == "Tbits/sec":
         value = speed*1000000
+    elif entity == "Kbits/sec":
+        value = speed
+    elif entity == "Mbits/sec":
+        value = speed*1000
+    elif entity == "Tbits/sec":
+        value = speed*1000000000
     else:
         value = "No valid measurement result!"
     return(value)
 
 if __name__ == "__main__":
+
+    destIP = "127.0.0.1"
+    destPort = 5000
+    startMessage = "Start"
+    stopMessage = "Stop"
+
+
+    # socket handling
+    tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    tcpsock.connect((destIP, destPort))
+    tcpsock.send(startMessage.encode())
+
+    time.sleep(2)
     threads = []
     t1 = Thread(target=download, args=())
     t2 = Thread(target=upload, args=())
@@ -42,21 +56,22 @@ if __name__ == "__main__":
     for thread in threads:  # Wait till all threads are finished
         thread.join()
 
-    destIP = "127.0.0.1"
-    destPort = 5000
-    beginMessage = "Start"
-    stopMessage = "Stop"
+    tcpsock.send(stopMessage.encode()) # Signal Server that bandwidth-measurement has finished
 
-    ####################################################################################################################
-    # socket handling
-    ####################################################################################################################
-    tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
-    tcpsock.connect((destIP, destPort))
-    tcpsock.send(stopMessage.encode())
-    print("hier")
     uploadLine = readFile("upload.txt")
     downloadLine = readFile("download.txt")
     uploadspeed = calcBandwidthResult(uploadLine)
     downloadspeed = calcBandwidthResult(downloadLine)
-    print("Upload: {} Mbit/s".format(uploadspeed))
-    print("Download: {} Mbit/s".format(downloadspeed))
+    print("Upload: {} Kbit/s".format(uploadspeed))
+    print("Download: {} Kbit/s".format(downloadspeed))
+
+    # CBR
+    print("Starting CBR-Test")
+    cbrspeedkbits = int(round((min(uploadspeed, downloadspeed)/2), 0)) #round to int
+    cbrspeedbytes = int(round((cbrspeedkbits*1000/8),0))
+    packetsize = 1000 #byte
+    packetssec = int(round((cbrspeedbytes/packetsize),0))
+    print(packetssec)
+    time.wait(1) # wait 1 sec to assure that the server has closed its threads
+    tcpsock.send(str(packetssec).encode())
+    tcpsock.close()
