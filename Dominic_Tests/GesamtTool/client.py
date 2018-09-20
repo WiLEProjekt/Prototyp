@@ -38,10 +38,12 @@ if __name__ == "__main__":
     destPort = 5000
     startMessage = "Start"
     stopMessage = "Stop"
+    udpPort = 5010
 
 
     # socket handling
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
     tcpsock.connect((destIP, destPort))
     tcpsock.send(startMessage.encode())
 
@@ -72,6 +74,18 @@ if __name__ == "__main__":
     packetsize = 1000 #byte
     packetssec = int(round((cbrspeedbytes/packetsize),0))
     print(packetssec)
-    time.wait(1) # wait 1 sec to assure that the server has closed its threads
+    time.wait(2) # wait to assure that the server has closed its threads
     tcpsock.send(str(packetssec).encode())
+    udpsock.sendto("CBRUDP".encode(), (destIP, udpPort))
+    tcpsock.settimeout(1) #1sec timeout
+    loopexit = False
+    while not loopexit:
+        try:
+            answer = tcpsock.recv(2048)
+            if answer.decode() == "ACK":
+                loopexit = True
+        except socket.timeout:
+            loopexit = False
+
+
     tcpsock.close()

@@ -17,7 +17,9 @@ def tcpreceive():
 if __name__ == "__main__":
     myIP = "127.0.0.1"
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
     tcpsock.bind((myIP, 5000))
+    udpsock.bind((myIP, 5010))
     tcpsock.listen()
     conn, addrtcp = tcpsock.accept()
     datatcp = conn.recv(2048).decode()
@@ -37,6 +39,11 @@ if __name__ == "__main__":
         print("hier")
         udppackets = conn.recv(2048).decode()
         print(udppackets)
+        dataudp, addrudp = udpsock.recvfrom(2048)  # grab client ip and port
+        if dataudp == "CBRUDP":
+            conn.sendto("ACK".encode())
+        else:
+            print("CBR startup failed")
     else:
         print("No start-message received")
         tcpsock.close()
