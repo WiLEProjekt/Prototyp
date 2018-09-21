@@ -1,7 +1,7 @@
 import socket
 
 def main():
-    myip = "127.0.0.1"
+    myip = "131.173.33.228"
     myport = 50002
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((myip, myport))

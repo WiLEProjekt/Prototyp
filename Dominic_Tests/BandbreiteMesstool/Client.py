@@ -1,4 +1,4 @@
-import sys, getopt, os, json, socket, time
+import sys, getopt, os, json, socket, time, multiprocessing, pcapy, signal
 from datetime import datetime
 from threading import Thread
 
@@ -28,25 +28,52 @@ def CBRupload(speed, a):
 def CBRdownload(speed, a):
     os.system("iperf3 -c 131.173.33.228 -p 50001 -u -b " + speed + " -R")
 
+def signal_term_handler(signal, frame):
+    sys.exit(0)
+
+def write_pcap(filename, interface):
+    pcapy.findalldevs()
+
+    max_bytes = 1024
+    promiscuous = False
+    read_timeout = 100
+    pc = pcapy.open_live(interface, max_bytes, promiscuous, read_timeout)
+    dumper = pc.dump_open(filename + ".pcap")
+    signal.signal(signal.SIGTERM, signal_term_handler)
+
+    try:
+        pc.setfilter('udp')
+
+        def recv_pkts(hdr, data):
+            dumper.dump(hdr, data)
+
+        packet_limit = -1 #infinite
+        pc.loop(packet_limit, recv_pkts)
+    except BaseException:
+        pc.close()
+
 def main(argv):
     ################################
     # Terminal argument parser
     ################################
     region = ''
     name = ''
+    interface = ''
     try:
-        opts, args = getopt.getopt(argv, "hr:n:", ["region=", "name"])
+        opts, args = getopt.getopt(argv, "hr:n:i:", ["region", "name", "interface"])
     except getopt.GetoptError:
-        print("Usage: python3 Client.py -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck>")
+        print("Usage: python3 Client.py -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck> -i <networkinterface")
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print("Parameters: -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck>")
+            print("Parameters: -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck> -i <networkinterface")
             sys.exit()
         elif opt in ("-r", "--region"):
             region = arg
         elif opt in ("-n", "--name"):
             name = arg
+        elif opt in ("-i", "--interface"):
+            interface = arg
 
     ################################
     # Create the measurementID
@@ -81,7 +108,7 @@ def main(argv):
     ################################
     cbr = int(min(uploadspeed, downloadspeed)/2)
     cbrstring = str(cbr)
-    destIP = "127.0.0.1"
+    destIP = "131.173.33.228"
     destPort = 50002
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
@@ -91,12 +118,15 @@ def main(argv):
     threads2 = []
     t3 = Thread(target=CBRupload, args=(cbrstring, 1))
     t4 = Thread(target=CBRdownload, args=(cbrstring, 1))
+    pcap_process = multiprocessing.Process(target=write_pcap, args=(pcapfilename, interface ))
+    pcap_process.start()
     threads2.append(t3)
     threads2.append(t4)
     t3.start()
     t4.start()
     for thread in threads2:  # Wait till all threads are finished
         thread.join()
+    pcap_process.terminate()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
