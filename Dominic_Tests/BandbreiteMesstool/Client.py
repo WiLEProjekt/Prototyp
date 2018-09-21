@@ -23,18 +23,17 @@ def readBandwidth(filename):
     return(bandwidth)
 
 def CBRupload(speed, a):
-    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -b " + speed)
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -b " + speed + " -l 1450")
 
 def CBRdownload(speed, a):
-    os.system("iperf3 -c 131.173.33.228 -p 50001 -u -b " + speed + " -R")
+    os.system("iperf3 -c 131.173.33.228 -p 50001 -u -b " + speed + " -l 1450 -R")
 
-def signal_term_handler(signal, frame):
+def signal_term_handler():
     sys.exit(0)
 
 def write_pcap(filename, interface):
     pcapy.findalldevs()
-
-    max_bytes = 1024
+    max_bytes = 2048
     promiscuous = False
     read_timeout = 100
     pc = pcapy.open_live(interface, max_bytes, promiscuous, read_timeout)
@@ -43,10 +42,8 @@ def write_pcap(filename, interface):
 
     try:
         pc.setfilter('udp')
-
         def recv_pkts(hdr, data):
             dumper.dump(hdr, data)
-
         packet_limit = -1 #infinite
         pc.loop(packet_limit, recv_pkts)
     except BaseException:
@@ -74,6 +71,7 @@ def main(argv):
             name = arg
         elif opt in ("-i", "--interface"):
             interface = arg
+    print(argv)
 
     ################################
     # Create the measurementID
@@ -127,6 +125,7 @@ def main(argv):
     for thread in threads2:  # Wait till all threads are finished
         thread.join()
     pcap_process.terminate()
+    tcpsock.close()
 
 if __name__ == "__main__":
     main(sys.argv[1:])

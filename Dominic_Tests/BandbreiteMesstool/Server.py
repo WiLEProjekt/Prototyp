@@ -1,17 +1,67 @@
-import socket
+import socket, multiprocessing, pcapy, signal, sys, getopt
+from threading import Thread
 
-def main():
+def signal_term_handler(signal, frame):
+    sys.exit(0)
+
+def write_pcap(filename, interface):
+    pcapy.findalldevs()
+    max_bytes = 1024
+    promiscuous = False
+    read_timeout = 100
+    pc = pcapy.open_live(interface, max_bytes, promiscuous, read_timeout)
+    dumper = pc.dump_open(filename + ".pcap")
+    signal.signal(signal.SIGTERM, signal_term_handler)
+
+    try:
+        pc.setfilter('udp')
+        def recv_pkts(hdr, data):
+            dumper.dump(hdr, data)
+        packet_limit = -1 #infinite
+        pc.loop(packet_limit, recv_pkts)
+    except BaseException:
+        pc.close()
+
+def tcpreceive(connection, a):
+    try:
+        data = connection.recv(2048)
+    except socket.error:
+        print("Connection closed by Client")
+
+def main(argv):
+    ################################
+    # Terminal argument parser
+    ################################
+    interface = ''
+    try:
+        opts, args = getopt.getopt(argv, "hi:", ["interface"])
+    except getopt.GetoptError:
+        print("Usage: python3 Server.py -i <networkinterface")
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print("Parameters: -i <networkinterface")
+            sys.exit()
+        elif opt in ("-i", "--interface"):
+            interface = arg
+
     myip = "131.173.33.228"
     myport = 50002
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((myip, myport))
+    sock.listen()
     while True:
-        sock.listen()
         conn, addr = sock.accept()
         data = conn.recv(2048)
         measurementID = data.decode()
         pcapfilename = "server_"+measurementID
         print(pcapfilename)
+        pcap_process = multiprocessing.Process(target=write_pcap, args=(pcapfilename, interface))
+        pcap_process.start()
+        t1 = Thread(target=tcpreceive, args=(conn, 1))
+        t1.start()
+        t1.join()
+        pcap_process.terminate()
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
