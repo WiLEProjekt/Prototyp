@@ -122,8 +122,8 @@ def main(argv):
     threads2.append(t4)
     t3.start()
     t4.start()
-    for thread in threads2:  # Wait till all threads are finished
-        thread.join()
+    for thread2 in threads2:  # Wait till all threads are finished
+        thread2.join()
     pcap_process.terminate()
     tcpsock.close()
 
