@@ -1,46 +1,74 @@
-import socket
-import threading
-import time
+import sys, getopt, os, json
+from datetime import datetime
 from threading import Thread
 
-def sendudp(killevent, socket, ip, port):
-    udp_message = "a"*1400
-    while not killevent.is_set():
-        socket.sendto(udp_message.encode(), (ip, port))
+def uploadBandwidth():
+    try:
+        os.remove("upload.json")
+    except FileNotFoundError:
+        pass
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -J --logfile upload.json") #TODO testen ob packetsize limitiert werden muss
 
-def udpreceive(killevent, udpsocket, tcpsocket):
-    data, addr = udpsocket.recvfrom(2048)
-    print("Upload Speed: {} kbit/s".format(int(data)))
-    killevent.set()
-    counter = 0
-    starttime = time.time()
-    while counter < 15000:
-        dataudp2, addrudp2 = udpsocket.recvfrom(2048)
-        counter += 1
-    endtime = time.time()
-    bandwidth = (((counter + 1) * 1400 * 8) / (endtime - starttime)) / 1024  # kbit/s
+def downloadBandwidth():
+    try:
+        os.remove("download.json")
+    except FileNotFoundError:
+        pass
+    os.system("iperf3 -c 131.173.33.228 -p 50001 -R -J --logfile download.json")  # TODO testen ob packetsize limitiert werden muss
 
-    print("Download Speed: {} kbit/s".format(int(bandwidth)))
-    TCP_Message = "END"
-    tcpsock.connect((IP, TCP_PORT))
-    tcpsocket.send(TCP_Message.encode())
+def readBandwidth(filename):
+    file = open(filename, "r")
+    json_file = json.load(file)
+    bandwidth = json_file['end']['sum_received']['bits_per_second']
+    return(bandwidth)
 
-if __name__ == "__main__":
-    IP = "131.173.33.211"
-    UDP_PORT = 5005
-    TCP_PORT = 5006
+def main(argv):
+    ################################
+    # Terminal argument parser
+    ################################
+    region = ''
+    name = ''
+    try:
+        opts, args = getopt.getopt(argv, "hr:n:", ["region=", "name"])
+    except getopt.GetoptError:
+        print("Usage: python3 Client.py -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck>")
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print("Parameters: -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck>")
+            sys.exit()
+        elif opt in ("-r", "--region"):
+            region = arg
+        elif opt in ("-n", "--name"):
+            name = arg
 
-    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-    tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    ################################
+    # Create the measurementID
+    ################################
+    currenttime = str(datetime.now())
+    measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
 
-
+    ################################
+    # TCP Bandwidth Measurement
+    ################################
     threads = []
-    killevent = threading.Event()
-    t1 = Thread(target=sendudp, args=(killevent, udpsock, IP, UDP_PORT))
-    t2 = Thread(target=udpreceive, args=(killevent, udpsock, tcpsock))
+    t1 = Thread(target=uploadBandwidth, args=())
+    t2 = Thread(target=downloadBandwidth, args=())
     threads.append(t1)
     threads.append(t2)
     t1.start()
     t2.start()
-    for thread in threads:
+    for thread in threads:  # Wait till all threads are finished
         thread.join()
+
+    ################################
+    # Fetch Bandwidth results into variable
+    ################################
+    uploadspeed = readBandwidth("upload.json")
+    downloadspeed = readBandwidth("download.json")
+    print("Upload: {} bit/sec".format(uploadspeed))
+    print("Download: {} bit/sec".format(downloadspeed))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

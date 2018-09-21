@@ -67,25 +67,25 @@ if __name__ == "__main__":
     print("Upload: {} Kbit/s".format(uploadspeed))
     print("Download: {} Kbit/s".format(downloadspeed))
 
-    # CBR
-    print("Starting CBR-Test")
-    cbrspeedkbits = int(round((min(uploadspeed, downloadspeed)/2), 0)) #round to int
-    cbrspeedbytes = int(round((cbrspeedkbits*1000/8),0))
-    packetsize = 1000 #byte
-    packetssec = int(round((cbrspeedbytes/packetsize),0))
-    print(packetssec)
-    time.wait(2) # wait to assure that the server has closed its threads
-    tcpsock.send(str(packetssec).encode())
-    udpsock.sendto("CBRUDP".encode(), (destIP, udpPort))
-    tcpsock.settimeout(1) #1sec timeout
-    loopexit = False
-    while not loopexit:
-        try:
-            answer = tcpsock.recv(2048)
-            if answer.decode() == "ACK":
-                loopexit = True
-        except socket.timeout:
-            loopexit = False
-
+    # # CBR
+    # print("Starting CBR-Test")
+    # cbrspeedkbits = int(round((min(uploadspeed, downloadspeed)/2), 0)) #round to int
+    # cbrspeedbytes = int(round((cbrspeedkbits*1000/8),0))
+    # packetsize = 1000 #byte
+    # packetssec = int(round((cbrspeedbytes/packetsize),0))
+    # print(packetssec)
+    # time.wait(2) # wait to assure that the server has closed its threads
+    # tcpsock.send(str(packetssec).encode())
+    # udpsock.sendto("CBRUDP".encode(), (destIP, udpPort))
+    # tcpsock.settimeout(1) #1sec timeout
+    # loopexit = False
+    # while not loopexit:
+    #     try:
+    #         answer = tcpsock.recv(2048)
+    #         if answer.decode() == "ACK":
+    #             loopexit = True
+    #     except socket.timeout:
+    #         loopexit = False
+    #
 
     tcpsock.close()
