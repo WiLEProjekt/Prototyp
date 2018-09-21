@@ -53,6 +53,7 @@ def main(argv):
     ################################
     currenttime = str(datetime.now())
     measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
+    pcapfilename = "client_"+measurementID
 
     ################################
     # TCP Bandwidth Measurement
@@ -81,7 +82,7 @@ def main(argv):
     cbr = int(min(uploadspeed, downloadspeed)/2)
     cbrstring = str(cbr)
     destIP = "127.0.0.1"
-    destPort = 5000
+    destPort = 50002
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
     tcpsock.send(measurementID.encode())
@@ -90,12 +91,10 @@ def main(argv):
     threads2 = []
     t3 = Thread(target=CBRupload, args=(cbrstring, 1))
     t4 = Thread(target=CBRdownload, args=(cbrstring, 1))
-    #t5 = Thread()
     threads2.append(t3)
     threads2.append(t4)
     t3.start()
     t4.start()
-    #t5.start()
     for thread in threads2:  # Wait till all threads are finished
         thread.join()
 
