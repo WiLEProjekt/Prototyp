@@ -1,4 +1,4 @@
-import sys, getopt, os, json
+import sys, getopt, os, json, socket, time
 from datetime import datetime
 from threading import Thread
 
@@ -21,6 +21,12 @@ def readBandwidth(filename):
     json_file = json.load(file)
     bandwidth = json_file['end']['sum_received']['bits_per_second']
     return(bandwidth)
+
+def CBRupload(speed, a):
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -b " + speed)
+
+def CBRdownload(speed, a):
+    os.system("iperf3 -c 131.173.33.228 -p 50001 -u -b " + speed + " -R")
 
 def main(argv):
     ################################
@@ -51,14 +57,14 @@ def main(argv):
     ################################
     # TCP Bandwidth Measurement
     ################################
-    threads = []
+    threads1 = []
     t1 = Thread(target=uploadBandwidth, args=())
     t2 = Thread(target=downloadBandwidth, args=())
-    threads.append(t1)
-    threads.append(t2)
+    threads1.append(t1)
+    threads1.append(t2)
     t1.start()
     t2.start()
-    for thread in threads:  # Wait till all threads are finished
+    for thread in threads1:  # Wait till all threads are finished
         thread.join()
 
     ################################
@@ -69,6 +75,29 @@ def main(argv):
     print("Upload: {} bit/sec".format(uploadspeed))
     print("Download: {} bit/sec".format(downloadspeed))
 
+    ################################
+    # Constant Bitrate
+    ################################
+    cbr = int(min(uploadspeed, downloadspeed)/2)
+    cbrstring = str(cbr)
+    destIP = "127.0.0.1"
+    destPort = 5000
+    tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    tcpsock.connect((destIP, destPort))
+    tcpsock.send(measurementID.encode())
+
+    time.sleep(1)
+    threads2 = []
+    t3 = Thread(target=CBRupload, args=(cbrstring, 1))
+    t4 = Thread(target=CBRdownload, args=(cbrstring, 1))
+    #t5 = Thread()
+    threads2.append(t3)
+    threads2.append(t4)
+    t3.start()
+    t4.start()
+    #t5.start()
+    for thread in threads2:  # Wait till all threads are finished
+        thread.join()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
