@@ -7,26 +7,31 @@ def uploadBandwidth():
         os.remove("upload.json")
     except FileNotFoundError:
         pass
-    os.system("iperf3 -c 131.173.33.228 -p 50000 -J --logfile upload.json") #TODO testen ob packetsize limitiert werden muss
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -t 60 -J --logfile upload.json") #TODO testen ob packetsize limitiert werden muss
 
 def downloadBandwidth():
     try:
         os.remove("download.json")
     except FileNotFoundError:
         pass
-    os.system("iperf3 -c 131.173.33.228 -p 50001 -R -J --logfile download.json")  # TODO testen ob packetsize limitiert werden muss
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -t 60 -R -J --logfile download.json")  # TODO testen ob packetsize limitiert werden muss
 
 def readBandwidth(filename):
     file = open(filename, "r")
     json_file = json.load(file)
-    bandwidth = json_file['end']['sum_received']['bits_per_second']
-    return(bandwidth)
+    all_bandwidth = json_file['intervals']
+    usefull_bandwidth = all_bandwidth[30:]
+    tmp_bandwith = 0
+    for bw in usefull_bandwidth:
+        tmp_bandwith += bw['sum']['bits_per_second']
+
+    return tmp_bandwith / len(usefull_bandwidth)
 
 def CBRupload(speed, a):
     os.system("iperf3 -c 131.173.33.228 -p 50000 -u -b " + speed + " -l 1450")
 
 def CBRdownload(speed, a):
-    os.system("iperf3 -c 131.173.33.228 -p 50001 -u -b " + speed + " -l 1450 -R")
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -b " + speed + " -l 1450 -R")
 
 def signal_term_handler():
     sys.exit(0)
@@ -78,20 +83,19 @@ def main(argv):
     ################################
     currenttime = str(datetime.now())
     measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
-    pcapfilename = "client_"+measurementID
+    pcap_cbr_filename = "client_cbr_"+measurementID
+    pcap_bw_filename = "client_bw_"+measurementID
 
     ################################
     # TCP Bandwidth Measurement
     ################################
-    threads1 = []
-    t1 = Thread(target=uploadBandwidth, args=())
-    t2 = Thread(target=downloadBandwidth, args=())
-    threads1.append(t1)
-    threads1.append(t2)
-    t1.start()
-    t2.start()
-    for thread in threads1:  # Wait till all threads are finished
-        thread.join()
+    pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename, interface))
+    pcap_bandwith_process.start()
+
+    uploadBandwidth()
+    downloadBandwidth()
+
+    pcap_bandwith_process.terminate()
 
     ################################
     # Fetch Bandwidth results into variable
@@ -112,18 +116,12 @@ def main(argv):
     tcpsock.connect((destIP, destPort))
     tcpsock.send(measurementID.encode())
 
-    time.sleep(1)
-    threads2 = []
-    t3 = Thread(target=CBRupload, args=(cbrstring, 1))
-    t4 = Thread(target=CBRdownload, args=(cbrstring, 1))
-    pcap_process = multiprocessing.Process(target=write_pcap, args=(pcapfilename, interface ))
+    pcap_process = multiprocessing.Process(target=write_pcap, args=(pcap_cbr_filename, interface))
     pcap_process.start()
-    threads2.append(t3)
-    threads2.append(t4)
-    t3.start()
-    t4.start()
-    for thread2 in threads2:  # Wait till all threads are finished
-        thread2.join()
+    time.sleep(1)
+    CBRupload(cbrstring, 1)
+    CBRdownload(cbrstring, 1)
+
     pcap_process.terminate()
     tcpsock.close()
 
