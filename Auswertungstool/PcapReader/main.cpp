@@ -4,7 +4,6 @@
 #include <cmath>
 #include <vector>
 #include <map>
-#include <algorithm>
 
 using namespace std;
 
@@ -102,14 +101,12 @@ vector<bool> findMissingSeqNums(vector<unsigned int> sequenzNumbers) {
 vector<bool> getLoss(vector<unsigned int> seqNums) {
     vector<bool> trace;
     trace = findMissingSeqNums(move(seqNums));
-    return trace;
 }
 
 struct results readPcapFile(const string &filename, const string &sourceIp, const string &destIp) {
     map<int, struct timeval> requestTimestamps;
     map<int, struct timeval> responseTimestamps;
     vector<unsigned int> seqNums;
-    struct results result{};
 
     struct stat buffer{};
     if (stat(filename.c_str(), &buffer) != 0) {
@@ -145,35 +142,25 @@ struct results readPcapFile(const string &filename, const string &sourceIp, cons
 
         vector<struct timeval> delays = getDelays(requestTimestamps, responseTimestamps);
         vector<bool> lossTrace = getLoss(seqNums);
+        struct results result{};
         result.delays = delays;
         result.loss = lossTrace;
+
+        return result;
     }
 
-    return result;
+    return nullptr;
 }
 
 int main(int argc, char **argv) {
     if (argc < 4) {
-        cout << "PcapReader [client.pcap] [sourceIp] [destIp] [server.pcap] [sourceIp] [destIp]";
+        cout << "PcapReader [filename] [sourceIp] [destIp]";
         return -1;
     }
-    string clientFilename = argv[1];
+    string filename = argv[1];
     string sourceIp = argv[2];
     string destIp = argv[3];
-    string serverFilename = argv[4];
-    string serverSourceIp = argv[5];
-    string serverDestIp = argv[6];
-
-    struct results clientResult = readPcapFile(clientFilename, sourceIp, destIp);
-    long onesClient = std::count(clientResult.loss.begin(), clientResult.loss.end(), true);
-    double lossClient = (double)onesClient / clientResult.loss.size();
-    cout << "Client loss: " << lossClient << endl;
-
-    struct results serverResult = readPcapFile(serverFilename, serverSourceIp, serverDestIp);
-
-    long onesServer = std::count(serverResult.loss.begin(), serverResult.loss.end(), true);
-    double lossServer = (double)onesServer / serverResult.loss.size();
-
-    cout << "Server loss: " << lossServer << endl;
+    struct results result = readPcapFile(filename, sourceIp, destIp);
+    
     return 0;
 }
