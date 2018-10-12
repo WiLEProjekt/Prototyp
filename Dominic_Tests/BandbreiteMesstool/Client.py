@@ -146,7 +146,7 @@ def main(argv):
     destPort = 50001
 
     signalkill = threading.Event()
-    signalthread = Thread(target=signalstrength, args=(signalkill))
+    signalthread = Thread(target=signalstrength, args=(signalkill, measurementID))
     signalthread.start()
     ################################
     # TCP Bandwidth Upload Measurement
