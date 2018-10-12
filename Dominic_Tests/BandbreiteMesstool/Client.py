@@ -28,45 +28,47 @@ class HuaweiE3372(object):
   def get(self,path):
     return xmltodict.parse(self.session.get(self.base_url + path).text).get('response',None)
 
-def signalstrength(kill):
+def signalstrength(kill, measurementId):
     e3372 = HuaweiE3372()
-    print("<data>")
+    file = open(measurementId + "/Signal" + time.time() + ".xml", "w")
+    file.write("<data>")  # end
     while not kill:
-        print("<set time=", time.time(), ">")
+        file.write("<set time=", time.time(), ">")
 
         for path in e3372.XML_APIS:
             for key, value in e3372.get(path).items():
 
                 # print(key,value)
                 if (key == u'FullName'):
-                    print("<fullname>", value, "</fullname>")
+                    file.write("<fullname>", value, "</fullname>")
                 if (key == u'workmode'):
-                    print("<workmode>", value, "</workmode>")
+                    file.write("<workmode>", value, "</workmode>")
                 if (key == u'rsrq'):
-                    print("<rsrq>", value, "</rsrq>")
+                    file.write("<rsrq>", value, "</rsrq>")
                 if (key == u'rssi'):
-                    print("<rssi>", value, "</rssi>")
+                    file.write("<rssi>", value, "</rssi>")
                 if (key == u'sinr'):
-                    print("<sinr>", value, "</sinr>")
+                    file.write("<sinr>", value, "</sinr>")
                 if (key == u'rsrp'):
-                    print("<rsrp>", value, "</rsrp>")
-        print("</set>")
+                    file.write("<rsrp>", value, "</rsrp>")
+                file.write("</set>")
         time.sleep(1)
-    print("</data>") #end
+        file.write("</data>") #end
+        file.close()
 
-def uploadBandwidth():
+def uploadBandwidth(measurementId):
     try:
-        os.remove("upload.json")
+        os.remove(measurementId + "/upload.json")
     except FileNotFoundError:
         pass
-    os.system("iperf3 -c 131.173.33.228 -p 50000 -t 60 -J --logfile upload.json") #TODO testen ob packetsize limitiert werden muss
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -t 60 -J --logfile " + measurementId + "/upload.json") #TODO testen ob packetsize limitiert werden muss
 
-def downloadBandwidth():
+def downloadBandwidth(measurementId):
     try:
-        os.remove("download.json")
+        os.remove(measurementId + "/download.json")
     except FileNotFoundError:
         pass
-    os.system("iperf3 -c 131.173.33.228 -p 50000 -t 60 -R -J --logfile download.json")  # TODO testen ob packetsize limitiert werden muss
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -t 60 -R -J --logfile " + measurementId + "/download.json")  # TODO testen ob packetsize limitiert werden muss
 
 def readBandwidth(filename):
     file = open(filename, "r")
@@ -135,10 +137,10 @@ def main(argv):
     ################################
     currenttime = str(datetime.now())
     measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
-    pcap_cbr_filename_slow = "client_cbr_slow_"+measurementID
-    pcap_cbr_filename_fast = "client_cbr_fast_"+measurementID
-    pcap_bw_filename_upload = "client_bw_upload_"+measurementID
-    pcap_bw_filename_download = "client_bw_download_"+measurementID
+    pcap_cbr_filename_slow = measurementID + "/client_cbr_slow"
+    pcap_cbr_filename_fast = measurementID + "/client_cbr_fast"
+    pcap_bw_filename_upload = measurementID + "/client_bw_upload"
+    pcap_bw_filename_download = measurementID + "/client_bw_download"
 
     destIP = "131.173.33.228"
     destPort = 50001
@@ -151,7 +153,7 @@ def main(argv):
     ################################
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
-    idup = "server_bw_upload_"+measurementID
+    idup = measurementID + "/server_bw_upload"
     tcpsock.send(idup.encode())
     pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_upload, interface, 'tcp'))
     pcap_bandwith_process.start()
@@ -165,7 +167,7 @@ def main(argv):
     ################################
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
-    iddown = "server_bw_download_"+measurementID
+    iddown = measurementID + "/server_bw_download"
     tcpsock.send(iddown.encode())
     pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_download, interface, 'tcp'))
     pcap_bandwith_process.start()
@@ -177,8 +179,8 @@ def main(argv):
     ################################
     # Fetch Bandwidth results into variable
     ################################
-    uploadspeed = readBandwidth("upload.json")
-    downloadspeed = readBandwidth("download.json")
+    uploadspeed = readBandwidth(measurementID + "/upload.json")
+    downloadspeed = readBandwidth(measurementID + "/download.json")
     print("Upload: {} bit/sec".format(uploadspeed))
     print("Download: {} bit/sec".format(downloadspeed))
 
@@ -191,7 +193,7 @@ def main(argv):
     #slow cbr
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
-    idcbrslow = "server_cbr_slow_"+measurementID
+    idcbrslow = measurementID + "/server_cbr_slow"
     tcpsock.send(idcbrslow.encode())
     pcap_process = multiprocessing.Process(target=write_pcap, args=(pcap_cbr_filename_slow, interface, 'udp'))
     pcap_process.start()
@@ -204,7 +206,7 @@ def main(argv):
     #fast cbr
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
-    idcbrfast = "server_cbr_fast_"+measurementID
+    idcbrfast = measurementID + "/server_cbr_fast"
     tcpsock.send(idcbrfast.encode())
     pcap_process = multiprocessing.Process(target=write_pcap, args=(pcap_cbr_filename_fast, interface, 'udp'))
     pcap_process.start()

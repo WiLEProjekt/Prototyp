@@ -62,7 +62,7 @@ def main(argv):
             conn, addr = sock.accept()
             data = conn.recv(2048)
             measurementID = data.decode()
-            pcapfilename = "server_" + measurementID
+            pcapfilename = measurementID
             print(pcapfilename)
             pcap_process = multiprocessing.Process(target=write_pcap, args=(pcapfilename, interface))
             pcap_process.start()
