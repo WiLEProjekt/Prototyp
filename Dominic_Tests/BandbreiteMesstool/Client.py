@@ -33,7 +33,7 @@ def signalstrength(kill, measurementId):
     file = open(measurementId + "/Signal.xml", "w")
     file.write("<data>")  # end
     while not kill.is_set():
-        file.write("<set time=", str(time.time()), ">")
+        file.write("<set time=" + str(time.time()) + ">")
 
         for path in e3372.XML_APIS:
             for key, value in e3372.get(path).items():
