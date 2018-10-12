@@ -40,17 +40,17 @@ def signalstrength(kill, measurementId):
 
                 # print(key,value)
                 if (key == u'FullName'):
-                    file.write("<fullname>", value, "</fullname>")
+                    file.write("<fullname>" + str(value) + "</fullname>")
                 if (key == u'workmode'):
-                    file.write("<workmode>", value, "</workmode>")
+                    file.write("<workmode>" + str(value) + "</workmode>")
                 if (key == u'rsrq'):
-                    file.write("<rsrq>", value, "</rsrq>")
+                    file.write("<rsrq>" + str(value) + "</rsrq>")
                 if (key == u'rssi'):
-                    file.write("<rssi>", value, "</rssi>")
+                    file.write("<rssi>" + str(value) + "</rssi>")
                 if (key == u'sinr'):
-                    file.write("<sinr>", value, "</sinr>")
+                    file.write("<sinr>" + str(value) + "</sinr>")
                 if (key == u'rsrp'):
-                    file.write("<rsrp>", value, "</rsrp>")
+                    file.write("<rsrp>" + str(value) + "</rsrp>")
                 file.write("</set>")
         time.sleep(1)
     file.write("</data>") #end
