@@ -1,3 +1,4 @@
+import os
 import socket, multiprocessing, pcapy, signal, sys, getopt
 from threading import Thread
 
@@ -62,6 +63,8 @@ def main(argv):
             conn, addr = sock.accept()
             data = conn.recv(2048)
             measurementID = data.decode()
+            if not os.path.exists(measurementID.split('/')[0]):
+                os.makedirs(measurementID.split('/')[0])
             pcapfilename = measurementID
             print(pcapfilename)
             pcap_process = multiprocessing.Process(target=write_pcap, args=(pcapfilename, interface))
