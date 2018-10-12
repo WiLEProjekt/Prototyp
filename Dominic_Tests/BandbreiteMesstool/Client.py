@@ -136,9 +136,9 @@ def main(argv):
     # Create the measurementID
     ################################
     currenttime = str(datetime.now())
-    currenttime.replace(':', '_')
-    currenttime.replace('.', '_')
-    currenttime.replace(' ', '_')
+    currenttime = currenttime.replace(':', '_')
+    currenttime = currenttime.replace('.', '_')
+    currenttime = currenttime.replace(' ', '_')
     measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
     pcap_cbr_filename_slow = measurementID + "/client_cbr_slow"
     pcap_cbr_filename_fast = measurementID + "/client_cbr_fast"
