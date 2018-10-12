@@ -158,7 +158,7 @@ def main(argv):
     pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_upload, interface, 'tcp'))
     pcap_bandwith_process.start()
     time.sleep(1)
-    uploadBandwidth()
+    uploadBandwidth(measurementID)
     pcap_bandwith_process.terminate()
     tcpsock.close()
 
@@ -172,7 +172,7 @@ def main(argv):
     pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_download, interface, 'tcp'))
     pcap_bandwith_process.start()
     time.sleep(1)
-    downloadBandwidth()
+    downloadBandwidth(measurementID)
     pcap_bandwith_process.terminate()
     tcpsock.close()
 
