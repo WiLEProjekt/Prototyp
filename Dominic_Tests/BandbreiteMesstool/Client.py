@@ -27,10 +27,10 @@ def readBandwidth(filename):
 
     return tmp_bandwith / len(usefull_bandwidth)
 
-def CBRupload(speed, a):
+def CBRupload(speed):
     os.system("iperf3 -c 131.173.33.228 -p 50000 -u -t 60 -b " + speed + " -l 1450")
 
-def CBRdownload(speed, a):
+def CBRdownload(speed):
     os.system("iperf3 -c 131.173.33.228 -p 50000 -u -t 60 -b " + speed + " -l 1450 -R")
 
 def signal_term_handler():
@@ -85,18 +85,39 @@ def main(argv):
     measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
     pcap_cbr_filename_slow = "client_cbr_slow_"+measurementID
     pcap_cbr_filename_fast = "client_cbr_fast_"+measurementID
-    pcap_bw_filename = "client_bw_"+measurementID
+    pcap_bw_filename_upload = "client_bw_upload_"+measurementID
+    pcap_bw_filename_download = "client_bw_download_"+measurementID
+
+    destIP = "131.173.33.228"
+    destPort = 50001
 
     ################################
-    # TCP Bandwidth Measurement
+    # TCP Bandwidth Upload Measurement
     ################################
-    pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename, interface, 'tcp'))
+    tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    tcpsock.connect((destIP, destPort))
+    idup = "server_bw_upload_"+measurementID
+    tcpsock.send(idup.encode())
+    pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_upload, interface, 'tcp'))
     pcap_bandwith_process.start()
-
+    time.sleep(1)
     uploadBandwidth()
-    downloadBandwidth()
-
     pcap_bandwith_process.terminate()
+    tcpsock.close()
+
+    ################################
+    # TCP Bandwidth Download Measurement
+    ################################
+    tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    tcpsock.connect((destIP, destPort))
+    iddown = "server_bw_download_"+measurementID
+    tcpsock.send(iddown.encode())
+    pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_download, interface, 'tcp'))
+    pcap_bandwith_process.start()
+    time.sleep(1)
+    downloadBandwidth()
+    pcap_bandwith_process.terminate()
+    tcpsock.close()
 
     ################################
     # Fetch Bandwidth results into variable
@@ -111,25 +132,32 @@ def main(argv):
     ################################
     cbr_slow = int(min(uploadspeed, downloadspeed)/4)
     cbr_fast = int(min(uploadspeed, downloadspeed)*3/4)
-    destIP = "131.173.33.228"
-    destPort = 50002
+
+    #slow cbr
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
-    tcpsock.send(measurementID.encode())
-
+    idcbrslow = "server_cbr_slow_"+measurementID
+    tcpsock.send(idcbrslow.encode())
     pcap_process = multiprocessing.Process(target=write_pcap, args=(pcap_cbr_filename_slow, interface, 'udp'))
     pcap_process.start()
     time.sleep(1)
-    CBRupload(str(cbr_slow), 1)
-    CBRdownload(str(cbr_slow), 1)
+    CBRupload(str(cbr_slow))
+    CBRdownload(str(cbr_slow))
     pcap_process.terminate()
+    tcpsock.close()
 
+    #fast cbr
+    tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
+    tcpsock.connect((destIP, destPort))
+    idcbrfast = "server_cbr_fast_"+measurementID
+    tcpsock.send(idcbrfast.encode())
     pcap_process = multiprocessing.Process(target=write_pcap, args=(pcap_cbr_filename_fast, interface, 'udp'))
     pcap_process.start()
     time.sleep(1)
-    CBRupload(str(cbr_fast), 1)
-    CBRdownload(str(cbr_fast), 1)
+    CBRupload(str(cbr_fast))
+    CBRdownload(str(cbr_fast))
     pcap_process.terminate()
+    time.sleep(1)
 
     tcpsock.close()
 
