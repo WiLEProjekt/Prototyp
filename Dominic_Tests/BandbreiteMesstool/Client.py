@@ -30,7 +30,7 @@ class HuaweiE3372(object):
 
 def signalstrength(kill, measurementId):
     e3372 = HuaweiE3372()
-    file = open(measurementId + "/Signal" + time.time() + ".xml", "w")
+    file = open(measurementId + "/Signal.xml", "w")
     file.write("<data>")  # end
     while not kill:
         file.write("<set time=", time.time(), ">")
@@ -188,6 +188,7 @@ def main(argv):
     ################################
     uploadspeed = readBandwidth(measurementID + "/upload.json")
     downloadspeed = readBandwidth(measurementID + "/download.json")
+
     print("Upload: {} bit/sec".format(uploadspeed))
     print("Download: {} bit/sec".format(downloadspeed))
 
