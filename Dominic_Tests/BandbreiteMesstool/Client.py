@@ -51,7 +51,7 @@ def signalstrength(kill, measurementId):
                     file.write("<sinr>" + str(value) + "</sinr>")
                 if (key == u'rsrp'):
                     file.write("<rsrp>" + str(value) + "</rsrp>")
-                file.write("</set>")
+        file.write("</set>")
         time.sleep(1)
     file.write("</data>") #end
     file.close()
@@ -130,7 +130,7 @@ def main(argv):
             name = arg
         elif opt in ("-i", "--interface"):
             interface = arg
-    print(argv)
+    #print(argv)
 
     ################################
     # Create the measurementID
