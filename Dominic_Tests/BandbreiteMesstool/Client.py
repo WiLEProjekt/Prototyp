@@ -140,6 +140,10 @@ def main(argv):
     currenttime = currenttime.replace('.', '_')
     currenttime = currenttime.replace(' ', '_')
     measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
+
+    if not os.path.exists(measurementID):
+        os.makedirs(measurementID)
+
     pcap_cbr_filename_slow = measurementID + "/client_cbr_slow"
     pcap_cbr_filename_fast = measurementID + "/client_cbr_fast"
     pcap_bw_filename_upload = measurementID + "/client_bw_upload"
