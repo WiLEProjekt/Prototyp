@@ -32,8 +32,8 @@ def signalstrength(kill, measurementId):
     e3372 = HuaweiE3372()
     file = open(measurementId + "/Signal.xml", "w")
     file.write("<data>")  # end
-    while not kill:
-        file.write("<set time=", time.time(), ">")
+    while not kill.is_set():
+        file.write("<set time=", str(time.time()), ">")
 
         for path in e3372.XML_APIS:
             for key, value in e3372.get(path).items():
@@ -53,8 +53,8 @@ def signalstrength(kill, measurementId):
                     file.write("<rsrp>", value, "</rsrp>")
                 file.write("</set>")
         time.sleep(1)
-        file.write("</data>") #end
-        file.close()
+    file.write("</data>") #end
+    file.close()
 
 def uploadBandwidth(measurementId):
     try:
