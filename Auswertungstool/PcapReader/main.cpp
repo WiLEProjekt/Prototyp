@@ -18,13 +18,15 @@ struct result {
      * reordering as the amount of skipped packets
      */
     vector<unsigned long> packetsSkipped;
-    vector<int> duplications;
+    vector<long> duplications;
     vector<struct timeval> delays;
 };
 
 struct pcapValues {
     map<unsigned long, struct timeval> send;
     map<unsigned long, struct timeval> recieved;
+    vector<unsigned long> seqNumsSend;
+    vector<unsigned long> seqNumsReceived;
 };
 
 unsigned int parseNumberFromBytes(const unsigned char *bytes, int length) {
@@ -77,58 +79,92 @@ void printData(const u_char *data, struct pcap_pkthdr *header){
     }
 }
 
-unsigned long* getTimestamps(const map<unsigned long, struct timeval> &timestampMap){
-    unsigned long timestamps[timestampMap.size()];
-    unsigned long i = 0;
-    for(auto& entity : timestampMap){
-        timestamps[i++] = entity.first;
+unsigned long getIndexOf(vector<unsigned long> searchVector, unsigned long value){
+    for(unsigned long i = 0; i < searchVector.size(); i++){
+        if(searchVector[i] == value){
+            return i;
+        }
     }
-    return timestamps;
+
+    return searchVector.size() + 1;
 }
 
-struct result getDelays(map<unsigned long, struct timeval> sendTS, map<unsigned long, struct timeval> recievedTS){
+struct result getResults(pcapValues values){
     struct result results {};
     vector<struct timeval> delays;
     vector<bool> loss;
     vector<unsigned long> skippedPackages;
-    vector<int> duplications;
-    for(auto& send: sendTS){
+    vector<long> duplications;
+
+    /*
+     * Delays and Loss
+     */
+    for(auto& send: values.send){
         struct timeval delay {};
-        auto recieved = recievedTS.find(send.first);
-        if(recieved != recievedTS.end()) {
+        auto recieved = values.recieved.find(send.first);
+        if(recieved != values.recieved.end()) {
             delay.tv_sec = recieved->second.tv_sec - send.second.tv_sec;
             delay.tv_usec = recieved->second.tv_usec - send.second.tv_usec;
-            loss.push_back(true);
+            loss.push_back(false);
         } else {
             delay.tv_sec = -1;
             delay.tv_usec = -1;
-            loss.push_back(false);
+            loss.push_back(true);
         }
         delays.push_back(delay);
     }
-    unsigned long* sendtimestamps = getTimestamps(sendTS);
-    unsigned long* receivedTimestamps = getTimestamps(recievedTS);
-    for(unsigned long i = 0; i < sendTS.size(); i++){
-        unsigned long currentTS = sendtimestamps[i];
-        if(loss[i]){
+
+    cout << "delays and loss finished" << endl;
+
+    /*
+     * Reordering
+     */
+    unsigned long losses = 0;
+    for(unsigned long i = 0; i < values.seqNumsSend.size(); i++){
+        unsigned long currentSeqNum = values.seqNumsSend[i];
+        bool isloss = loss[i+1];
+        if(isloss){
             skippedPackages.push_back(0);
+            losses++;
         } else {
-            for(unsigned long j = i; j < recievedTS.size(); j++){
-                if(receivedTimestamps[j] == currentTS){
-                    
+            bool seqNumFound = false;
+            unsigned long j;
+            for(j = 0; i + j - losses < values.seqNumsReceived.size() && !seqNumFound; j++){
+                unsigned long seqNum = values.seqNumsReceived[i + j - losses];
+                if(seqNum == currentSeqNum){
+                    skippedPackages.push_back(j);
+                    seqNumFound = true;
                 }
             }
         }
     }
 
+    cout << skippedPackages.size() << " reordering finished" << endl;
+    /*
+     * Duplication
+     */
+    for (unsigned long sendSeqNum : values.seqNumsSend) {
+        vector<unsigned long> matches;
+        copy_if(values.seqNumsReceived.begin(), values.seqNumsReceived.end(), back_inserter(matches), [&](unsigned long v){
+            return v == sendSeqNum;
+        });
+        duplications.push_back(matches.size() - 1);
+    }
+
+    cout << "duplication finished" << endl;
+
     results.delays = delays;
     results.loss = loss;
+    results.packetsSkipped = skippedPackages;
+    results.duplications = duplications;
     return results;
 }
 
 struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice) {
     map<unsigned long, struct timeval> toOtherTS;
     map<unsigned long, struct timeval> toSelfTS;
+    vector<unsigned long> timestampsSend;
+    vector<unsigned long> timestampsReceived;
 
     struct pcapValues result{};
 
@@ -165,12 +201,14 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
                         isFirstPackageToOther = false;
                     } else {
                         toOtherTS[seqNum] = header->ts;
+                        timestampsSend.push_back(seqNum);
                     }
                 } else if (ipOfPcapDevice == packetDest && ipOfOtherDevice == packetSource) {
                     if(isFirstPackageToSelf) {
                         isFirstPackageToSelf = false;
                     } else {
                         toSelfTS[seqNum] = header->ts;
+                        timestampsReceived.push_back(seqNum);
                     }
                 }
             }
@@ -179,6 +217,8 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
 
         result.send = toOtherTS;
         result.recieved = toSelfTS;
+        result.seqNumsReceived = timestampsReceived;
+        result.seqNumsSend = timestampsSend;
 
         return result;
     }
@@ -212,13 +252,15 @@ void writeResultToFile(result upload, result download) {
     for(bool b : upload.loss){
         uploadLossFile << b;
     }
+    uploadLossFile.flush();
     uploadLossFile.close();
 
     ofstream downloadLossFile;
-    uploadLossFile.open("downloadLoss.txt");
+    downloadLossFile.open("downloadLoss.txt");
     for(bool b : download.loss){
         downloadLossFile << b;
     }
+    downloadLossFile.flush();
     downloadLossFile.close();
 
     ofstream uploadDelayFile;
@@ -226,6 +268,7 @@ void writeResultToFile(result upload, result download) {
     for(struct timeval tv : upload.delays){
         uploadDelayFile << tv.tv_sec << "." << tv.tv_usec << ";";
     }
+    uploadDelayFile.flush();
     uploadDelayFile.close();
 
     ofstream downloadDelayFile;
@@ -233,7 +276,40 @@ void writeResultToFile(result upload, result download) {
     for(struct timeval tv : download.delays){
         downloadDelayFile << tv.tv_sec << "." << tv.tv_usec << ";";
     }
+    downloadDelayFile.flush();
     downloadDelayFile.close();
+
+    ofstream uploadDuplicationFile;
+    uploadDuplicationFile.open("uploadDuplication.txt");
+    for(long dupli : upload.duplications){
+        uploadDuplicationFile << dupli << ";";
+    }
+    uploadDuplicationFile.flush();
+    uploadDuplicationFile.close();
+
+    ofstream downloadDuplicationFile;
+    downloadDuplicationFile.open("downloadDuplication.txt");
+    for(long dupli : download.duplications){
+        downloadDuplicationFile << dupli << ";";
+    }
+    downloadDuplicationFile.flush();
+    downloadDuplicationFile.close();
+
+    ofstream uploadReorderingFile;
+    uploadReorderingFile.open("uploadReordering.txt");
+    for(unsigned long reor : upload.packetsSkipped){
+        uploadReorderingFile << reor << ";";
+    }
+    uploadReorderingFile.flush();
+    uploadReorderingFile.close();
+
+    ofstream downloadReorderingFile;
+    downloadReorderingFile.open("downloadReordering.txt");
+    for(unsigned long reor : download.packetsSkipped){
+        downloadReorderingFile << reor << ";";
+    }
+    downloadReorderingFile.flush();
+    downloadReorderingFile.close();
 }
 
 int main(int argc, char **argv) {
@@ -246,11 +322,24 @@ int main(int argc, char **argv) {
     string serverIp = argv[3];
     string localeClientIp = argv[4];
     string globalClientIp = argv[5];
-    struct pcapValues clientResult = readPcapFile(clientFilename, localeClientIp, serverIp);
-    struct pcapValues serverResult = readPcapFile(serverFilename, serverIp, globalClientIp);
+    struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
+    struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
 
-    struct result uploadResult = getDelays(clientResult.send, serverResult.recieved);
-    struct result downloadResult = getDelays(serverResult.send, clientResult.recieved);
+    struct pcapValues downloadValues{};
+    struct pcapValues uploadValues{};
+
+    downloadValues.seqNumsSend = serverValues.seqNumsSend;
+    downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+    downloadValues.send = serverValues.send;
+    downloadValues.recieved = clientValues.recieved;
+
+    uploadValues.seqNumsSend = clientValues.seqNumsSend;
+    uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+    uploadValues.send = clientValues.send;
+    uploadValues.recieved = serverValues.recieved;
+
+    struct result uploadResult = getResults(uploadValues);
+    struct result downloadResult = getResults(downloadValues);
 
     //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
     writeResultToFile(uploadResult, downloadResult);
