@@ -9,10 +9,16 @@
 
 using namespace std;
 
-const unsigned int MAX_SEQ_NUM = 65535;
-
 struct result {
+    /**
+     * 0 = packet arrived, 1 = packet lost
+     */
     vector<bool> loss;
+    /**
+     * reordering as the amount of skipped packets
+     */
+    vector<unsigned long> packetsSkipped;
+    vector<int> duplications;
     vector<struct timeval> delays;
 };
 
@@ -71,10 +77,21 @@ void printData(const u_char *data, struct pcap_pkthdr *header){
     }
 }
 
+unsigned long* getTimestamps(const map<unsigned long, struct timeval> &timestampMap){
+    unsigned long timestamps[timestampMap.size()];
+    unsigned long i = 0;
+    for(auto& entity : timestampMap){
+        timestamps[i++] = entity.first;
+    }
+    return timestamps;
+}
+
 struct result getDelays(map<unsigned long, struct timeval> sendTS, map<unsigned long, struct timeval> recievedTS){
     struct result results {};
     vector<struct timeval> delays;
     vector<bool> loss;
+    vector<unsigned long> skippedPackages;
+    vector<int> duplications;
     for(auto& send: sendTS){
         struct timeval delay {};
         auto recieved = recievedTS.find(send.first);
@@ -89,6 +106,21 @@ struct result getDelays(map<unsigned long, struct timeval> sendTS, map<unsigned 
         }
         delays.push_back(delay);
     }
+    unsigned long* sendtimestamps = getTimestamps(sendTS);
+    unsigned long* receivedTimestamps = getTimestamps(recievedTS);
+    for(unsigned long i = 0; i < sendTS.size(); i++){
+        unsigned long currentTS = sendtimestamps[i];
+        if(loss[i]){
+            skippedPackages.push_back(0);
+        } else {
+            for(unsigned long j = i; j < recievedTS.size(); j++){
+                if(receivedTimestamps[j] == currentTS){
+                    
+                }
+            }
+        }
+    }
+
     results.delays = delays;
     results.loss = loss;
     return results;
