@@ -30,30 +30,28 @@ class HuaweiE3372(object):
 
 def signalstrength(kill, measurementId):
     e3372 = HuaweiE3372()
-    file = open(measurementId + "/Signal.xml", "w")
-    file.write("<data>")  # end
+    file = open(measurementId + "/Signal.csv", "w")
     while not kill.is_set():
-        file.write("<set time=" + str(time.time()) + ">")
+        file.write(str(time.time()))
 
         for path in e3372.XML_APIS:
             for key, value in e3372.get(path).items():
 
                 # print(key,value)
                 if (key == u'FullName'):
-                    file.write("<fullname>" + str(value) + "</fullname>")
+                    file.write(";" + str(value))
                 if (key == u'workmode'):
-                    file.write("<workmode>" + str(value) + "</workmode>")
+                    file.write(";" + str(value))
                 if (key == u'rsrq'):
-                    file.write("<rsrq>" + str(value) + "</rsrq>")
+                    file.write(";" + str(value))
                 if (key == u'rssi'):
-                    file.write("<rssi>" + str(value) + "</rssi>")
+                    file.write(";" + str(value))
                 if (key == u'sinr'):
-                    file.write("<sinr>" + str(value) + "</sinr>")
+                    file.write(";" + str(value))
                 if (key == u'rsrp'):
-                    file.write("<rsrp>" + str(value) + "</rsrp>")
-        file.write("</set>")
-        time.sleep(1)
-    file.write("</data>") #end
+                    file.write(";" + str(value))
+        file.write("\n")
+        time.sleep(0.5)
     file.close()
 
 def uploadBandwidth(measurementId):
@@ -115,14 +113,16 @@ def main(argv):
     region = ''
     name = ''
     interface = ''
+    langitude = ''
+    longitude = ''
     try:
-        opts, args = getopt.getopt(argv, "hr:n:i:", ["region", "name", "interface"])
+        opts, args = getopt.getopt(argv, "hr:n:i:x:y:", ["region", "name", "interface","langitude","longitude"])
     except getopt.GetoptError:
-        print("Usage: python3 Client.py -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck> -i <networkinterface")
+        print("Usage: python3 Client.py -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck> -i <networkinterface> -x <langitude> -y <longitude>")
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print("Parameters: -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck> -i <networkinterface")
+            print("Parameters: -r <region, [urban|suburban|rural]> -n <regionname e.g Osnabrueck> -i <networkinterface> -x <langitude> -y <longitude>")
             sys.exit()
         elif opt in ("-r", "--region"):
             region = arg
@@ -130,6 +130,12 @@ def main(argv):
             name = arg
         elif opt in ("-i", "--interface"):
             interface = arg
+        elif opt in ("-x", "--langitude"):
+            langitude = arg
+        elif opt in ("-y", "--longitude"):
+            longitude = arg
+
+	
     #print(argv)
 
     ################################
@@ -139,10 +145,15 @@ def main(argv):
     currenttime = currenttime.replace(':', '_')
     currenttime = currenttime.replace('.', '_')
     currenttime = currenttime.replace(' ', '_')
-    measurementID = region + "_" + name + "_" + currenttime #TODO add signal strength
+    measurementID = currenttime + "_" + name + "_" + region 
+
 
     if not os.path.exists(measurementID):
         os.makedirs(measurementID)
+
+    file = open(measurementID + "/coordinates.txt", "w")
+    file.write(langitude + "\n" + longitude)
+    file.close()
 
     pcap_cbr_filename_slow = measurementID + "/client_cbr_slow"
     pcap_cbr_filename_fast = measurementID + "/client_cbr_fast"
