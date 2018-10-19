@@ -30,9 +30,11 @@ class HuaweiE3372(object):
 
 def signalstrength(kill, measurementId):
     e3372 = HuaweiE3372()
+
     file = open(measurementId + "/Signal.csv", "w")
     while not kill.is_set():
         file.write(str(time.time()))
+
 
         for path in e3372.XML_APIS:
             for key, value in e3372.get(path).items():
@@ -52,6 +54,7 @@ def signalstrength(kill, measurementId):
                     file.write(";" + str(value))
         file.write("\n")
         time.sleep(0.5)
+
     file.close()
 
 def uploadBandwidth(measurementId):
