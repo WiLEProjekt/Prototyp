@@ -2,7 +2,7 @@
 #include <pcap.h>
 #include <sys/stat.h>
 #include <cmath>
-#include <vector>
+#include <utility> #include <vector>
 #include <algorithm>
 #include <map>
 #include <fstream>
@@ -19,7 +19,7 @@ struct result {
      */
     vector<unsigned long> packetsSkipped;
     vector<long> duplications;
-    vector<struct timeval> delays;
+    vector<uint64_t> delays;
 };
 
 struct pcapValues {
@@ -91,7 +91,7 @@ unsigned long getIndexOf(vector<unsigned long> searchVector, unsigned long value
 
 struct result getResults(pcapValues values){
     struct result results {};
-    vector<struct timeval> delays;
+    vector<uint64_t> delays;
     vector<bool> loss;
     vector<unsigned long> skippedPackages;
     vector<long> duplications;
@@ -100,16 +100,16 @@ struct result getResults(pcapValues values){
      * Delays and Loss
      */
     for(auto& send: values.send){
-        struct timeval delay {};
+        uint64_t delay {};
         auto recieved = values.recieved.find(send.first);
         if(recieved != values.recieved.end()) {
-            delay.tv_sec = recieved->second.tv_sec - send.second.tv_sec;
-            delay.tv_usec = recieved->second.tv_usec - send.second.tv_usec;
-            loss.push_back(false);
-        } else {
-            delay.tv_sec = -1;
-            delay.tv_usec = -1;
+            uint64_t recievedTs = (recieved->second.tv_sec * (uint64_t)1000) + (recieved->second.tv_usec / 1000);
+            uint64_t sendTs = (send.second.tv_sec * (uint64_t)1000) + (send.second.tv_usec / 1000);
+            delay = recievedTs - sendTs;
             loss.push_back(true);
+        } else {
+            delay = 0;
+            loss.push_back(false);
         }
         delays.push_back(delay);
     }
@@ -143,12 +143,22 @@ struct result getResults(pcapValues values){
     /*
      * Duplication
      */
-    for (unsigned long sendSeqNum : values.seqNumsSend) {
+    map<unsigned long, unsigned long> duplictationsFound;
+    for(unsigned long sendSeqNum : values.seqNumsSend){
+        duplictationsFound[sendSeqNum] = 0;
+    }
+    for(unsigned long recSeqNum : values.seqNumsReceived){
+        duplictationsFound[recSeqNum] += 1;
+    }
+    /*for (unsigned long sendSeqNum : values.seqNumsSend) {
         vector<unsigned long> matches;
         copy_if(values.seqNumsReceived.begin(), values.seqNumsReceived.end(), back_inserter(matches), [&](unsigned long v){
             return v == sendSeqNum;
         });
         duplications.push_back(matches.size() - 1);
+    }*/
+    for(auto& dupli : duplictationsFound){
+        duplications.push_back(dupli.second);
     }
 
     cout << "duplication finished" << endl;
@@ -246,9 +256,11 @@ void printResult(const vector<bool> &clientToServerLoss, const vector<bool> &ser
     }
 }
 
-void writeResultToFile(result upload, result download) {
+void writeResultToFile(const string &path, result upload, result download){
     ofstream uploadLossFile;
-    uploadLossFile.open("uploadLoss.txt");
+    string pathcommand = "mkdir -p " + path;
+    system(pathcommand.c_str());
+    uploadLossFile.open(path + "uploadLoss.txt");
     for(bool b : upload.loss){
         uploadLossFile << b;
     }
@@ -256,7 +268,7 @@ void writeResultToFile(result upload, result download) {
     uploadLossFile.close();
 
     ofstream downloadLossFile;
-    downloadLossFile.open("downloadLoss.txt");
+    downloadLossFile.open(path + "downloadLoss.txt");
     for(bool b : download.loss){
         downloadLossFile << b;
     }
@@ -264,23 +276,24 @@ void writeResultToFile(result upload, result download) {
     downloadLossFile.close();
 
     ofstream uploadDelayFile;
-    uploadDelayFile.open("uploadDelays.csv");
-    for(struct timeval tv : upload.delays){
-        uploadDelayFile << tv.tv_sec << "." << tv.tv_usec << ";";
+    uploadDelayFile.open(path + "uploadDelays.csv");
+    for(uint64_t ts: upload.delays){
+        uploadDelayFile << ts << ";";
     }
     uploadDelayFile.flush();
     uploadDelayFile.close();
 
     ofstream downloadDelayFile;
-    downloadDelayFile.open("downloadDelays.csv");
-    for(struct timeval tv : download.delays){
-        downloadDelayFile << tv.tv_sec << "." << tv.tv_usec << ";";
+    downloadDelayFile.open(path + "downloadDelays.csv");
+    for(uint64_t ts: download.delays){
+        downloadDelayFile << ts << ";";
     }
     downloadDelayFile.flush();
     downloadDelayFile.close();
 
     ofstream uploadDuplicationFile;
-    uploadDuplicationFile.open("uploadDuplication.txt");
+    string filename  =path + "uploadDuplication.txt";
+    uploadDuplicationFile.open(filename);
     for(long dupli : upload.duplications){
         uploadDuplicationFile << dupli << ";";
     }
@@ -288,7 +301,7 @@ void writeResultToFile(result upload, result download) {
     uploadDuplicationFile.close();
 
     ofstream downloadDuplicationFile;
-    downloadDuplicationFile.open("downloadDuplication.txt");
+    downloadDuplicationFile.open(path + "downloadDuplication.txt");
     for(long dupli : download.duplications){
         downloadDuplicationFile << dupli << ";";
     }
@@ -296,7 +309,7 @@ void writeResultToFile(result upload, result download) {
     downloadDuplicationFile.close();
 
     ofstream uploadReorderingFile;
-    uploadReorderingFile.open("uploadReordering.txt");
+    uploadReorderingFile.open(path + "uploadReordering.txt");
     for(unsigned long reor : upload.packetsSkipped){
         uploadReorderingFile << reor << ";";
     }
@@ -304,7 +317,7 @@ void writeResultToFile(result upload, result download) {
     uploadReorderingFile.close();
 
     ofstream downloadReorderingFile;
-    downloadReorderingFile.open("downloadReordering.txt");
+    downloadReorderingFile.open(path + "downloadReordering.txt");
     for(unsigned long reor : download.packetsSkipped){
         downloadReorderingFile << reor << ";";
     }
@@ -312,37 +325,90 @@ void writeResultToFile(result upload, result download) {
     downloadReorderingFile.close();
 }
 
+
+void writeResultToFile(result upload, result download) {
+    string path = "Ergebnis/";
+    writeResultToFile(path, std::move(upload), std::move(download));
+}
+
 int main(int argc, char **argv) {
-    if (argc < 4) {
+    if (argc < 5) {
         cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp]";
+        cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]";
         return -1;
     }
-    string clientFilename = argv[1];
-    string serverFilename = argv[2];
-    string serverIp = argv[3];
-    string localeClientIp = argv[4];
-    string globalClientIp = argv[5];
-    struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
-    struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
+    string clientFilename;
+    string serverFilename;
+    string serverIp;
+    string localeClientIp;
+    string globalClientIp;
+    if(argc == 6) {
+        clientFilename = argv[1];
+        serverFilename = argv[2];
+        serverIp = argv[3];
+        localeClientIp = argv[4];
+        globalClientIp = argv[5];
 
-    struct pcapValues downloadValues{};
-    struct pcapValues uploadValues{};
+        struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
+        struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
 
-    downloadValues.seqNumsSend = serverValues.seqNumsSend;
-    downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
-    downloadValues.send = serverValues.send;
-    downloadValues.recieved = clientValues.recieved;
+        struct pcapValues downloadValues{};
+        struct pcapValues uploadValues{};
 
-    uploadValues.seqNumsSend = clientValues.seqNumsSend;
-    uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
-    uploadValues.send = clientValues.send;
-    uploadValues.recieved = serverValues.recieved;
+        downloadValues.seqNumsSend = serverValues.seqNumsSend;
+        downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+        downloadValues.send = serverValues.send;
+        downloadValues.recieved = clientValues.recieved;
 
-    struct result uploadResult = getResults(uploadValues);
-    struct result downloadResult = getResults(downloadValues);
+        uploadValues.seqNumsSend = clientValues.seqNumsSend;
+        uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+        uploadValues.send = clientValues.send;
+        uploadValues.recieved = serverValues.recieved;
 
-    //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
-    writeResultToFile(uploadResult, downloadResult);
+        struct result uploadResult = getResults(uploadValues);
+        struct result downloadResult = getResults(downloadValues);
+
+        //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
+        writeResultToFile(uploadResult, downloadResult);
+    } else if(argc == 5){
+        string path = argv[1];
+        serverIp = argv[2];
+        localeClientIp = argv[3];
+        globalClientIp = argv[4];
+        for(int i = 0; i < 2; i++) {
+            string cbrMode = "fast";
+            if(i == 0){
+                cbrMode = "slow";
+            }
+            clientFilename = path + "/client_cbr_" + cbrMode + ".pcap";
+            serverFilename = path + "/server_cbr_" + cbrMode + ".pcap";
+
+            struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
+            struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
+
+            struct pcapValues downloadValues{};
+            struct pcapValues uploadValues{};
+
+            downloadValues.seqNumsSend = serverValues.seqNumsSend;
+            downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+            downloadValues.send = serverValues.send;
+            downloadValues.recieved = clientValues.recieved;
+
+            uploadValues.seqNumsSend = clientValues.seqNumsSend;
+            uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+            uploadValues.send = clientValues.send;
+            uploadValues.recieved = serverValues.recieved;
+
+            struct result uploadResult = getResults(uploadValues);
+            struct result downloadResult = getResults(downloadValues);
+
+            string resultPath = path + "/Ergebnis_" + cbrMode + "/";
+            //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
+            writeResultToFile(resultPath, uploadResult, downloadResult);
+        }
+    }
+
+
 
     return 0;
 }
