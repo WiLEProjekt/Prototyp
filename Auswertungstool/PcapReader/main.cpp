@@ -2,10 +2,12 @@
 #include <pcap.h>
 #include <sys/stat.h>
 #include <cmath>
-#include <utility> #include <vector>
+#include <utility>
+#include <vector>
 #include <algorithm>
 #include <map>
 #include <fstream>
+#include <string>
 
 using namespace std;
 
@@ -19,14 +21,19 @@ struct result {
      */
     vector<unsigned long> packetsSkipped;
     vector<long> duplications;
-    vector<uint64_t> delays;
+    vector<int64_t> delays;
 };
 
 struct pcapValues {
     map<unsigned long, struct timeval> send;
-    map<unsigned long, struct timeval> recieved;
+    map<unsigned long, struct timeval> received;
     vector<unsigned long> seqNumsSend;
     vector<unsigned long> seqNumsReceived;
+};
+
+struct pingValues {
+    map<unsigned long, struct timeval> send;
+    map<unsigned long, struct timeval> received;
 };
 
 unsigned int parseNumberFromBytes(const unsigned char *bytes, int length) {
@@ -54,6 +61,12 @@ unsigned long getSeqNum(const u_char *data) {
     //Data start: 42
     unsigned char seqNumBytes[] = {data[50], data[51], data[52], data[53]};
     unsigned long seqNum = parseNumberFromBytes(seqNumBytes, 4);
+    return seqNum;
+}
+
+unsigned long getSeqNumPing(const u_char *data){
+    unsigned char seqNumBytes[] = {data[40], data[41]};
+    unsigned long seqNum = parseNumberFromBytes(seqNumBytes, 2);
     return seqNum;
 }
 
@@ -89,9 +102,45 @@ unsigned long getIndexOf(vector<unsigned long> searchVector, unsigned long value
     return searchVector.size() + 1;
 }
 
-struct result getResults(pcapValues values){
+uint64_t getMillisFromTimeval(struct timeval tv){
+    return  (tv.tv_sec * (uint64_t)1000) + (tv.tv_usec / 1000);
+}
+
+uint64_t getMicrosFromTimeval(struct timeval tv){
+    return (tv.tv_sec *(uint64_t)1000000) + tv.tv_usec;
+}
+
+vector<double> getPingResults(struct pingValues clientValues, struct pingValues serverValues){
+    vector<double> delays;
+    for(auto& clientSend: clientValues.send) {
+        uint64_t delay{};
+        auto serverReceived = serverValues.received.find(clientSend.first);
+        if (serverReceived != serverValues.received.end()) {
+            uint64_t clientSendMicros = getMicrosFromTimeval(clientSend.second);
+            uint64_t serverReceivedMicros = getMicrosFromTimeval(serverReceived->second);
+
+            auto serverSend = serverValues.send.find(clientSend.first);
+            if(serverSend != serverValues.send.end()) {
+                auto clientReceived = clientValues.received.find(serverSend->first);
+                if(clientReceived != clientValues.received.end()) {
+                    uint64_t serverSendMicros = getMicrosFromTimeval(serverSend->second);
+                    uint64_t clientReceivedMicros = getMicrosFromTimeval(clientReceived->second);
+
+                    int64_t clientToServerDelay = serverReceivedMicros - clientSendMicros;
+                    int64_t serverToClientDelay = clientReceivedMicros - serverSendMicros;
+                    double result = clientToServerDelay + serverToClientDelay;
+                    result /= 1000;
+                    delays.push_back(result);
+                }
+            }
+        }
+    }
+    return delays;
+}
+
+struct result getResults(struct pcapValues values){
     struct result results {};
-    vector<uint64_t> delays;
+    vector<int64_t> delays;
     vector<bool> loss;
     vector<unsigned long> skippedPackages;
     vector<long> duplications;
@@ -101,10 +150,10 @@ struct result getResults(pcapValues values){
      */
     for(auto& send: values.send){
         uint64_t delay {};
-        auto recieved = values.recieved.find(send.first);
-        if(recieved != values.recieved.end()) {
-            uint64_t recievedTs = (recieved->second.tv_sec * (uint64_t)1000) + (recieved->second.tv_usec / 1000);
-            uint64_t sendTs = (send.second.tv_sec * (uint64_t)1000) + (send.second.tv_usec / 1000);
+        auto recieved = values.received.find(send.first);
+        if(recieved != values.received.end()) {
+            uint64_t recievedTs = getMillisFromTimeval(recieved->second);
+            uint64_t sendTs = getMillisFromTimeval(send.second);
             delay = recievedTs - sendTs;
             loss.push_back(true);
         } else {
@@ -170,6 +219,44 @@ struct result getResults(pcapValues values){
     return results;
 }
 
+struct pingValues readPingFile(const string& filename, const string &ipOfPcapDevice, const string& ipOfOtherDevice) {
+    map<unsigned long, struct timeval> toOtherTS;
+    map<unsigned long, struct timeval> toSelfTS;
+    struct pingValues result{};
+
+    struct stat buffer{};
+    if (stat(filename.c_str(), &buffer) != 0) {
+        cout << "file " << filename << " not found" << endl;
+    } else {
+        char errbuff[PCAP_ERRBUF_SIZE];
+        pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
+        struct pcap_pkthdr *header;
+        const u_char *data;
+
+        while (pcap_next_ex(pcap, &header, &data) >= 0) {
+            //Data[23] == 1: ICMP
+            if (data[23] == 1) {
+                unsigned char sourceIPBytes[] = {data[26], data[27], data[28], data[29]};
+                unsigned char destIPBytes[] = {data[30], data[31], data[32], data[33]};
+                string packetSource = parseIP(sourceIPBytes);
+                string packetDest = parseIP(destIPBytes);
+
+                unsigned long seqNum = getSeqNumPing(data);
+
+                if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
+                    toOtherTS[seqNum] = header->ts;
+                } else if (ipOfPcapDevice == packetDest && ipOfOtherDevice == packetSource) {
+                    toSelfTS[seqNum] = header->ts;
+                }
+            }
+        }
+        pcap_close(pcap);
+        result.send = toOtherTS;
+        result.received = toSelfTS;
+    }
+    return result;
+}
+
 struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice) {
     map<unsigned long, struct timeval> toOtherTS;
     map<unsigned long, struct timeval> toSelfTS;
@@ -186,8 +273,10 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
         pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
         struct pcap_pkthdr *header;
         const u_char *data;
+        //BRAUCHEN WIR DAS NOCH??????
         bool isFirstPackageToOther = true;
         bool isFirstPackageToSelf = true;
+        //-------
         unsigned long packageCount = 0;
         while (pcap_next_ex(pcap, &header, &data) >= 0) {
             if (header->len != header->caplen) {
@@ -226,7 +315,7 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
         pcap_close(pcap);
 
         result.send = toOtherTS;
-        result.recieved = toSelfTS;
+        result.received = toSelfTS;
         result.seqNumsReceived = timestampsReceived;
         result.seqNumsSend = timestampsSend;
 
@@ -256,6 +345,26 @@ void printResult(const vector<bool> &clientToServerLoss, const vector<bool> &ser
     }
 }
 
+void writeDelayFile(const string& filename, vector<int64_t> delays){
+    ofstream uploadDelayFile;
+    uploadDelayFile.open(filename);
+    for(int64_t ts: delays){
+        uploadDelayFile << ts << ";";
+    }
+    uploadDelayFile.flush();
+    uploadDelayFile.close();
+}
+
+void writeDelayFile(const string& filename, vector<double> delays){
+    ofstream uploadDelayFile;
+    uploadDelayFile.open(filename);
+    for(double ts: delays){
+        uploadDelayFile << ts << ";";
+    }
+    uploadDelayFile.flush();
+    uploadDelayFile.close();
+}
+
 void writeResultToFile(const string &path, result upload, result download){
     ofstream uploadLossFile;
     string pathcommand = "mkdir -p " + path;
@@ -275,24 +384,14 @@ void writeResultToFile(const string &path, result upload, result download){
     downloadLossFile.flush();
     downloadLossFile.close();
 
-    ofstream uploadDelayFile;
-    uploadDelayFile.open(path + "uploadDelays.csv");
-    for(uint64_t ts: upload.delays){
-        uploadDelayFile << ts << ";";
-    }
-    uploadDelayFile.flush();
-    uploadDelayFile.close();
+    string uploadDelayFilename = path + "uploadDelays.csv";
+    writeDelayFile(uploadDelayFilename, upload.delays);
 
-    ofstream downloadDelayFile;
-    downloadDelayFile.open(path + "downloadDelays.csv");
-    for(uint64_t ts: download.delays){
-        downloadDelayFile << ts << ";";
-    }
-    downloadDelayFile.flush();
-    downloadDelayFile.close();
+    string downloadDelayFilename = path + "downloadDelays.csv";
+    writeDelayFile(downloadDelayFilename, download.delays);
 
     ofstream uploadDuplicationFile;
-    string filename  =path + "uploadDuplication.txt";
+    string filename = path + "uploadDuplication.txt";
     uploadDuplicationFile.open(filename);
     for(long dupli : upload.duplications){
         uploadDuplicationFile << dupli << ";";
@@ -331,57 +430,62 @@ void writeResultToFile(result upload, result download) {
     writeResultToFile(path, std::move(upload), std::move(download));
 }
 
+vector<double> readPingLog(const string &filename) {
+    vector<double> pingResults;
+    ifstream file;
+    file.open(filename, ios::in);
+    string line;
+    while(getline(file, line)){
+        double ping = stod(line);
+        pingResults.push_back(ping);
+    }
+    file.close();
+    return pingResults;
+}
+
 int main(int argc, char **argv) {
     if (argc < 5) {
-        cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp]";
-        cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]";
+        cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp]" << endl;
+        cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]" << endl;
+        cout << "PcapReader [path to pcaps] [serverIp] [clientIp] -p" << endl;
         return -1;
     }
     string clientFilename;
     string serverFilename;
     string serverIp;
     string localeClientIp;
-    string globalClientIp;
-    if(argc == 6) {
-        clientFilename = argv[1];
-        serverFilename = argv[2];
-        serverIp = argv[3];
-        localeClientIp = argv[4];
-        globalClientIp = argv[5];
+    string globalClientIp = argv[4];
 
-        struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
-        struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
-
-        struct pcapValues downloadValues{};
-        struct pcapValues uploadValues{};
-
-        downloadValues.seqNumsSend = serverValues.seqNumsSend;
-        downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
-        downloadValues.send = serverValues.send;
-        downloadValues.recieved = clientValues.recieved;
-
-        uploadValues.seqNumsSend = clientValues.seqNumsSend;
-        uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
-        uploadValues.send = clientValues.send;
-        uploadValues.recieved = serverValues.recieved;
-
-        struct result uploadResult = getResults(uploadValues);
-        struct result downloadResult = getResults(downloadValues);
-
-        //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
-        writeResultToFile(uploadResult, downloadResult);
-    } else if(argc == 5){
+    if(globalClientIp == "-p"){
         string path = argv[1];
         serverIp = argv[2];
-        localeClientIp = argv[3];
-        globalClientIp = argv[4];
-        for(int i = 0; i < 2; i++) {
-            string cbrMode = "fast";
-            if(i == 0){
-                cbrMode = "slow";
+        string clientIp = argv[3];
+        clientFilename = path + "/pingClient.pcap";
+        serverFilename = path + "/pingServer.pcap";
+        string pinglogFilename = path + "/ping.txt";
+
+        struct pingValues clientValues = readPingFile(clientFilename, clientIp, serverIp);
+        struct pingValues serverValues = readPingFile(serverFilename, serverIp, clientIp);
+
+        vector<double> delays = getPingResults(clientValues, serverValues);
+        vector<double> pings = readPingLog(pinglogFilename);
+        vector<double> results;
+        if(delays.size() == pings.size()){
+            for(int i = 0; i < delays.size(); i++){
+                results.push_back(delays[i] - pings[i]);
             }
-            clientFilename = path + "/client_cbr_" + cbrMode + ".pcap";
-            serverFilename = path + "/server_cbr_" + cbrMode + ".pcap";
+        } else {
+            cerr << "ERROR pcaps results: " << delays.size() << " ping results: " << pings.size() << endl;
+        }
+
+        writeDelayFile(path + "/result.csv", results);
+    } else {
+        if (argc == 6) {
+            clientFilename = argv[1];
+            serverFilename = argv[2];
+            serverIp = argv[3];
+            localeClientIp = argv[4];
+            globalClientIp = argv[5];
 
             struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
             struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
@@ -392,19 +496,54 @@ int main(int argc, char **argv) {
             downloadValues.seqNumsSend = serverValues.seqNumsSend;
             downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
             downloadValues.send = serverValues.send;
-            downloadValues.recieved = clientValues.recieved;
+            downloadValues.received = clientValues.received;
 
             uploadValues.seqNumsSend = clientValues.seqNumsSend;
             uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
             uploadValues.send = clientValues.send;
-            uploadValues.recieved = serverValues.recieved;
+            uploadValues.received = serverValues.received;
 
             struct result uploadResult = getResults(uploadValues);
             struct result downloadResult = getResults(downloadValues);
 
-            string resultPath = path + "/Ergebnis_" + cbrMode + "/";
             //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
-            writeResultToFile(resultPath, uploadResult, downloadResult);
+            writeResultToFile(uploadResult, downloadResult);
+        } else if (argc == 5) {
+            string path = argv[1];
+            serverIp = argv[2];
+            localeClientIp = argv[3];
+            globalClientIp = argv[4];
+            for (int i = 0; i < 2; i++) {
+                string cbrMode = "fast";
+                if (i == 0) {
+                    cbrMode = "slow";
+                }
+                clientFilename = path + "/client_cbr_" + cbrMode + ".pcap";
+                serverFilename = path + "/server_cbr_" + cbrMode + ".pcap";
+
+                struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
+                struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
+
+                struct pcapValues downloadValues{};
+                struct pcapValues uploadValues{};
+
+                downloadValues.seqNumsSend = serverValues.seqNumsSend;
+                downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+                downloadValues.send = serverValues.send;
+                downloadValues.received = clientValues.received;
+
+                uploadValues.seqNumsSend = clientValues.seqNumsSend;
+                uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+                uploadValues.send = clientValues.send;
+                uploadValues.received = serverValues.received;
+
+                struct result uploadResult = getResults(uploadValues);
+                struct result downloadResult = getResults(downloadValues);
+
+                string resultPath = path + "/Ergebnis_" + cbrMode + "/";
+                //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
+                writeResultToFile(resultPath, uploadResult, downloadResult);
+            }
         }
     }
 
