@@ -447,45 +447,47 @@ int main(int argc, char **argv) {
     if (argc < 5) {
         cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp]" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]" << endl;
-        cout << "PcapReader [path to pcaps] [serverIp] [clientIp] -p" << endl;
+        cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp] -p" << endl;
         return -1;
     }
     string clientFilename;
     string serverFilename;
     string serverIp;
     string localeClientIp;
-    string globalClientIp = argv[4];
+    string globalClientIp;
 
-    if(globalClientIp == "-p"){
-        string path = argv[1];
-        serverIp = argv[2];
-        string clientIp = argv[3];
-        clientFilename = path + "/pingClient.pcap";
-        serverFilename = path + "/pingServer.pcap";
-        string pinglogFilename = path + "/ping.txt";
+    if(argc == 6){
+        string arg5 = argv[5];
+        if(arg5 == "-p") {
+            string path = argv[1];
+            serverIp = argv[2];
+            string clientIpLocal = argv[3];
+            string clientIpGlobal = argv[4];
+            clientFilename = path + "/pingClient.pcap";
+            serverFilename = path + "/pingServer.pcap";
+            string pinglogFilename = path + "/ping.txt";
 
-        struct pingValues clientValues = readPingFile(clientFilename, clientIp, serverIp);
-        struct pingValues serverValues = readPingFile(serverFilename, serverIp, clientIp);
+            struct pingValues clientValues = readPingFile(clientFilename, clientIpLocal, serverIp);
+            struct pingValues serverValues = readPingFile(serverFilename, serverIp, clientIpGlobal);
 
-        vector<double> delays = getPingResults(clientValues, serverValues);
-        vector<double> pings = readPingLog(pinglogFilename);
-        vector<double> results;
-        if(delays.size() == pings.size()){
-            for(int i = 0; i < delays.size(); i++){
-                results.push_back(delays[i] - pings[i]);
+            vector<double> delays = getPingResults(clientValues, serverValues);
+            vector<double> pings = readPingLog(pinglogFilename);
+            vector<double> results;
+            if (delays.size() == pings.size()) {
+                for (int i = 0; i < delays.size(); i++) {
+                    results.push_back(delays[i] - pings[i]);
+                }
+            } else {
+                cerr << "ERROR pcaps results: " << delays.size() << " ping results: " << pings.size() << endl;
             }
-        } else {
-            cerr << "ERROR pcaps results: " << delays.size() << " ping results: " << pings.size() << endl;
-        }
 
-        writeDelayFile(path + "/result.csv", results);
-    } else {
-        if (argc == 6) {
+            writeDelayFile(path + "/result.csv", results);
+        } else {
             clientFilename = argv[1];
             serverFilename = argv[2];
             serverIp = argv[3];
             localeClientIp = argv[4];
-            globalClientIp = argv[5];
+            globalClientIp = arg5;
 
             struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
             struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
@@ -508,6 +510,9 @@ int main(int argc, char **argv) {
 
             //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(uploadResult, downloadResult);
+        }
+    } else {
+        if (argc == 6) {
         } else if (argc == 5) {
             string path = argv[1];
             serverIp = argv[2];
