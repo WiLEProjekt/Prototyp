@@ -83,10 +83,10 @@ def readBandwidth(filename):
     return tmp_bandwith / len(usefull_bandwidth)
 
 def CBRupload(speed):
-    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -t 60 -b " + speed + " -l 1450")
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -t 60 -b " + speed + " -l 1000")
 
 def CBRdownload(speed):
-    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -t 60 -b " + speed + " -l 1450 -R")
+    os.system("iperf3 -c 131.173.33.228 -p 50000 -u -t 60 -b " + speed + " -l 1000 -R")
 
 def signal_term_handler():
     sys.exit(0)
@@ -182,6 +182,7 @@ def main(argv):
     uploadBandwidth(measurementID)
     pcap_bandwith_process.terminate()
     tcpsock.close()
+    time.sleep(5)
 
     ################################
     # TCP Bandwidth Download Measurement
@@ -196,6 +197,7 @@ def main(argv):
     downloadBandwidth(measurementID)
     pcap_bandwith_process.terminate()
     tcpsock.close()
+    time.sleep(5)
 
     ################################
     # Fetch Bandwidth results into variable
@@ -224,6 +226,7 @@ def main(argv):
     CBRdownload(str(cbr_slow))
     pcap_process.terminate()
     tcpsock.close()
+    time.sleep(5)
 
     #fast cbr
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
@@ -237,6 +240,7 @@ def main(argv):
     CBRdownload(str(cbr_fast))
     pcap_process.terminate()
     time.sleep(1)
+    time.sleep(5)
 
     tcpsock.close()
 
