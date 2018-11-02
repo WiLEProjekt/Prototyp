@@ -12,6 +12,7 @@ filename = paste(folders[1],"/Signal.csv", sep = "")
 myData <- read.csv(file=filename,header=FALSE,sep=";",stringsAsFactors=FALSE)
 dv1 <- as.numeric(gsub("dB","", unlist(myData[,6], use.names = FALSE)))
 
+
 filename = paste(folders[2],"/Signal.csv", sep = "")
 myData <- read.csv(file=filename,header=FALSE,sep=";",stringsAsFactors=FALSE)
 dv2 <- as.numeric(gsub("dB","", unlist(myData[,6], use.names = FALSE)))
@@ -33,4 +34,4 @@ full <- c(dv1,dv2,dv3,dv4,dv5)
 dvfull <- cbind(dv1,dv2,dv3,dv4,dv5,full)
 names <- c("Messung 1","Messung 2","Messung 3","Messung 4","Messung 5","Gesamt")
 colnames(dvfull) <- names
-boxplot(dvfull,  main="Full RSRP")
+boxplot(dvfull,  main="SINR - Osnabrück - Siedlung Westerberg - Urban- 52.283902/8.032466")
