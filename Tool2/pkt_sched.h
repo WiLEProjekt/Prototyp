@@ -529,6 +529,7 @@ enum {
 	TCA_NETEM_UNSPEC,
 	TCA_NETEM_CORR,
 	TCA_NETEM_DELAY_DIST,
+	TCA_NETEM_DELAY_TRACE,		/* Loading Tracefile for delay */
 	TCA_NETEM_REORDER,
 	TCA_NETEM_CORRUPT,
 	TCA_NETEM_LOSS,
@@ -587,7 +588,7 @@ enum {
 	NETEM_LOSS_UNSPEC,
 	NETEM_LOSS_GI,		/* General Intuitive - 4 state model */
 	NETEM_LOSS_GE,		/* Gilbert Elliot models */
-	NETEM_LOSS_TR,		/* Loading Tracefile */
+	NETEM_LOSS_TR,		/* Loading Tracefile for loss */
 	__NETEM_LOSS_MAX
 };
 #define NETEM_LOSS_MAX (__NETEM_LOSS_MAX - 1)
@@ -609,10 +610,16 @@ struct tc_netem_gemodel {
 	__u32 k1;
 };
 
-/* trace content */
-struct tc_netem_trace {
+/* trace content for loss */
+struct tc_netem_losstrace {
 	__u32 trlen; /* length of the trace, sum of 0s and 1s */ 
 	__u8* trloss; /* contains current loss trace */
+};
+
+/* trace content for delay */
+struct tc_netem_delaytrace {
+	__u32 trlen; /* length of the trace, sum of numbers (us) */ 
+	__u32* trdelay; /* contains current delay trace */
 };
 
 #define NETEM_DIST_SCALE	8192

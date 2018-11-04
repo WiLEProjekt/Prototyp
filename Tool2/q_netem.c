@@ -38,6 +38,7 @@ static void explain(void)
 	fprintf(stderr,
 "Usage: ... netem [ limit PACKETS ]\n" \
 "                 [ delay TIME [ JITTER [CORRELATION]]]\n" \
+"                 [ delay trace [FILEPATH]\n" \
 "                 [ distribution {uniform|normal|pareto|paretonormal} ]\n" \
 "                 [ corrupt PERCENT [CORRELATION]]\n" \
 "                 [ duplicate PERCENT [CORRELATION]]\n" \
@@ -164,7 +165,7 @@ The textfile should only contain 0 and 1 without any linebreaks or different kin
 0 and 1 are read as character (integer values 48 and 49) and transformed to bytes with a value of 1 or 0. This implementation is safe against any other characters. 
 return trace length*/
 
-static int readTraceFile(char* filename, __u8* trloss)
+static int readLossTraceFile(char* filename, __u8* trloss)
 {
 	FILE *fp;
 	int c, ctr; 
@@ -207,7 +208,7 @@ The textfile should only contain 0 and 1 without any linebreaks or different kin
 0 and 1 are read as character (integer values 48 and 49) and transformed to bytes with a value of 1 or 0. This implementation is safe against any other characters. 
 return trace length*/
 
-static int getTraceLength(char* filename)
+static int getLossTraceLength(char* filename)
 {
 	FILE *fp;
 	int c, ctr; 
@@ -241,6 +242,90 @@ static int getTraceLength(char* filename)
 	return ctr;
 }
 
+/**
+ * Read a textfile which contains a trace.
+ * The textfile should only contain numbers, any non integer values result in a -1 error.
+ * The textfile has to end with a whitespace-cahracter, else the last integer is ignored
+ * return trace length
+ **/
+static int parseIntsFromFile(const char* filename, __u32* vals)
+{
+    FILE* fp = fopen (filename, "r");
+    if (fp == NULL)
+    {
+        printf("Could not open file %s \n", filename);
+        return -1;
+    }
+
+    if (fscanf (fp, "%d", vals) == 0)
+    {
+        printf("Error: File contains non integer values.\n");
+        return -1;
+    }
+
+    if (*vals < 0)
+    {
+        printf("Error: File contains negativ integer values.\n");
+        return -1;
+    }
+
+    vals++;
+    while (!feof (fp))
+    {
+        if (fscanf (fp, "%d", vals) == 0)
+        {
+            printf("Error: File contains non integer values.\n");
+            return -1;
+        }
+
+        if (*vals < 0)
+        {
+            printf("Error: File contains negativ integer values.\n");
+            return -1;
+        }
+        vals++;
+    }
+
+    fclose (fp);
+    return 0;
+}
+
+/**
+ * Read a textfile which contains a trace.
+ * The textfile should only contain numbers, any non integer values result in a -1 error.
+ * The textfile has to end with a whitespace-cahracter, else the last integer is ignored
+ * return trace length
+ **/
+static int countIntValues(const char* filename)
+{
+    int i = 0, ctr = 0;
+    FILE* fp = fopen (filename, "r");
+    if (fp == NULL)
+    {
+        printf("Could not open file %s \n", filename);
+        return -1;
+    }
+
+    if (fscanf (fp, "%d", &i) == 0)
+    {
+        printf("Error: File contains non integer values.\n");
+        return -1;
+    }
+
+    while (!feof (fp))
+    {
+        if (fscanf (fp, "%d", &i) == 0)
+        {
+            printf("Error: File contains non integer values.\n");
+            return -1;
+        }
+        ctr++;
+    }
+
+    fclose (fp);
+    return ctr;
+}
+
 static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			   struct nlmsghdr *n, const char *dev)
 {
@@ -252,7 +337,8 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	struct tc_netem_corrupt corrupt = {};
 	struct tc_netem_gimodel gimodel;
 	struct tc_netem_gemodel gemodel;
-	struct tc_netem_trace trace;
+	struct tc_netem_losstrace losstrace;
+	struct tc_netem_delaytrace delaytrace;
 	struct tc_netem_rate rate = {};
 	__s16 *dist_data = NULL;
 	__u16 loss_type = NETEM_LOSS_UNSPEC;
@@ -269,12 +355,70 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 		} else if (matches(*argv, "latency") == 0 ||
 			   matches(*argv, "delay") == 0) {
 			NEXT_ARG();
-			if (get_ticks(&opt.latency, *argv)) {
+
+			if (!strcmp(*argv, "trace")) {
+				NEXT_ARG();				
+				++present[TCA_NETEM_DELAY_TRACE];
+
+				/* set trace parameter */
+				delaytrace.trlen = countIntValues(*argv) + 1; /* + 1 because of first element flag */
+				if (-1 == delaytrace.trlen) 
+				{
+					printf("Error while computing length of trace. Exiting...\n");
+					exit(1);
+				}
+
+
+				/* create shared memory space */
+				/* first element in shared memory is used as shmdt_lock, the rest are trace values*/
+				key_t key = ftok("shmdelay", 52); 
+				int shmid = shmget(key,delaytrace.trlen*sizeof(__u32),IPC_CREAT); /* create shared memory */
+				delaytrace.trdelay = (__u32 *) shmat(shmid, 0, 0); /* attach pointer to shared */
+				*delaytrace.trdelay = 0; /* first element shmdt_lock, rest contains  */
+				delaytrace.trdelay++;
+				if (-1 == parseIntsFromFile(*argv, delaytrace.trdelay) ) 
+				{
+					printf("Error while reading tracefile. Exiting...\n");
+					exit(1);
+				}
+				delaytrace.trdelay--;	
+/*
+				int i;
+				for (i = 0 ; i < delaytrace.trlen ; i++)
+				{
+					printf("%d ", delaytrace.trdelay[i]);
+				}
+*/
+							
+				
+				/* parent and child share the defined shared memory. So parent finish this 
+				process and transfer the parameters to the netem module. The child is responsible to free the shared 					memory (after the netem-module copied the data!). Because of the process communication between 
+				kernel and user space, it is not possible to use futex, pthread_mutex or kernel libraries like 					(linux/	mutex.h) to assure mutual exlcusion of the shared memory. Hence, there is no silver bullet 					solution... and an ugly hack provides a fitting solution:
+				Parent sets shmdt_lock = 0.
+				The child sleeps for 10 seconds, and checks if shmdt_lock == 1. Else sleep... */
+
+				pid_t pid = fork();	
+				if (pid == 0) // child
+				{	
+
+					printf("child id: %i \n", getpid()); /* TODO: only used to check where the child defenitly terminates */
+					do {
+						sleep(10); // in seconds
+					} while (0 == *delaytrace.trdelay);
+					shmdt(delaytrace.trdelay); /* detach trdelay */
+					shmctl(shmid, IPC_RMID, NULL); /* release shared memory */
+					exit(1);
+				}	
+				
+
+			}
+
+			else if (get_ticks(&opt.latency, *argv)) {
 				explain1("latency");
 				return -1;
 			}
 
-			if (NEXT_IS_NUMBER()) {
+			else if (NEXT_IS_NUMBER()) {
 				NEXT_ARG();
 				if (get_ticks(&opt.jitter, *argv)) {
 					explain1("latency");
@@ -290,6 +434,7 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 					}
 				}
 			}
+
 		} else if (matches(*argv, "loss") == 0 ||
 			   matches(*argv, "drop") == 0) {
 			if (opt.loss > 0 || loss_type != NETEM_LOSS_UNSPEC) {
@@ -410,39 +555,45 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				loss_type = NETEM_LOSS_TR;
 				
 				/* set trace parameter */
-				trace.trlen = getTraceLength(*argv);
-				if (-1 == trace.trlen) 
+				losstrace.trlen = getLossTraceLength(*argv) + 1; /* + 1 because of first element flag */
+				if (-1 == losstrace.trlen) 
 				{
 					printf("Error while computing length of trace. Exiting...\n");
 					exit(1);
 				}
-				
+
 				/* create shared memory space */
-				key_t key = ftok("shmfile", 65); 
-				int shmid = shmget(key,trace.trlen,IPC_CREAT); /* create shared memory */
-				trace.trloss = (__u8 *) shmat(shmid, 0, 0); /* attach pointer to shared */
-				if (-1 == readTraceFile(*argv, trace.trloss) ) 
+				/* first element in shared memory is used as shmdt_lock, the rest are trace values*/
+				key_t key = ftok("shmloss", 42); 
+				int shmid = shmget(key,losstrace.trlen,IPC_CREAT); /* create shared memory */
+				losstrace.trloss = (__u8 *) shmat(shmid, 0, 0); /* attach pointer to shared */
+				*losstrace.trloss = 0; /* first element shmdt_lock, rest contains  */
+				losstrace.trloss++;
+				if (-1 == readLossTraceFile(*argv, losstrace.trloss) ) 
 				{
 					printf("Error while reading tracefile. Exiting...\n");
 					exit(1);
 				}
+				losstrace.trloss--;				
 				
 				/* parent and child share the defined shared memory. So parent finish this 
-				process and transfer the parameters. The child sleeps for some seconds 
-				(in which the kernel copies the data).By the time the child wakes up, the 
-				data was copied and it releases the shared memory.*/
+				process and transfer the parameters to the netem module. The child is responsible to free the shared 					memory (after the netem-module copied the data!). Because of the process communication between 
+				kernel and user space, it is not possible to use futex, pthread_mutex or kernel libraries like 					(linux/	mutex.h) to assure mutual exlcusion of the shared memory. Hence, there is no silver bullet 					solution... and an ugly hack provides a fitting solution:
+				Parent sets shmdt_lock = 0.
+				The child sleeps for 10 seconds, and checks if shmdt_lock == 1. Else sleep... */
 
 				pid_t pid = fork();	
 				if (pid == 0) // child
-				{
-					sleep(10); // in seconds
-					shmdt(trace.trloss); /* detach trloss */
+				{	
+
+					printf("child id: %i \n", getpid()); /* TODO: only used to check where the child defenitly terminates */
+					do {
+						sleep(10); // in seconds
+					} while (0 == *losstrace.trloss);
+					shmdt(losstrace.trloss); /* detach trloss */
 					shmctl(shmid, IPC_RMID, NULL); /* release shared memory */
 					exit(1);
 				}
-
-				//TODO: technically, it is possible, that two initializations of netem overwrite
-				// the shared memory or free the shared memory while it is in use --> unique id or kill the 					//child!
 				
 			} else {
 				fprintf(stderr, "Unknown loss parameter: %s\n",
@@ -601,6 +752,14 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	    addattr_l(n, 1024, TCA_NETEM_CORRUPT, &corrupt, sizeof(corrupt)) < 0)
 		return -1;
 
+/* --------------------------------------------------------------------------------- */
+
+	if (present[TCA_NETEM_DELAY_TRACE] &&
+	    addattr_l(n, 1024, TCA_NETEM_DELAY_TRACE, &delaytrace, sizeof(delaytrace)) < 0)
+		return -1;
+	
+/* --------------------------------------------------------------------------------- */
+
 	if (loss_type != NETEM_LOSS_UNSPEC) {
 		struct rtattr *start;
 
@@ -615,7 +774,7 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 		} else if (loss_type == NETEM_LOSS_TR) {
 			if (addattr_l(n, 1024, NETEM_LOSS_TR,
-				      &trace, sizeof(trace)) < 0)
+				      &losstrace, sizeof(losstrace)) < 0)
 				return -1;
 			
 	
