@@ -269,11 +269,11 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
             //check if packet is UDP (17)
             unsigned char lengthBytes[] = {data[16], data[17]};
             unsigned long length = parseNumberFromBytes(lengthBytes, 2);
-            if (length == 1028) {
+            if (length == 1478) {
                 unsigned long seqNum = getSeqNum(data);
                 //printData(data, header);
                 if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
-                    if(isFirstPackageToOther) {
+                    if (isFirstPackageToOther) {
                         isFirstPackageToOther = false;
                     } else {
                         toOtherTS[seqNum] = header->ts;
