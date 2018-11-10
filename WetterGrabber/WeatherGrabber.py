@@ -1,4 +1,4 @@
-import csv, os, sys, getopt
+import csv, os, sys, getopt, ftplib, zipfile
 
 def readTextList(filename):
     file = open(filename, 'r', encoding='iso-8859-1')
@@ -37,8 +37,6 @@ if __name__ == "__main__":
         elif opt in ("-y", "--longitude"):
             longitude = arg
 
-    print(langitude, longitude)
-
     # read all DWD Stations from file --> list(lists)
     stations = readCSVFile('stationlistGermany.csv')
 
@@ -58,9 +56,79 @@ if __name__ == "__main__":
     closest = 100000.0
     closestStation = []
     for l in activeStations:
-        if l[2] == "MI" or l[2] == "MN":
+        if l[2] == "MI" or l[2] == "MN": #assure that 10min data is available from that station
             diff = abs(float(l[4])-float(langitude))+abs(float(l[5])-float(longitude))
             if diff < closest:
                 closest = diff
                 closestStation = l
-    print(closestStation)
+    print("Closest Station with 10min Values: {}".format(closestStation))
+    stationID=""
+    if((5 - len(closestStation[1])) > 0):
+        stationID="0"*(5-len(closestStation[1]))+closestStation[1]
+    else:
+        stationID=closestStation[1]
+
+    ########################
+    # download precipitation (niederschlag) file from ftp
+    ########################
+    path = 'pub/CDC/observations_germany/climate/10_minutes/precipitation/now/'
+    filename = '10minutenwerte_nieder_'+stationID+'_now.zip'
+    ftp = ftplib.FTP("ftp-cdc.dwd.de")
+    ftp.login()
+    ftp.cwd(path)
+    ftp.retrbinary("RETR "+filename, open(filename, 'wb').write)
+    ftp.quit
+
+    ########################
+    # download air-temperature file from ftp
+    ########################
+    path = 'pub/CDC/observations_germany/climate/10_minutes/air_temperature/now/'
+    filename = '10minutenwerte_TU_' + stationID + '_now.zip'
+    ftp = ftplib.FTP("ftp-cdc.dwd.de")
+    ftp.login()
+    ftp.cwd(path)
+    ftp.retrbinary("RETR " + filename, open(filename, 'wb').write)
+    ftp.quit
+
+    ########################
+    # download wind file from ftp
+    ########################
+    path = 'pub/CDC/observations_germany/climate/10_minutes/wind/now/'
+    filename = '10minutenwerte_wind_' + stationID + '_now.zip'
+    ftp = ftplib.FTP("ftp-cdc.dwd.de")
+    ftp.login()
+    ftp.cwd(path)
+    ftp.retrbinary("RETR " + filename, open(filename, 'wb').write)
+    ftp.quit
+
+    ########################
+    # download solar (solarestrahlung file from ftp
+    ########################
+    path = 'pub/CDC/observations_germany/climate/10_minutes/solar/now/'
+    filename = '10minutenwerte_SOLAR_' + stationID + '_now.zip'
+    ftp = ftplib.FTP("ftp-cdc.dwd.de")
+    ftp.login()
+    ftp.cwd(path)
+    ftp.retrbinary("RETR " + filename, open(filename, 'wb').write)
+    ftp.quit
+
+    ########################
+    # extract zip archives, delete archives
+    ########################
+    zipf = zipfile.ZipFile('10minutenwerte_nieder_'+stationID+'_now.zip', 'r')
+    zipf.extractall()
+    os.remove('10minutenwerte_nieder_' + stationID + '_now.zip')
+    zipf = zipfile.ZipFile('10minutenwerte_TU_' + stationID + '_now.zip', 'r')
+    zipf.extractall()
+    os.remove('10minutenwerte_TU_' + stationID + '_now.zip')
+    zipf = zipfile.ZipFile('10minutenwerte_wind_' + stationID + '_now.zip', 'r')
+    zipf.extractall()
+    os.remove('10minutenwerte_wind_' + stationID + '_now.zip')
+    zipf = zipfile.ZipFile('10minutenwerte_SOLAR_' + stationID + '_now.zip', 'r')
+    zipf.extractall()
+    os.remove('10minutenwerte_SOLAR_' + stationID + '_now.zip')
+    zipf.close()
+
+    ########################
+    # read data from extracted files, delete old files and write new one
+    ########################
