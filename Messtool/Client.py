@@ -172,14 +172,18 @@ def main(argv):
     ################################
     # TCP Bandwidth Upload Measurement
     ################################
+    #Send MEsaurmentID to the Server and signal the server that a new measurement begins
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
     idup = measurementID + "/server_bw_upload"
     tcpsock.send(idup.encode())
+
     pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_upload, interface, 'tcp'))
     pcap_bandwith_process.start()
-    time.sleep(1)
+    time.sleep(1) #Make sure that pcap is started
+    print("Measuring Upload-Goodput...\n")
     uploadBandwidth(measurementID)
+    time.sleep(1)  #Make sure that measurement is finished and pcaps are logged
     pcap_bandwith_process.terminate()
     tcpsock.close()
     time.sleep(5)
@@ -193,8 +197,10 @@ def main(argv):
     tcpsock.send(iddown.encode())
     pcap_bandwith_process = multiprocessing.Process(target=write_pcap, args=(pcap_bw_filename_download, interface, 'tcp'))
     pcap_bandwith_process.start()
-    time.sleep(1)
+    time.sleep(1) #Make sure that pcap is started
+    print("Measuring Download-Goodput...\n")
     downloadBandwidth(measurementID)
+    time.sleep(1)  # Make sure that measurement is finished and pcaps are logged
     pcap_bandwith_process.terminate()
     tcpsock.close()
     time.sleep(5)
@@ -214,33 +220,42 @@ def main(argv):
     cbr_slow = int(min(uploadspeed, downloadspeed)/4)
     cbr_fast = int(min(uploadspeed, downloadspeed)*3/4)
 
-    #slow cbr
+    ####slow cbr
+    #Signal Server that slow_cbr is starting
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
     idcbrslow = measurementID + "/server_cbr_slow"
     tcpsock.send(idcbrslow.encode())
+    #slow crb
     pcap_process = multiprocessing.Process(target=write_pcap, args=(pcap_cbr_filename_slow, interface, 'udp'))
     pcap_process.start()
-    time.sleep(1)
+    time.sleep(1) #Make sure that pcap is started
+    print("Slow CBR Upload...\n")
     CBRupload(str(cbr_slow))
+    print("Slow CBR Download...\n")
     CBRdownload(str(cbr_slow))
+    time.sleep(1)  # Make sure that measurement is finished and pcaps are logged
     pcap_process.terminate()
     tcpsock.close()
     time.sleep(5)
 
-    #fast cbr
+    ####fast cbr
+    #Signal Server that fast cbr is starting
     tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP
     tcpsock.connect((destIP, destPort))
     idcbrfast = measurementID + "/server_cbr_fast"
     tcpsock.send(idcbrfast.encode())
+    #fast cbr
     pcap_process = multiprocessing.Process(target=write_pcap, args=(pcap_cbr_filename_fast, interface, 'udp'))
     pcap_process.start()
-    time.sleep(1)
+    time.sleep(1) #Make sure that pcap is started
+    print("Fast CBR Upload...\n")
     CBRupload(str(cbr_fast))
+    print("Fast CBR Download...\n")
     CBRdownload(str(cbr_fast))
+    time.sleep(1)  # Make sure that measurement is finished and pcaps are logged
     pcap_process.terminate()
-    time.sleep(1)
-    time.sleep(5)
+    print("Measurement finished.\n")
 
     tcpsock.close()
 
