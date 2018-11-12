@@ -1,11 +1,4 @@
-import csv, os, sys, getopt, ftplib, zipfile
-
-def readData(filename):
-    file = open(filename, 'r', encoding='iso-8859-1')
-    for line in file:
-        (name, id, kennung, statkennung, breite, laenge, hoehe, flussgebiet, bundesland, beginn, ende) = line.split(" ")
-        print("{} {} {} {} {} {} {} {} {} {}".format(name, id, kennung, statkennung, breite, laenge, hoehe, flussgebiet,
-                                                     bundesland, beginn, ende))
+import csv, os, sys, getopt, ftplib, zipfile, json
 
 def readCSVFile(folder, filename):
     path = os.getcwd()+"/"+folder
@@ -16,6 +9,11 @@ def readCSVFile(folder, filename):
     for row in reader:
         data.append(row)
     return data
+
+def writeJSON(filename, data):
+    outfile = open(filename, 'w', encoding='utf-8')
+    json.dump(data, outfile, ensure_ascii=False)
+    outfile.close
 
 if __name__ == "__main__":
     ########################
@@ -161,3 +159,23 @@ if __name__ == "__main__":
                 solar = readCSVFile("tempRawData", file)
             else:
                 print("Invalid RawData file.")
+            os.remove('tempRawData/'+file)
+
+    ########################
+    # Add Data to Dictionary and write it as JSON-File
+    ########################
+    dataDict = {}
+    dataDict['Niederschlagsdauer'] = precipitation[-1][3]+' min'
+    dataDict['Niederschlagshoehe'] = precipitation[-1][4]+' mm'
+    dataDict['Luftdruck'] = temperature[-1][3]+' hPa'
+    dataDict['Temperatur2m'] = temperature[-1][4]+' °C'
+    dataDict['Temperatur5cm'] = temperature[-1][5]+' °C'
+    dataDict['RelativeFeuchte'] = temperature[-1][6]+' %'
+    dataDict['Taupunkttemperatur'] = temperature[-1][7]+' °C'
+    dataDict['Windgeschwindigkeit'] = wind[-1][3]+' m/s'
+    dataDict['Windrichtung'] = wind[-1][4]+' Grad'
+    dataDict['SolareStrahlung'] = solar[-1][3]+' J/cm²'
+    dataDict['Globalstrahlung'] = solar[-1][4]+' J/cm²'
+    dataDict['Sonnenscheindauer'] = solar[-1][5]+' h'
+    dataDict['AtmosphaerischeGegenstrahlung'] = solar[-1][6]+' J/cm²'
+    writeJSON('data.json', dataDict)
