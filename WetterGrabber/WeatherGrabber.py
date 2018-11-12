@@ -1,16 +1,16 @@
 import csv, os, sys, getopt, ftplib, zipfile
 
-def readTextList(filename):
+def readData(filename):
     file = open(filename, 'r', encoding='iso-8859-1')
     for line in file:
         (name, id, kennung, statkennung, breite, laenge, hoehe, flussgebiet, bundesland, beginn, ende) = line.split(" ")
         print("{} {} {} {} {} {} {} {} {} {}".format(name, id, kennung, statkennung, breite, laenge, hoehe, flussgebiet,
                                                      bundesland, beginn, ende))
 
-def readCSVFile(filename):
-    path = os.getcwd()+"/DWDData"
+def readCSVFile(folder, filename):
+    path = os.getcwd()+"/"+folder
     file = open(os.path.join(path,filename), 'r', encoding='utf-8')
-    reader = csv.reader(file, delimiter=';')
+    reader = csv.reader(file, skipinitialspace=True, delimiter=';')
     #next(reader) #skip header
     data = []
     for row in reader:
@@ -38,7 +38,7 @@ if __name__ == "__main__":
             longitude = arg
 
     # read all DWD Stations from file --> list(lists)
-    stations = readCSVFile('stationlistGermany.csv')
+    stations = readCSVFile('DWDData','stationlistGermany.csv')
 
     ########################
     #filter only active stations.
@@ -113,22 +113,51 @@ if __name__ == "__main__":
     ftp.quit
 
     ########################
+    # create folder for the raw data files
+    ########################
+    try:
+        os.mkdir("tempRawData")
+    except OSError:
+        pass
+
+    ########################
     # extract zip archives, delete archives
     ########################
     zipf = zipfile.ZipFile('10minutenwerte_nieder_'+stationID+'_now.zip', 'r')
-    zipf.extractall()
+    zipf.extractall("tempRawData")
     os.remove('10minutenwerte_nieder_' + stationID + '_now.zip')
     zipf = zipfile.ZipFile('10minutenwerte_TU_' + stationID + '_now.zip', 'r')
-    zipf.extractall()
+    zipf.extractall("tempRawData")
     os.remove('10minutenwerte_TU_' + stationID + '_now.zip')
     zipf = zipfile.ZipFile('10minutenwerte_wind_' + stationID + '_now.zip', 'r')
-    zipf.extractall()
+    zipf.extractall("tempRawData")
     os.remove('10minutenwerte_wind_' + stationID + '_now.zip')
     zipf = zipfile.ZipFile('10minutenwerte_SOLAR_' + stationID + '_now.zip', 'r')
-    zipf.extractall()
+    zipf.extractall("tempRawData")
     os.remove('10minutenwerte_SOLAR_' + stationID + '_now.zip')
     zipf.close()
 
     ########################
     # read data from extracted files, delete old files and write new one
     ########################
+    precipitation = []
+    temperature = []
+    wind = []
+    solar = []
+    #rr = precipitation (Niederschlag)
+    #tu = air temperature
+    #ff = wind
+    #sd = solar
+    for file in os.listdir("tempRawData"):
+        if file.endswith(".txt"):
+            (produkt, interval, now, category, startdate, enddate, staID) = file.split("_")
+            if category == "rr":
+                precipitation = readCSVFile("tempRawData", file)
+            elif category == "tu":
+                temperature = readCSVFile("tempRawData", file)
+            elif category == "ff":
+                wind = readCSVFile("tempRawData", file)
+            elif category == "sd":
+                solar = readCSVFile("tempRawData", file)
+            else:
+                print("Invalid RawData file.")
