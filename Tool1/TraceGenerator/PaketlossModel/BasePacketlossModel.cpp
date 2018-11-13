@@ -3,7 +3,7 @@
 #include "BasePacketlossModel.h"
 #include <iostream>
 float BasePacketlossModel::generateRandomNumber() {
-    return(distribution(generator));
+    return(distribution(randomGenerator));
 }
 
 //calculate burstsizes

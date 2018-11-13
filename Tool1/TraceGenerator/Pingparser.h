@@ -93,6 +93,12 @@ public:
     vector<bool> readPcapFile(const string &filename, Protocol protocol, string outputFile);
 
     vector<bool> readPcapFile(const string &filename, Protocol protocol);
+
+    /**
+     * Reads a trace in a 01-file
+     * @param filename the file
+     * @return the trace
+     */
     vector<bool> readFile(string filename);
 };
 
