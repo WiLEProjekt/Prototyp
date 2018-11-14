@@ -1,4 +1,5 @@
-import csv, os, sys, getopt, ftplib, zipfile, json
+import csv, os, sys, getopt, ftplib, zipfile, json, re
+import urllib.request
 
 def readCSVFile(folder, filename):
     path = os.getcwd()+"/"+folder
@@ -8,12 +9,33 @@ def readCSVFile(folder, filename):
     data = []
     for row in reader:
         data.append(row)
+    file.close()
     return data
 
 def writeJSON(filename, data):
     outfile = open(filename, 'w', encoding='utf-8')
     json.dump(data, outfile, ensure_ascii=False)
     outfile.close
+
+def readStationList(fname):
+    file = open(fname, 'r')
+    data = file.readlines()
+    indicator=data[2]
+    indices = findIndices(indicator)
+    del data[0:3] #delete header lines
+    stations=[]
+    for line in data:
+        parts=[line[indices[i]:indices[i+1]].strip() for i in range(len(indices)-1)]
+        stations.append(parts)
+    return(stations)
+
+def findIndices(string):
+    indices=[0]
+    for i,c in enumerate(string):
+        if c==' ':
+            indices.append(i)
+    del indices[-1] #at the end theres a double ' '
+    return(indices)
 
 if __name__ == "__main__":
     ########################
@@ -35,8 +57,13 @@ if __name__ == "__main__":
         elif opt in ("-y", "--longitude"):
             longitude = arg
 
-    # read all DWD Stations from file --> list(lists)
-    stations = readCSVFile('DWDData','stationlistGermany.csv')
+    ########################
+    #Grab File with all current stations and save it
+    ########################
+    uf = urllib.request.urlopen("https://www.dwd.de/DE/leistungen/klimadatendeutschland/statliste/statlex_rich.txt?view=nasPublication&nn=16102")
+    stationData = uf.read()
+    open('stations.txt', 'w').write(stationData.decode("iso-8859-1"))
+    stations = readStationList("stations.txt")
 
     ########################
     #filter only active stations.
@@ -59,7 +86,7 @@ if __name__ == "__main__":
             if diff < closest:
                 closest = diff
                 closestStation = l
-    print("Closest Station with 10min Values: {}".format(closestStation))
+    #print("Closest Station with 10min Values: {}".format(closestStation))
     stationID=""
     if((5 - len(closestStation[1])) > 0):
         stationID="0"*(5-len(closestStation[1]))+closestStation[1]
