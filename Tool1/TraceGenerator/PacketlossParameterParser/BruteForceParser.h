@@ -18,8 +18,7 @@ protected:
 
     void findTopX(vector<vector<float> > &top, vector<vector<float> > &possibleParams, int x, string model);
 
-    virtual vector<float>
-    checkResult(vector<vector<float>> avgburstsizes, float origburstsize, vector<vector<float>> possibleParams,
+    virtual vector<float> checkResult(vector<vector<float>> avgburstsizes, float origburstsize, vector<vector<float>> possibleParams,
                 float origLoss, float origgoodsize);
 };
 

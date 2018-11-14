@@ -8,7 +8,7 @@ using namespace std;
 
 class BasePacketlossModel {
 protected:
-    mt19937 generator; //Mersenne Twister Engine
+    mt19937 randomGenerator; //Mersenne Twister Engine
     uniform_real_distribution<float> distribution; //Uniform floats in [a,b) => a=0.0, b=1.0 is not 100% correct. Correct would be [0.0, 1.0]. Now its [0.0, 1.0). Error is neglectable
     long numPackets;
 
@@ -22,10 +22,10 @@ protected:
      * Constructor
      * @param numPackets number of packets
      */
-    BasePacketlossModel(long numPackets) : numPackets(numPackets) {
-        generator.seed(time(0));
-        //generator.seed(1);
-        uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
+    explicit BasePacketlossModel(long numPackets) : numPackets(numPackets) {
+        randomGenerator.seed(time(0));
+        //randomGenerator.seed(1);
+        auto *dist = new uniform_real_distribution<float>(0.0, 1.0);
         distribution = *dist;
         delete (dist);
     }
@@ -36,8 +36,8 @@ protected:
      * @param numPackets number of packets
      */
     BasePacketlossModel(unsigned int seed, long numPackets) : numPackets(numPackets) {
-        generator.seed(seed);
-        uniform_real_distribution<float> *dist = new uniform_real_distribution<float>(0.0, 1.0);
+        randomGenerator.seed(seed);
+        auto *dist = new uniform_real_distribution<float>(0.0, 1.0);
         distribution = *dist;
         delete (dist);
     }
