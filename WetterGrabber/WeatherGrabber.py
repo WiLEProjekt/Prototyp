@@ -82,7 +82,7 @@ if __name__ == "__main__":
     closestStation = []
     for l in activeStations:
         if l[2] == "MI" or l[2] == "MN": #assure that 10min data is available from that station
-            diff = abs(float(l[4])-float(langitude))+abs(float(l[5])-float(longitude))
+            diff = abs(float(l[4])-float(langitude))+abs(float(l[5])-float(longitude)) #Manhattan Distance, maybe euclidian would be better
             if diff < closest:
                 closest = diff
                 closestStation = l
