@@ -66,8 +66,9 @@ def main(argv):
             measure_path = measurementID.split('/')[0]
             if not os.path.exists(measure_path):
                 os.makedirs(measure_path)
-                f = open(measure_path + "/gloablIp")
+                f = open(measure_path + "/gloablIp", "w")
                 f.write(addr[0])
+                f.close()
             pcapfilename = measurementID
             print(pcapfilename)
             pcap_process = multiprocessing.Process(target=write_pcap, args=(pcapfilename, interface))
