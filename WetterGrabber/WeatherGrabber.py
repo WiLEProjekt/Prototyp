@@ -206,7 +206,7 @@ if __name__ == "__main__":
             # find the index with the timestamp directly before our measurement starts
             ########################
             timemeasurement=date+hour+mins
-            i=0;
+            i=0
             minsnew = mins[0]+'0'
             for l in precipitation:
                 if i == 0:
