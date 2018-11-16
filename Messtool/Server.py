@@ -63,8 +63,11 @@ def main(argv):
             conn, addr = sock.accept()
             data = conn.recv(2048)
             measurementID = data.decode()
-            if not os.path.exists(measurementID.split('/')[0]):
-                os.makedirs(measurementID.split('/')[0])
+            measure_path = measurementID.split('/')[0]
+            if not os.path.exists(measure_path):
+                os.makedirs(measure_path)
+                f = open(measure_path + "/gloablIp")
+                f.write(addr[0])
             pcapfilename = measurementID
             print(pcapfilename)
             pcap_process = multiprocessing.Process(target=write_pcap, args=(pcapfilename, interface))
