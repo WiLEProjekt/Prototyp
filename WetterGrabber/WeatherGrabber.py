@@ -1,4 +1,4 @@
-import csv, os, sys, getopt, ftplib, zipfile, json, time
+import csv, os, sys, getopt, ftplib, zipfile, json, time, math
 import urllib.request
 
 def readCSVFile(folder, filename):
@@ -72,9 +72,6 @@ if __name__ == "__main__":
         if enddateYear == "2018" or enddateYear == "2019":
             activeStations.append(l)
 
-
-
-
     places = os.listdir(directory)
     for place in places:
         measurements = os.listdir(directory+'/'+place)
@@ -98,11 +95,12 @@ if __name__ == "__main__":
             closestStation = []
             for l in activeStations:
                 if l[2] == "MI" or l[2] == "MN": #assure that 10min data is available from that station
-                    diff = abs(float(l[4])-float(langitude))+abs(float(l[5])-float(longitude)) #Manhattan Distance, maybe euclidian would be better
+                    diff = math.sqrt((float(l[4])-float(langitude))**2+(float(l[5])-float(longitude))**2) #Manhattan Distance, maybe euclidian would be better
                     if diff < closest:
                         closest = diff
                         closestStation = l
-            #print("Closest Station with 10min Values: {}".format(closestStation))
+
+            print("Closest Station with 10min Values: {}".format(closestStation))
             stationID=""
             if((5 - len(closestStation[1])) > 0):
                 stationID="0"*(5-len(closestStation[1]))+closestStation[1]
@@ -112,8 +110,8 @@ if __name__ == "__main__":
             ########################
             # download precipitation (niederschlag) file from ftp
             ########################
-            path = 'pub/CDC/observations_germany/climate/10_minutes/precipitation/now/'
-            filename = '10minutenwerte_nieder_'+stationID+'_now.zip'
+            path = 'pub/CDC/observations_germany/climate/10_minutes/precipitation/recent/'
+            filename = '10minutenwerte_nieder_'+stationID+'_akt.zip'
             ftp = ftplib.FTP("ftp-cdc.dwd.de")
             ftp.login()
             ftp.cwd(path)
@@ -123,8 +121,8 @@ if __name__ == "__main__":
             ########################
             # download air-temperature file from ftp
             ########################
-            path = 'pub/CDC/observations_germany/climate/10_minutes/air_temperature/now/'
-            filename = '10minutenwerte_TU_' + stationID + '_now.zip'
+            path = 'pub/CDC/observations_germany/climate/10_minutes/air_temperature/recent/'
+            filename = '10minutenwerte_TU_' + stationID + '_akt.zip'
             ftp = ftplib.FTP("ftp-cdc.dwd.de")
             ftp.login()
             ftp.cwd(path)
@@ -134,8 +132,8 @@ if __name__ == "__main__":
             ########################
             # download wind file from ftp
             ########################
-            path = 'pub/CDC/observations_germany/climate/10_minutes/wind/now/'
-            filename = '10minutenwerte_wind_' + stationID + '_now.zip'
+            path = 'pub/CDC/observations_germany/climate/10_minutes/wind/recent/'
+            filename = '10minutenwerte_wind_' + stationID + '_akt.zip'
             ftp = ftplib.FTP("ftp-cdc.dwd.de")
             ftp.login()
             ftp.cwd(path)
@@ -145,8 +143,8 @@ if __name__ == "__main__":
             ########################
             # download solar (solarestrahlung file from ftp
             ########################
-            path = 'pub/CDC/observations_germany/climate/10_minutes/solar/now/'
-            filename = '10minutenwerte_SOLAR_' + stationID + '_now.zip'
+            path = 'pub/CDC/observations_germany/climate/10_minutes/solar/recent/'
+            filename = '10minutenwerte_SOLAR_' + stationID + '_akt.zip'
             ftp = ftplib.FTP("ftp-cdc.dwd.de")
             ftp.login()
             ftp.cwd(path)
@@ -164,18 +162,18 @@ if __name__ == "__main__":
             ########################
             # extract zip archives, delete archives
             ########################
-            zipf = zipfile.ZipFile('10minutenwerte_nieder_'+stationID+'_now.zip', 'r')
+            zipf = zipfile.ZipFile('10minutenwerte_nieder_'+stationID+'_akt.zip', 'r')
             zipf.extractall("tempRawData")
-            os.remove('10minutenwerte_nieder_' + stationID + '_now.zip')
-            zipf = zipfile.ZipFile('10minutenwerte_TU_' + stationID + '_now.zip', 'r')
+            os.remove('10minutenwerte_nieder_' + stationID + '_akt.zip')
+            zipf = zipfile.ZipFile('10minutenwerte_TU_' + stationID + '_akt.zip', 'r')
             zipf.extractall("tempRawData")
-            os.remove('10minutenwerte_TU_' + stationID + '_now.zip')
-            zipf = zipfile.ZipFile('10minutenwerte_wind_' + stationID + '_now.zip', 'r')
+            os.remove('10minutenwerte_TU_' + stationID + '_akt.zip')
+            zipf = zipfile.ZipFile('10minutenwerte_wind_' + stationID + '_akt.zip', 'r')
             zipf.extractall("tempRawData")
-            os.remove('10minutenwerte_wind_' + stationID + '_now.zip')
-            zipf = zipfile.ZipFile('10minutenwerte_SOLAR_' + stationID + '_now.zip', 'r')
+            os.remove('10minutenwerte_wind_' + stationID + '_akt.zip')
+            zipf = zipfile.ZipFile('10minutenwerte_SOLAR_' + stationID + '_akt.zip', 'r')
             zipf.extractall("tempRawData")
-            os.remove('10minutenwerte_SOLAR_' + stationID + '_now.zip')
+            os.remove('10minutenwerte_SOLAR_' + stationID + '_akt.zip')
             zipf.close()
 
             ########################
@@ -205,20 +203,20 @@ if __name__ == "__main__":
                     os.remove('tempRawData/'+file)
 
             ########################
-            # find the index with the closest timestamp to our measurement
+            # find the index with the timestamp directly before our measurement starts
             ########################
             timemeasurement=date+hour+mins
             i=0;
+            minsnew = mins[0]+'0'
             for l in precipitation:
                 if i == 0:
                     i += 1
                 else:
-                    diff = abs(int(timemeasurement)-int(l[1]))
-                    if diff < 10:
-                        print(l[1], timemeasurement)
+                    if date+hour+minsnew == l[1]:
                         break
                     else:
                         i += 1
+
 
             ########################
             # Add Data to Dictionary and write it as JSON-File
@@ -237,5 +235,5 @@ if __name__ == "__main__":
             dataDict['Globalstrahlung'] = solar[i][4]+' J/cm²'
             dataDict['Sonnenscheindauer'] = solar[i][5]+' h'
             dataDict['AtmosphaerischeGegenstrahlung'] = solar[i][6]+' J/cm²'
-            writeJSON(directory+'/'+place+'/'+measurement+'/data.json', dataDict)
+            writeJSON(directory+'/'+place+'/'+measurement+'/Ergebnis/weather.json', dataDict)
             time.sleep(1)
