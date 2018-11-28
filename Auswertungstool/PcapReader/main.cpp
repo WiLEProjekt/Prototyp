@@ -25,6 +25,16 @@ struct result {
     vector<unsigned long> packetsSkipped;
     vector<long> duplications;
     vector<int64_t> delays;
+
+    vector<struct resultpoint> fullResult;
+};
+
+struct resultpoint {
+    struct timeval ts;
+    bool loss;
+    unsigned long packtesSkipped;
+    long duplications;
+    int64_t delay;
 };
 
 struct pcapValues {
@@ -139,11 +149,13 @@ struct result getResults(struct pcapValues values) {
     vector<bool> loss;
     vector<unsigned long> skippedPackages;
     vector<long> duplications;
+    vector<struct resultpoint> points;
 
     /*
      * Delays and Loss
      */
     for (auto &send: values.send) {
+        bool isLoss;
         uint64_t delay{};
         auto recieved = values.received.find(send.first);
         if (recieved != values.received.end()) {
@@ -151,11 +163,17 @@ struct result getResults(struct pcapValues values) {
             uint64_t sendTs = getMillisFromTimeval(send.second);
             delay = recievedTs - sendTs;
             loss.push_back(true);
+            isLoss = true;
         } else {
             delay = 0;
             loss.push_back(false);
+            isLoss = false;
         }
         delays.push_back(delay);
+        struct resultpoint currentPoint{};
+        currentPoint.loss = isLoss;
+        currentPoint.delay = delay;
+        points.push_back(currentPoint);
     }
 
     cout << "delays and loss finished" << endl;
@@ -211,6 +229,7 @@ struct result getResults(struct pcapValues values) {
     results.loss = loss;
     results.packetsSkipped = skippedPackages;
     results.duplications = duplications;
+    results.fullResult = points;
     return results;
 }
 
@@ -341,6 +360,16 @@ void writeDelayFile(const string &filename, vector<double> delays) {
     uploadDelayFile.close();
 }
 
+void writeFullTraceFile(const string &filename, vector<resultpoint> result) {
+    ofstream uploadDelayFile;
+    uploadDelayFile.open(filename);
+    for (struct resultpoint rp : result) {
+        uploadDelayFile << rp.ts.tv_sec << "." << rp.ts.tv_usec << ";" << rp.delay << ";" << rp.loss << endl;
+    }
+    uploadDelayFile.flush();
+    uploadDelayFile.close();
+}
+
 void writeResultToFile(const string &path, result upload, result download) {
     ofstream uploadLossFile;
     string pathcommand = "mkdir -p " + path;
@@ -398,6 +427,9 @@ void writeResultToFile(const string &path, result upload, result download) {
     }
     downloadReorderingFile.flush();
     downloadReorderingFile.close();
+
+    writeFullTraceFile(path + "uploadfull.csv", upload.fullResult);
+    writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
 }
 
 
