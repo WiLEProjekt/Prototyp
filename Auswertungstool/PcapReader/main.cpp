@@ -23,6 +23,16 @@ struct result {
     double reordering;
     double duplication;
     vector<int64_t> delays;
+
+    vector<struct resultpoint> fullResult;
+};
+
+struct resultpoint {
+    struct timeval ts;
+    bool loss;
+    unsigned long packtesSkipped;
+    long duplications;
+    int64_t delay;
 };
 
 struct pcapValues {
@@ -140,11 +150,13 @@ struct result getResults(struct pcapValues values) {
     struct result results{};
     vector<int64_t> delays;
     vector<bool> loss;
+    vector<struct resultpoint> points;
 
     /*
      * Delays and Loss
      */
     for (auto &send: values.send) {
+        bool isLoss;
         uint64_t delay{};
         auto recieved = values.received.find(send.first);
         if (recieved != values.received.end()) {
@@ -152,11 +164,17 @@ struct result getResults(struct pcapValues values) {
             uint64_t sendTs = getMillisFromTimeval(send.second);
             delay = recievedTs - sendTs;
             loss.push_back(true);
+            isLoss = true;
         } else {
             delay = 0;
             loss.push_back(false);
+            isLoss = false;
         }
         delays.push_back(delay);
+        struct resultpoint currentPoint{};
+        currentPoint.loss = isLoss;
+        currentPoint.delay = delay;
+        points.push_back(currentPoint);
     }
 
     cout << "delays and loss finished" << endl;
@@ -198,6 +216,7 @@ struct result getResults(struct pcapValues values) {
     results.loss = loss;
     results.duplication = duplications;
     results.reordering = reordering;
+    results.fullResult = points;
     return results;
 }
 
@@ -328,6 +347,16 @@ void writeDelayFile(const string &filename, vector<double> delays) {
     uploadDelayFile.close();
 }
 
+void writeFullTraceFile(const string &filename, vector<resultpoint> result) {
+    ofstream uploadDelayFile;
+    uploadDelayFile.open(filename);
+    for (struct resultpoint rp : result) {
+        uploadDelayFile << rp.ts.tv_sec << "." << rp.ts.tv_usec << ";" << rp.delay << ";" << rp.loss << endl;
+    }
+    uploadDelayFile.flush();
+    uploadDelayFile.close();
+}
+
 void writeResultToFile(const string &path, result upload, result download) {
     ofstream uploadLossFile;
     string pathcommand = "mkdir -p " + path;
@@ -377,6 +406,9 @@ void writeResultToFile(const string &path, result upload, result download) {
     downloadReorderingFile << download.reordering << endl;
     downloadReorderingFile.flush();
     downloadReorderingFile.close();
+
+    writeFullTraceFile(path + "uploadfull.csv", upload.fullResult);
+    writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
 }
 
 
@@ -398,13 +430,21 @@ vector<double> readPingLog(const string &filename) {
     return pingResults;
 }
 
+void pimpData(const string &path) {
+    std::ifstream src("../Datenanpasser.py", std::ios::binary);
+    std::ofstream dst(path + "/Datenanpasser.py", std::ios::binary);
+    dst << src.rdbuf();
+    string pimpCommand = "python3 " + path + "/Datenanpasser.py";
+    system(pimpCommand.c_str());
+}
+
 int main(int argc, char **argv) {
     if (argc < 5 && argc != 2) {
         cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp]" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp] -p" << endl;
         cout << "PcapReader [path to pcaps]" << endl;
-        cout << "PcapReader [path to filesystem] -r (noch nicht implementiert" << endl;
+        cout << "PcapReader [path to filesystem] -r (noch nicht implementiert)" << endl;
         return -1;
     }
     string clientFilename;
@@ -507,6 +547,7 @@ int main(int argc, char **argv) {
             string resultPath = path + "/Ergebnis/" + cbrMode + "/";
             //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(resultPath, uploadResult, downloadResult);
+            pimpData(path);
         }
     } else if (argc == 2) {
         string path = argv[1];
@@ -554,6 +595,7 @@ int main(int argc, char **argv) {
             string resultPath = path + "/Ergebnis/" + cbrMode + "/";
             //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(resultPath, uploadResult, downloadResult);
+            pimpData(path);
         }
     }
 
