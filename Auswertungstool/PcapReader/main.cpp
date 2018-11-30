@@ -451,8 +451,12 @@ vector<double> readPingLog(const string &filename) {
     return pingResults;
 }
 
-void readBandwithJson(string filename) {
-
+void pimpData(const string &path){
+    std::ifstream  src("../Datenanpasser.py", std::ios::binary);
+    std::ofstream  dst(path + "/Datenanpasser.py",   std::ios::binary);
+    dst << src.rdbuf();
+    string pimpCommand = "python3 " + path + "/Datenanpasser.py";
+    system(pimpCommand.c_str());
 }
 
 int main(int argc, char **argv) {
@@ -461,7 +465,7 @@ int main(int argc, char **argv) {
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp] -p" << endl;
         cout << "PcapReader [path to pcaps]" << endl;
-        cout << "PcapReader [path to filesystem] -r (noch nicht implementiert" << endl;
+        cout << "PcapReader [path to filesystem] -r (noch nicht implementiert)" << endl;
         return -1;
     }
     string clientFilename;
@@ -564,6 +568,7 @@ int main(int argc, char **argv) {
             string resultPath = path + "/Ergebnis/" + cbrMode + "/";
             //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(resultPath, uploadResult, downloadResult);
+            pimpData(path);
         }
     } else if (argc == 2) {
         string path = argv[1];
@@ -608,6 +613,7 @@ int main(int argc, char **argv) {
             string resultPath = path + "/Ergebnis/" + cbrMode + "/";
             //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(resultPath, uploadResult, downloadResult);
+            pimpData(path);
         }
     }
 
