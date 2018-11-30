@@ -11,6 +11,7 @@
 #include <string>
 #include <dirent.h>
 #include <experimental/filesystem>
+#include <set>
 
 using namespace std;
 
@@ -19,11 +20,8 @@ struct result {
      * 0 = packet arrived, 1 = packet lost
      */
     vector<bool> loss;
-    /**
-     * reordering as the amount of skipped packets
-     */
-    vector<unsigned long> packetsSkipped;
-    vector<long> duplications;
+    double reordering;
+    double duplication;
     vector<int64_t> delays;
 };
 
@@ -133,12 +131,15 @@ vector<double> getPingResults(vector<struct timeval> clientValues, vector<struct
     return delays;
 }
 
+/**
+ * Calculates the Delay, Loss, Reordering and Duplication
+ * @param values the values from the pcaps
+ * @return the resutls
+ */
 struct result getResults(struct pcapValues values) {
     struct result results{};
     vector<int64_t> delays;
     vector<bool> loss;
-    vector<unsigned long> skippedPackages;
-    vector<long> duplications;
 
     /*
      * Delays and Loss
@@ -163,54 +164,40 @@ struct result getResults(struct pcapValues values) {
     /*
      * Reordering
      */
-    unsigned long losses = 0;
-    for (unsigned long i = 0; i < values.seqNumsSend.size(); i++) {
-        unsigned long currentSeqNum = values.seqNumsSend[i];
-        bool isloss = loss[i + 1];
-        if (isloss) {
-            skippedPackages.push_back(0);
-            losses++;
-        } else {
-            bool seqNumFound = false;
-            unsigned long j;
-            for (j = 0; i + j - losses < values.seqNumsReceived.size() && !seqNumFound; j++) {
-                unsigned long seqNum = values.seqNumsReceived[i + j - losses];
-                if (seqNum == currentSeqNum) {
-                    skippedPackages.push_back(j);
-                    seqNumFound = true;
-                }
-            }
+    set<unsigned long> reorders;
+    unsigned long lastValidSeqNum = 0UL - 1UL;
+    for (unsigned long i = (values.seqNumsReceived.size() - 1); i > 0; i--) {
+        unsigned long currentSeqNum = values.seqNumsReceived[i];
+        if (currentSeqNum < lastValidSeqNum) {
+            lastValidSeqNum = currentSeqNum;
+        } else if (currentSeqNum > lastValidSeqNum) {
+            reorders.insert(currentSeqNum);
         }
     }
 
-    cout << skippedPackages.size() << " reordering finished" << endl;
+
+    double reordering = (double) 100 / (double) values.seqNumsReceived.size() * (double) reorders.size();
+    cout << reorders.size() << " reordered packets [" << reordering << "%]" << endl;
+
     /*
      * Duplication
      */
-    map<unsigned long, unsigned long> duplictationsFound;
-    for (unsigned long sendSeqNum : values.seqNumsSend) {
-        duplictationsFound[sendSeqNum] = 0;
-    }
-    for (unsigned long recSeqNum : values.seqNumsReceived) {
-        duplictationsFound[recSeqNum] += 1;
-    }
-    /*for (unsigned long sendSeqNum : values.seqNumsSend) {
-        vector<unsigned long> matches;
-        copy_if(values.seqNumsReceived.begin(), values.seqNumsReceived.end(), back_inserter(matches), [&](unsigned long v){
-            return v == sendSeqNum;
-        });
-        duplications.push_back(matches.size() - 1);
-    }*/
-    for (auto &dupli : duplictationsFound) {
-        duplications.push_back(dupli.second);
+    set<unsigned long> allSeqNums;
+
+    for (unsigned long recvSeqNum : values.seqNumsReceived) {
+        allSeqNums.insert(recvSeqNum);
     }
 
-    cout << "duplication finished" << endl;
+    unsigned long duplications = values.seqNumsReceived.size() - allSeqNums.size();
+    double duplication = (double) 100 / (double) values.seqNumsReceived.size() * (double) duplications;
+
+    cout << duplications << " duplicated packets [" << duplication << "%]" << endl;
+
 
     results.delays = delays;
     results.loss = loss;
-    results.packetsSkipped = skippedPackages;
-    results.duplications = duplications;
+    results.duplication = duplications;
+    results.reordering = reordering;
     return results;
 }
 
@@ -369,33 +356,25 @@ void writeResultToFile(const string &path, result upload, result download) {
     ofstream uploadDuplicationFile;
     string filename = path + "uploadDuplication.txt";
     uploadDuplicationFile.open(filename);
-    for (long dupli : upload.duplications) {
-        uploadDuplicationFile << dupli << endl;
-    }
+    uploadDuplicationFile << upload.duplication << endl;
     uploadDuplicationFile.flush();
     uploadDuplicationFile.close();
 
     ofstream downloadDuplicationFile;
     downloadDuplicationFile.open(path + "downloadDuplication.txt");
-    for (long dupli : download.duplications) {
-        downloadDuplicationFile << dupli << endl;
-    }
+    downloadDuplicationFile << download.duplication << endl;
     downloadDuplicationFile.flush();
     downloadDuplicationFile.close();
 
     ofstream uploadReorderingFile;
     uploadReorderingFile.open(path + "uploadReordering.txt");
-    for (unsigned long reor : upload.packetsSkipped) {
-        uploadReorderingFile << reor << endl;
-    }
+    uploadReorderingFile << upload.reordering << endl;
     uploadReorderingFile.flush();
     uploadReorderingFile.close();
 
     ofstream downloadReorderingFile;
     downloadReorderingFile.open(path + "downloadReordering.txt");
-    for (unsigned long reor : download.packetsSkipped) {
-        downloadReorderingFile << reor << endl;
-    }
+    downloadReorderingFile << download.reordering << endl;
     downloadReorderingFile.flush();
     downloadReorderingFile.close();
 }
@@ -417,10 +396,6 @@ vector<double> readPingLog(const string &filename) {
     }
     file.close();
     return pingResults;
-}
-
-void readBandwithJson(string filename) {
-
 }
 
 int main(int argc, char **argv) {
@@ -551,6 +526,7 @@ int main(int argc, char **argv) {
             if (i == 0) {
                 cbrMode = "slow";
             }
+            cout << endl << "CBR-Mode: " << cbrMode << endl;
             clientFilename = path + "/client_cbr_" + cbrMode + ".pcap";
             serverFilename = path + "/server_cbr_" + cbrMode + ".pcap";
 
@@ -570,7 +546,9 @@ int main(int argc, char **argv) {
             uploadValues.send = clientValues.send;
             uploadValues.received = serverValues.received;
 
+            cout << endl << "starting Upload" << endl;
             struct result uploadResult = getResults(uploadValues);
+            cout << endl << "starting Download" << endl;
             struct result downloadResult = getResults(downloadValues);
 
             string resultPath = path + "/Ergebnis/" + cbrMode + "/";
