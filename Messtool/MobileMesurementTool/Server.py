@@ -6,23 +6,30 @@ import threading
 #Global Variables
 sequencenumber = 0
 port = 5000  # default port
-packetsize = 0
-bandwidth = 0
+packetsize = 1 # set to 1 because of cbr function()
+bandwidth = 1 # set to 1 because of cbr function()
 ip=""
 
 def calcSequencenumber(sequencenumber):
     return(sequencenumber+1)
 
 def sendCBR(udpsock, sendstart):
-    print("send")
     global packetsize, bandwidth, ip, sequencenumber
+    print("send")
     while True:
         while sendstart.is_set():
-
+            # compute cbr #
+            bw_byte = ((bandwidth / 8) * 1024)  # original bandwidth is in kbit
+            packetsNumber = bw_byte / packetsize
+            sleepIntervall = 1000 / packetsNumber
             sequenceString = str(sequencenumber)
             Message = "0" * (packetsize - len(sequenceString)) + sequenceString
+            print(sleepIntervall)
+            print(packetsNumber)
             udpsock.sendto(Message.encode(), (ip, port))
             sequencenumber = calcSequencenumber(sequencenumber)
+            time.sleep(sleepIntervall)
+
 
 def receiveMSGS(udpsock, sendstart):
     print("rcv")
@@ -33,8 +40,9 @@ def receiveMSGS(udpsock, sendstart):
         ip = addr[0]
         port= addr[1]
         datastr = data.decode()
-        packetsize2, bandwidth = datastr.split('_')
+        packetsize2, bandwidth2 = datastr.split('_')
         packetsize = int(packetsize2)
+        bandwidth = int(bandwidth2)
         sendstart.set()
 
 
