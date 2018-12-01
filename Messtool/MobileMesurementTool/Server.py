@@ -10,7 +10,10 @@ bandwidth = 1 # will be overwritten by first packet received
 clientIP=""
 
 def calcSequencenumber(sequencenumber):
-    return(sequencenumber+1)
+    if (sequencenumber + 1) == sys.maxsize: #start with 0 if max int is reached
+        return(0)
+    else:
+        return(sequencenumber+1)
 
 def sendCBR(udpsock, sendstart, killevent):
     global packetsize, bandwidth, clientIP, clientPort, sequencenumber
