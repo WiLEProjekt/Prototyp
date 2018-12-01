@@ -1,11 +1,23 @@
-import sys, getopt, os, json, socket, time, multiprocessing, pcapy, signal, pprint, requests, xmltodict
+import sys, getopt, os, json, socket, time, multiprocessing, pcapy, signal, pprint, requests
 from datetime import datetime
 from threading import Thread
 import threading
 
-def sendStart(udpsock, message, ip, port):
-    for i in range(10): #send the start message
-        udpsock.sendto(message.encode(), (ip, port))
+def sendStart(udpsock, message, ip, port, sendstart, killevent):
+    while killevent.is_set():
+        sendstart.wait()
+        print("Send new heartbeats")
+        for i in range(10): #send the start message
+            udpsock.sendto(message.encode(), (ip, port))
+        sendstart.clear()
+
+def receiveMSGS(udpsock, sendstart, killevent):
+    while killevent.is_set():
+        try:
+            data, addr = udpsock.recvfrom(2048)
+        except socket.timeout:
+            print("connection lost")
+            sendstart.set()
 
 if __name__ == "__main__":
     argv = sys.argv[1:]
@@ -34,11 +46,23 @@ if __name__ == "__main__":
 
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
     udpsock.settimeout(2)
-    Message=str(packetsize)+"_"+str(bandwidth)
-    sendStart(udpsock, Message, destIP, destPort)
-    while True:
+    Message = str(packetsize)+"_"+str(bandwidth)
+    sendstart = threading.Event()
+    killevent = threading.Event()
+    killevent.set()
+    threads = []
+    recthread = Thread(target=receiveMSGS, args=(udpsock, sendstart, killevent))
+    sendthread = Thread(target=sendStart, args=(udpsock, Message, destIP,destPort, sendstart, killevent))
+    threads.append(recthread)
+    threads.append(sendthread)
+    recthread.start()
+    sendthread.start()
+    while len(threads)>0:
         try:
-            data, addr = udpsock.recvfrom(2048)
-        except socket.timeout:
-            print("connection lost, reset connection.")
-            sendStart(udpsock, Message, destIP, destPort)
+            for t in threads:
+                t.join(1)
+                if t.is_alive() is False:
+                    threads.remove(t)
+        except KeyboardInterrupt:
+            print("keyboardinterrupt detected")
+            killevent.clear()
