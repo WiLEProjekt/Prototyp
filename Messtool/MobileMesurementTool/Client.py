@@ -19,6 +19,7 @@ def receiveMSGS(udpsock, sendstart, killevent):
     while killevent.is_set():
         try:
             data, addr = udpsock.recvfrom(2048)
+            print("received package from {}".format(addr))
         except socket.timeout:
             print("connection lost")
             timeout=True

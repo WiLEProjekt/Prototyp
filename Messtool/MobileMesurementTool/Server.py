@@ -22,20 +22,21 @@ def sendCBR(udpsock, sendstart, killevent):
             if not clientIP=="":
                 print("Start sending CBR")
                 # compute cbr #
-                bw_byte = ((bandwidth / 8) * 1024)  # original bandwidth is in kbit/s, now byte/s
+                bw_byte = ((bandwidth / 8) * 1000)  # original bandwidth is in kbit/s, now byte/s
                 packetsNumber = bw_byte / packetsize # packets pro sec
-                sleepIntervall = 1000 / packetsNumber
+                print("packets/sec: {}".format(packetsNumber))
+                sleepIntervall = 1 / packetsNumber
+                print("sleep intervall: {}".format(sleepIntervall))
                 sequenceString = str(sequencenumber)
                 Message = "0" * (packetsize - len(sequenceString)) + sequenceString
-                print(sleepIntervall)
-                print(packetsNumber)
+                print("sending to {}:{}".format(clientIP, clientPort))
                 udpsock.sendto(Message.encode(), (clientIP, clientPort))
                 sequencenumber = calcSequencenumber(sequencenumber)
                 time.sleep(sleepIntervall)
 
 
 def receiveMSGS(udpsock, sendstart, killevent):
-    global packetsize, clientIP, clientPort,bandwidth
+    global packetsize, clientIP, clientPort, bandwidth
     while killevent.is_set():
         try:
             data, addr = udpsock.recvfrom(2048)
