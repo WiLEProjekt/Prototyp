@@ -3,20 +3,25 @@ from datetime import datetime
 from threading import Thread
 import threading
 
+timeout=False
 def sendStart(udpsock, message, ip, port, sendstart, killevent):
+    global timeout
     while killevent.is_set():
         sendstart.wait()
-        print("Send new heartbeats")
-        for i in range(10): #send the start message
-            udpsock.sendto(message.encode(), (ip, port))
-        sendstart.clear()
+        if timeout:
+            print("Send new heartbeats")
+            for i in range(10): #send the start message
+                udpsock.sendto(message.encode(), (ip, port))
+            sendstart.clear()
 
 def receiveMSGS(udpsock, sendstart, killevent):
+    global timeout
     while killevent.is_set():
         try:
             data, addr = udpsock.recvfrom(2048)
         except socket.timeout:
             print("connection lost")
+            timeout=True
             sendstart.set()
 
 if __name__ == "__main__":
@@ -52,7 +57,7 @@ if __name__ == "__main__":
     killevent.set()
     threads = []
     recthread = Thread(target=receiveMSGS, args=(udpsock, sendstart, killevent))
-    sendthread = Thread(target=sendStart, args=(udpsock, Message, destIP,destPort, sendstart, killevent))
+    sendthread = Thread(target=sendStart, args=(udpsock, Message, destIP, destPort, sendstart, killevent))
     threads.append(recthread)
     threads.append(sendthread)
     recthread.start()
@@ -65,4 +70,5 @@ if __name__ == "__main__":
                     threads.remove(t)
         except KeyboardInterrupt:
             print("keyboardinterrupt detected")
+            sendstart.set()
             killevent.clear()
