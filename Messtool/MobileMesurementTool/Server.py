@@ -87,11 +87,11 @@ if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(argv, "hi:p:n:", ["Server IP","Port","Interface"])
     except getopt.GetoptError:
-        print("Usage: python3 Server.py -i <Server IP> -p <Port>")
+        print("Usage: python3 Server.py -i <Server IP> -p <Port> -n <interface>")
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print("Parameters: -p <Port>")
+            print("Parameters: -i <own IP> -p <own Port> -n <interface>")
             sys.exit()
         elif opt in ("-i", "--ip"):
             ownIP = arg
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     currenttime = currenttime.replace(':', '_')
     currenttime = currenttime.replace('.', '_')
     currenttime = currenttime.replace(' ', '_')
-    measurementID = currenttime + "_Train_MS_OS"
+    measurementID = currenttime + "_Train_MS_OS_Server"
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
     udpsock.bind((ownIP, ownPort))
     udpsock.settimeout(2)
