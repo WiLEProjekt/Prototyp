@@ -33,29 +33,30 @@ def write_pcap(filename, interface):
     except BaseException:
         pc.close()
 
-def calcSequencenumber(sequencenumber):
+def calcSequencenumber():
+    global sequencenumber
     if (sequencenumber + 1) == sys.maxsize: #start with 0 if max int is reached
-        return(0)
+        sequencenumber = 0
     else:
-        return(sequencenumber+1)
+        sequencenumber += 1
 
 def sendCBR(udpsock, sendstart, killevent):
     global packetsize, bandwidth, clientIP, clientPort, sequencenumber
     while killevent.is_set():
             sendstart.wait()
             if not clientIP=="":
-                print("Start sending CBR")
+                #print("Start sending CBR")
                 # compute cbr #
                 bw_byte = ((bandwidth / 8) * 1000)  # original bandwidth is in kbit/s, now byte/s
                 packetsNumber = bw_byte / packetsize # packets pro sec
-                print("packets/sec: {}".format(packetsNumber))
+                #print("packets/sec: {}".format(packetsNumber))
                 sleepIntervall = 1 / packetsNumber
-                print("sleep intervall: {}".format(sleepIntervall))
+                #print("sleep intervall: {}".format(sleepIntervall))
                 sequenceString = str(sequencenumber)
                 Message = "0" * (packetsize - len(sequenceString)) + sequenceString
-                print("sending to {}:{}".format(clientIP, clientPort))
+                #print("sending to {}:{}".format(clientIP, clientPort))
                 udpsock.sendto(Message.encode(), (clientIP, clientPort))
-                sequencenumber = calcSequencenumber(sequencenumber)
+                calcSequencenumber()
                 time.sleep(sleepIntervall)
 
 
@@ -82,7 +83,7 @@ def receiveMSGS(udpsock, sendstart, killevent):
 if __name__ == "__main__":
     argv = sys.argv[1:]
     ownIP = ""
-    ownPort = 5000
+    ownPort = 50000
     interface=""
     try:
         opts, args = getopt.getopt(argv, "hi:p:n:", ["Server IP","Port","Interface"])
