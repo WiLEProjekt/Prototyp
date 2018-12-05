@@ -15,7 +15,7 @@ def signal_term_handler(signal, frame):
 
 def write_pcap(filename, interface):
     pcapy.findalldevs()
-    max_bytes = 1024
+    max_bytes = 1100
     promiscuous = False
     read_timeout = 100
     pc = pcapy.open_live(interface, max_bytes, promiscuous, read_timeout)
@@ -65,7 +65,7 @@ def receiveMSGS(udpsock, sendstart, killevent):
     while killevent.is_set():
         try:
             data, addr = udpsock.recvfrom(2048)
-            print(data.decode(), addr)
+            #print(data.decode(), addr)
             clientIP = addr[0]
             clientPort = int(addr[1])
             datastr = data.decode()
