@@ -6,7 +6,6 @@ import threading
 packetctr = 0
 timeout=False
 measurementID = "" # public because used in different functions
-
 timestamp_list = [] # each entry contains a timestamp, a timestamp is added all 1000 packets
 
 
@@ -55,13 +54,13 @@ def receiveMSGS(udpsock, sendstart, killevent):
         try:
             data, addr = udpsock.recvfrom(2048)            
             packetctr += 1 
-            if (packetctr % 999) == 0: # each 1000 packets a timestamp is added to list
+            if (packetctr % 99) == 0: # each 1000 packets a timestamp is added to list
                 currentTs = time.time() * 1000 # current time in ms
                 if (len(timestamp_list) > 1):
                     previousTs = timestamp_list[-1]
-                    # 1000 packets with 1000*8 bits goodput divided by passed time (which is in ms) multiplied with 1000
-                    currentBandwidth = (1000 * 1000*8) / ((currentTs - previousTs) / 1000) 
-                    print("Current Bandwidth: " + str(currentBandwidth) + " kbit/s")
+                    # 100 packets with 1000*8 bits goodput divided by passed time (which is in ms) multiplied with 1000
+                    currentBandwidth = (100 * 1000*8) / ((currentTs- previousTs))
+                    print("Current Bandwidth: " + str(currentBandwidth) + " kbit/ms")
                 timestamp_list.append(currentTs)
             #print("received package from {}".format(addr))
         except socket.timeout:
