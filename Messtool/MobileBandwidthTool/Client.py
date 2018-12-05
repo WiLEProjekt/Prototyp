@@ -3,6 +3,63 @@ from datetime import datetime
 from threading import Thread
 import threading
 
+
+class HuaweiE3372(object):
+  BASE_URL = 'http://{host}'
+  COOKIE_URL = '/html/index.html'
+  XML_APIS = [
+    '/api/device/information',
+    '/api/device/signal',
+    '/api/monitoring/status',
+    '/api/monitoring/traffic-statistics',
+    '/api/dialup/connection',
+    '/api/global/module-switch',
+    '/api/net/current-plmn',
+    '/api/net/net-mode',
+  ]
+  session = None
+
+  def __init__(self,host='192.168.8.1'):
+    self.host = host
+    self.base_url = self.BASE_URL.format(host=host)
+    self.session = requests.Session()
+    # get a session cookie by requesting the COOKIE_URL
+    r = self.session.get(self.base_url + self.COOKIE_URL)
+
+  def get(self,path):
+    return xmltodict.parse(self.session.get(self.base_url + path).text).get('response',None)
+
+def signalstrength(killevent, measurementId):
+    e3372 = HuaweiE3372()    
+
+    file = open(measurementId + "_signal.csv", "w")
+    while killevent.is_set():
+        file.write(str(time.time()))
+
+
+        for path in e3372.XML_APIS:
+            for key, value in e3372.get(path).items():
+
+                # print(key,value)
+                if (key == u'FullName'):
+                    file.write(";" + str(value))
+                if (key == u'workmode'):
+                    file.write(";" + str(value))
+                if (key == u'rsrq'):
+                    file.write(";" + str(value))
+                if (key == u'rssi'):
+                    file.write(";" + str(value))
+                if (key == u'sinr'):
+                    file.write(";" + str(value))
+                if (key == u'rsrp'):
+                    file.write(";" + str(value))
+        file.write("\n")
+        time.sleep(0.5)
+
+    file.close()
+
+
+##### GLOBAL VARIABLES ############
 packetctr = 0
 timeout=False
 measurementID = "" # public because used in different functions
@@ -116,8 +173,11 @@ if __name__ == "__main__":
     threads = []
     recthread = Thread(target=receiveMSGS, args=(udpsock, sendstart, killevent))
     sendthread = Thread(target=sendStart, args=(udpsock, Message, destIP, destPort, sendstart, killevent))
+    signalthread = Thread(target=signalstrength, args=(killevent, measurementID))
     threads.append(recthread)
     threads.append(sendthread)
+    threads.append(signalthread)
+    signalthread.start()
     recthread.start()
     sendthread.start()
     while len(threads)>0:
