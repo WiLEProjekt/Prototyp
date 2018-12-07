@@ -1028,6 +1028,7 @@ def DoTrack(rgm, args):
   _, _, _, _, _, _, _, tracks, _ = info
 
   range_iter = ParseRange(args[0], 0, tracks-1)
+  print str(args) + "\n"
   if not range_iter:
     return DoHelp(rgm, args)
 
@@ -1105,10 +1106,21 @@ def DoWrite(rgm, args):
      msg = rgm.RecvMessage()
      if not msg:
        continue
-     prefix = msg.split(',')[0]
+     parts = msg.split(',')
+     prefix = parts[0]
      if arglen == 0 or prefix in args:
-      	print msg
-      	f.write(msg + "\n");
+      if prefix == 'GPGGA':
+        newmsg = ''
+        for i in range(15):
+          if i != 0:
+            newmsg += ','
+          if i == 1:
+            newmsg += str(time.time())
+          else:
+            newmsg += parts[i]
+        msg = newmsg
+     print msg
+     f.write(msg + "\n");
   except KeyboardInterrupt:
     f.close();
   return 0
