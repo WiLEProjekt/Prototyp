@@ -434,6 +434,8 @@ void pimpData(const string &path) {
     std::ifstream src("../Datenanpasser.py", std::ios::binary);
     std::ofstream dst(path + "/Datenanpasser.py", std::ios::binary);
     dst << src.rdbuf();
+    dst.close();
+    src.close();
     string pimpCommand = "python3 " + path + "/Datenanpasser.py";
     system(pimpCommand.c_str());
 }
