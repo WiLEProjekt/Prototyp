@@ -1,0 +1,3 @@
+Status von ntp: sudo ntpq -np
+Restart ntp: sudo systemctl restart ntp
+
