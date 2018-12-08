@@ -1,7 +1,11 @@
 import sys, getopt, os, json, socket, time, multiprocessing, pcapy, signal, pprint, requests
 from datetime import datetime
+from subprocess import call
 from threading import Thread
 import threading
+
+# Class to measure signal strength parameters with huaweiE3372 stick
+import xmltodict
 
 
 class HuaweiE3372(object):
@@ -29,17 +33,22 @@ class HuaweiE3372(object):
   def get(self,path):
     return xmltodict.parse(self.session.get(self.base_url + path).text).get('response',None)
 
-def signalstrength(killevent, measurementId):
-    e3372 = HuaweiE3372()    
 
+
+
+##### GLOBAL VARIABLES ############
+
+packetctr = 0
+timeout=False
+measurementID = "" # public because used in different functions
+
+def signalstrength(killevent, measurementId):
+    e3372 = HuaweiE3372()
     file = open(measurementId + "_signal.csv", "w")
     while killevent.is_set():
         file.write(str(time.time()))
-
-
         for path in e3372.XML_APIS:
             for key, value in e3372.get(path).items():
-
                 # print(key,value)
                 if (key == u'FullName'):
                     file.write(";" + str(value))
@@ -55,22 +64,21 @@ def signalstrength(killevent, measurementId):
                     file.write(";" + str(value))
         file.write("\n")
         time.sleep(0.5)
-
     file.close()
 
-
-##### GLOBAL VARIABLES ############
-packetctr = 0
-timeout=False
-measurementID = "" # public because used in different functions
-timestamp_list = [] # each entry contains a timestamp, a timestamp is added all 1000 packets
+def logGPS(filepath, killevent):
+    with open(filepath + "_gps.txt", 'w') as output:
+        call(["sudo", "python2", "gpsreader.py", "dump"], stdout=output)
 
 
-# write line-by-line the timestamps to a textfile
-def writeTimestamp_list_to_file(filename):
-    with open(filename,'w') as fd: 
-        for timestamp in timestamp_list:
-            fd.write("%s\n" % timestamp)
+def logNTP_Status(filepath, killevent):
+    with open(filepath + "_ntp_status.txt", 'w') as output:
+        while killevent.is_set():
+            output.write("Timestamp: " + str(time.time()) + "\n")
+            output.flush()
+            # similar to sudo ntpq -np >> filepath
+            call(["sudo", "ntpq", "-np"], stdout=output)
+            time.sleep(1)
 
 # signal handler for SIGINT pcap_thread
 def signal_handler(signal, frame):
@@ -107,18 +115,22 @@ def sendStart(udpsock, message, ip, port, sendstart, killevent):
 
 def receiveMSGS(udpsock, sendstart, killevent):
     global timeout, packetctr
+    firstPacket = True
+    previousTs = 0.0
     while killevent.is_set():
         try:
             data, addr = udpsock.recvfrom(2048)            
             packetctr += 1 
-            if (packetctr % 99) == 0: # each 1000 packets a timestamp is added to list
-                currentTs = time.time() * 1000 # current time in ms
-                if (len(timestamp_list) > 1):
-                    previousTs = timestamp_list[-1]
-                    # 100 packets with 1000*8 bits goodput divided by passed time (which is in ms) multiplied with 1000
-                    currentBandwidth = (100 * 1000*8) / ((currentTs- previousTs))
-                    print("Current Bandwidth: " + str(currentBandwidth) + " kbit/ms")
-                timestamp_list.append(currentTs)
+            if (packetctr % 999) == 0: # each 1000 packets a timestamp is added to list
+                currentTs = time.time() # current time in sec
+                if (firstPacket):
+                    previousTs = currentTs
+                    firstPacket=False
+                else:
+                    # 1000 packets with 1000*8 bits goodput divided by passed time (which is in sec)
+                    currentBandwidth = (1000 * 1000*8) / ((currentTs- previousTs)) / 1024
+                    print("Current Bandwidth: " + str(currentBandwidth) + " Kbit/s")
+                    previousTs = currentTs
             #print("received package from {}".format(addr))
         except socket.timeout:
             print("connection lost")
@@ -160,26 +172,40 @@ if __name__ == "__main__":
         print("No IP or no Port or no interface provided.")
         sys.exit(2)
 
-    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+    # setup socket and start message for server
+    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udpsock.settimeout(2)
     Message = str(packetsize)+"_"+str(bandwidth)
     currenttime = formatTimestamp()
     measurementID = currenttime + "_Train_MS_OS_Client"
-    pcap_process = multiprocessing.Process(target=write_pcap, args=(measurementID, interface))
+    os.mkdir(measurementID)
+    dirpath = measurementID + "/" + measurementID
+
+    # pcap must be logged by a process
+    pcap_process = multiprocessing.Process(target=write_pcap, args=(dirpath, interface))
     pcap_process.start()
+
+    # synchronize other functionalities
     sendstart = threading.Event()
     killevent = threading.Event()
     killevent.set()
     threads = []
     recthread = Thread(target=receiveMSGS, args=(udpsock, sendstart, killevent))
     sendthread = Thread(target=sendStart, args=(udpsock, Message, destIP, destPort, sendstart, killevent))
-    signalthread = Thread(target=signalstrength, args=(killevent, measurementID))
+    ntpthread = Thread(target=logNTP_Status, args=(dirpath, killevent))
+    gpsthread = Thread(target=logGPS, args=(dirpath,killevent))
+    signalthread = Thread(target=signalstrength, args=(killevent, dirpath))
     threads.append(recthread)
     threads.append(sendthread)
+    threads.append(ntpthread)
+    threads.append(gpsthread)
     threads.append(signalthread)
     signalthread.start()
     recthread.start()
     sendthread.start()
+    ntpthread.start()
+    gpsthread.start()
+
     while len(threads)>0:
         try:
             for t in threads:
@@ -187,10 +213,8 @@ if __name__ == "__main__":
                 if t.is_alive() is False:
                     threads.remove(t)
         except KeyboardInterrupt:
-            print("keyboardinterrupt detected")
+            print("Stopped measurement via KeyboardInterrupt. Finishing...")
             sendstart.set()
             killevent.clear()
             time.sleep(3)
-            filename = measurementID + "_Bandwidth_Timestamps.txt"
-            writeTimestamp_list_to_file(filename)
             pcap_process.terminate()

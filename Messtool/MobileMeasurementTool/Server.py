@@ -9,7 +9,7 @@ packetsize = 1 # will be overwritten by first packet received
 bandwidth = 1 # will be overwritten by first packet received
 clientIP=""
 
-def signal_term_handler(signal, frame):
+def signalhandler(signal, frame):
     sys.exit(0)
 
 
@@ -20,7 +20,7 @@ def write_pcap(filename, interface):
     read_timeout = 100
     pc = pcapy.open_live(interface, max_bytes, promiscuous, read_timeout)
     dumper = pc.dump_open(filename + ".pcap")
-    signal.signal(signal.SIGTERM, signal_term_handler)
+    signal.signal(signal.SIGINT, signalhandler)
 
     try:
         pc.setfilter('udp')
@@ -39,6 +39,13 @@ def calcSequencenumber():
         sequencenumber = 0
     else:
         sequencenumber += 1
+
+# address is used in PcapParser
+def writeClientAdress_to_file(filename, addr, port):
+    with open(filename,"w") as fd:
+        fd.write(str(addr) + " ")
+        fd.write(str(port))
+    fd.close()
 
 def sendCBR(udpsock, sendstart, killevent):
     global packetsize, bandwidth, clientIP, clientPort, sequencenumber
@@ -60,11 +67,12 @@ def sendCBR(udpsock, sendstart, killevent):
                 time.sleep(sleepIntervall)
 
 
-def receiveMSGS(udpsock, sendstart, killevent):
+def receiveMSGS(udpsock,mdir, sendstart, killevent):
     global packetsize, clientIP, clientPort, bandwidth
     while killevent.is_set():
         try:
             data, addr = udpsock.recvfrom(2048)
+            writeClientAdress_to_file(mdir + "_clientAdress.txt", addr[0], addr[1])
             #print(data.decode(), addr)
             clientIP = addr[0]
             clientPort = int(addr[1])
@@ -80,10 +88,17 @@ def receiveMSGS(udpsock, sendstart, killevent):
             pass
 
 
+def formatTimestamp():
+    currenttime = str(datetime.now())
+    currenttime = currenttime.replace(':', '_')
+    currenttime = currenttime.replace('.', '_')
+    currenttime = currenttime.replace(' ', '_')
+    return currenttime
+
 if __name__ == "__main__":
     argv = sys.argv[1:]
     ownIP = ""
-    ownPort = 50000
+    ownPort = 50000 # default
     interface=""
     try:
         opts, args = getopt.getopt(argv, "hi:p:n:", ["Server IP","Port","Interface"])
@@ -104,22 +119,28 @@ if __name__ == "__main__":
         print("The IP address this server should listen on is missing or no Interface provided")
         sys.exit(2)
 
-    currenttime = str(datetime.now())
-    currenttime = currenttime.replace(':', '_')
-    currenttime = currenttime.replace('.', '_')
-    currenttime = currenttime.replace(' ', '_')
+    # make unique folder for data
+    currenttime = formatTimestamp()
     measurementID = currenttime + "_Train_MS_OS_Server"
+    os.mkdir(measurementID)
+    dirpath = measurementID + "/" + measurementID
+
+    # setup server
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
     udpsock.bind((ownIP, ownPort))
     udpsock.settimeout(2)
     print("Server is listening on {}:{}".format(ownIP, ownPort))
-    pcap_process = multiprocessing.Process(target=write_pcap, args=(measurementID, interface))
+
+    # pcap has to be started in own process
+    pcap_process = multiprocessing.Process(target=write_pcap, args=(dirpath, interface))
     pcap_process.start()
+
+    # synchro threads
     sendstart = threading.Event()
     killevent = threading.Event()
     killevent.set()
     threads=[]
-    recthread = Thread(target=receiveMSGS, args=(udpsock, sendstart, killevent))
+    recthread = Thread(target=receiveMSGS, args=(udpsock, dirpath,sendstart, killevent))
     sendthread = Thread(target=sendCBR, args=(udpsock, sendstart, killevent))
     recthread.start()
     sendthread.start()
@@ -132,7 +153,7 @@ if __name__ == "__main__":
                 if t.is_alive() is False:
                     threads.remove(t)
         except KeyboardInterrupt:
-            print("keyboardinterrupt detected")
+            print("Stopped measurement via KeyboardInterrupt. Finishing...")
             sendstart.set()
             killevent.clear()
             time.sleep(3)
