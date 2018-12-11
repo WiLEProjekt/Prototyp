@@ -44,27 +44,33 @@ measurementID = "" # public because used in different functions
 
 def signalstrength(killevent, measurementId):
     e3372 = HuaweiE3372()
-    file = open(measurementId + "_signal.csv", "w")
+    output = open(measurementId + "_signal.csv", "w")
     while killevent.is_set():
-        file.write(str(time.time()))
+        output.write(str(time.time()))
         for path in e3372.XML_APIS:
-            for key, value in e3372.get(path).items():
+            try:
+                items = e3372.get(path).items()
+            except AttributeError:
+                print("AttributeError occured, hence a signalstrength is missing.")
+                continue
+            for key, value in items:
                 # print(key,value)
                 if (key == u'FullName'):
-                    file.write(";" + str(value))
+                    output.write(";" + str(value))
                 if (key == u'workmode'):
-                    file.write(";" + str(value))
+                    output.write(";" + str(value))
                 if (key == u'rsrq'):
-                    file.write(";" + str(value))
+                    output.write(";" + str(value))
                 if (key == u'rssi'):
-                    file.write(";" + str(value))
+                    output.write(";" + str(value))
                 if (key == u'sinr'):
-                    file.write(";" + str(value))
+                    output.write(";" + str(value))
                 if (key == u'rsrp'):
-                    file.write(";" + str(value))
-        file.write("\n")
+                    output.write(";" + str(value))
+                output.flush()
+        output.write("\n")
         time.sleep(0.5)
-    file.close()
+    output.close()
 
 def logGPS(filepath, killevent):
     with open(filepath + "_gps.txt", 'w') as output:
