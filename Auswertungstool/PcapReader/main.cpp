@@ -68,10 +68,29 @@ string parseIP(unsigned char *bytes) {
     return ip;
 }
 
-unsigned long getSeqNum(const u_char *data) {
+unsigned long getSeqNumIperf(const u_char *data) {
     //Data start: 42
     unsigned char seqNumBytes[] = {data[50], data[51], data[52], data[53]};
     unsigned long seqNum = parseNumberFromBytes(seqNumBytes, 4);
+    return seqNum;
+}
+
+unsigned long getSeqNumMobileTool(const u_char *data) {
+    //44 = payload start
+    const int longDigits = 10;
+    unsigned int seqNumDigits[longDigits] = {0};
+    for(int i = 0; i < longDigits; i++){
+        seqNumDigits[i] = data[1041 - i] - '0';
+    }
+
+    unsigned long seqNum = 0;
+    for(int i = 0; i< longDigits; i++){
+        unsigned long factor = 1;
+        for(int j = 0; j < i; j++){
+            factor *= 10;
+        }
+        seqNum += seqNumDigits[i] * factor;
+    }
     return seqNum;
 }
 
@@ -84,11 +103,7 @@ unsigned long getSeqNumPing(const u_char *data) {
 vector<bool> getLoss(vector<unsigned long> sendSeqNums, vector<unsigned long> recievedSeqNums) {
     vector<bool> trace;
     for (unsigned long send : sendSeqNums) {
-        if (std::find(recievedSeqNums.begin(), recievedSeqNums.end(), send) != recievedSeqNums.end()) {
-            trace.push_back(true);
-        } else {
-            trace.push_back(false);
-        }
+        trace.push_back(std::find(recievedSeqNums.begin(), recievedSeqNums.end(), send) != recievedSeqNums.end());
     }
     return trace;
 }
@@ -176,7 +191,6 @@ struct result getResults(struct pcapValues values) {
         currentPoint.delay = delay;
         points.push_back(currentPoint);
     }
-
     cout << "delays and loss finished" << endl;
 
     /*
@@ -243,6 +257,69 @@ readPingFile(const string &filename, const string &ipOfPcapDevice, const string 
     return timeStamps;
 }
 
+struct pcapValues readMobilePcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice) {
+    map<unsigned long, struct timeval> toOtherTS;
+    map<unsigned long, struct timeval> toSelfTS;
+    vector<unsigned long> timestampsSend;
+    vector<unsigned long> timestampsReceived;
+
+    struct pcapValues result{};
+
+    struct stat buffer{};
+    if (stat(filename.c_str(), &buffer) != 0) {
+        cout << "file " << filename << " not found" << endl;
+    } else {
+        char errbuff[PCAP_ERRBUF_SIZE];
+        pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
+        struct pcap_pkthdr *header;
+        const u_char *data;
+        //BRAUCHEN WIR DAS NOCH??????
+        bool isFirstPackageToOther = true;
+        //-------
+        unsigned long packageCount = 0;
+        while (pcap_next_ex(pcap, &header, &data) >= 0) {
+            if (header->len != header->caplen) {
+                //printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
+            }
+            packageCount++;
+
+            unsigned char sourceIPBytes[] = {data[26], data[27], data[28], data[29]};
+            unsigned char destIPBytes[] = {data[30], data[31], data[32], data[33]};
+            string packetSource = parseIP(sourceIPBytes);
+            string packetDest = parseIP(destIPBytes);
+
+            //check if packet is UDP (17)
+            unsigned char lengthBytes[] = {data[16], data[17]};
+            unsigned long length = parseNumberFromBytes(lengthBytes, 2);
+            if (length == 1028) {
+                unsigned long seqNum = getSeqNumMobileTool(data);
+                if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
+                    if (isFirstPackageToOther) {
+                        isFirstPackageToOther = false;
+                    } else {
+                        toOtherTS[seqNum] = header->ts;
+                        timestampsSend.push_back(seqNum);
+                    }
+                } else if (ipOfPcapDevice == packetDest && ipOfOtherDevice == packetSource) {
+                    toSelfTS[seqNum] = header->ts;
+                    timestampsReceived.push_back(seqNum);
+                }
+            }
+        }
+        pcap_close(pcap);
+
+        result.send = toOtherTS;
+        result.received = toSelfTS;
+        result.seqNumsReceived = timestampsReceived;
+        result.seqNumsSend = timestampsSend;
+
+        return result;
+    }
+
+    return result;
+}
+
+
 struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice) {
     map<unsigned long, struct timeval> toOtherTS;
     map<unsigned long, struct timeval> toSelfTS;
@@ -261,7 +338,6 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
         const u_char *data;
         //BRAUCHEN WIR DAS NOCH??????
         bool isFirstPackageToOther = true;
-        bool isFirstPackageToSelf = true;
         //-------
         unsigned long packageCount = 0;
         while (pcap_next_ex(pcap, &header, &data) >= 0) {
@@ -279,8 +355,7 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
             unsigned char lengthBytes[] = {data[16], data[17]};
             unsigned long length = parseNumberFromBytes(lengthBytes, 2);
             if (length == 1028) {
-                unsigned long seqNum = getSeqNum(data);
-                //printData(data, header);
+                unsigned long seqNum = getSeqNumIperf(data);
                 if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
                     if (isFirstPackageToOther) {
                         isFirstPackageToOther = false;
@@ -417,6 +492,38 @@ void writeResultToFile(result upload, result download) {
     writeResultToFile(path, std::move(upload), std::move(download));
 }
 
+void writeResultToFile(const result &download){
+    string path = "Ergebnis/";
+    ofstream uploadLossFile;
+    string pathcommand = "mkdir -p " + path;
+    system(pathcommand.c_str());
+
+    ofstream downloadLossFile;
+    downloadLossFile.open(path + "downloadLoss.txt");
+    for (bool b : download.loss) {
+        downloadLossFile << b;
+    }
+    downloadLossFile.flush();
+    downloadLossFile.close();
+
+    string downloadDelayFilename = path + "downloadDelays.csv";
+    writeDelayFile(downloadDelayFilename, download.delays);
+
+    ofstream downloadDuplicationFile;
+    downloadDuplicationFile.open(path + "downloadDuplication.txt");
+    downloadDuplicationFile << download.duplication << endl;
+    downloadDuplicationFile.flush();
+    downloadDuplicationFile.close();
+
+    ofstream downloadReorderingFile;
+    downloadReorderingFile.open(path + "downloadReordering.txt");
+    downloadReorderingFile << download.reordering << endl;
+    downloadReorderingFile.flush();
+    downloadReorderingFile.close();
+
+    writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
+}
+
 vector<double> readPingLog(const string &filename) {
     vector<double> pingResults;
     ifstream file;
@@ -443,6 +550,7 @@ void pimpData(const string &path) {
 int main(int argc, char **argv) {
     if (argc < 5 && argc != 2) {
         cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp]" << endl;
+        cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp] -m" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp] -p" << endl;
         cout << "PcapReader [path to pcaps]" << endl;
@@ -455,7 +563,39 @@ int main(int argc, char **argv) {
     string localeClientIp;
     string globalClientIp;
 
-    if (argc == 6) {
+    if(argc == 7){
+        string arg6 = argv[6];
+        if(arg6 == "-m"){
+            /*
+             * Zwei einzelne Pcaps vom Server und Client aus MobileMessung vergleichen
+             */
+            clientFilename = argv[1];
+            serverFilename = argv[2];
+            serverIp = argv[3];
+            localeClientIp = argv[4];
+            globalClientIp = argv[5];
+
+            struct pcapValues clientValues = readMobilePcapFile(clientFilename, localeClientIp, serverIp);
+            struct pcapValues serverValues = readMobilePcapFile(serverFilename, serverIp, globalClientIp);
+
+            struct pcapValues downloadValues{};
+            struct pcapValues uploadValues{};
+
+            downloadValues.seqNumsSend = serverValues.seqNumsSend;
+            downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+            downloadValues.send = serverValues.send;
+            downloadValues.received = clientValues.received;
+
+            uploadValues.seqNumsSend = clientValues.seqNumsSend;
+            uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+            uploadValues.send = clientValues.send;
+            uploadValues.received = serverValues.received;
+
+            struct result downloadResult = getResults(downloadValues);
+
+            writeResultToFile(downloadResult);
+        }
+    } else if (argc == 6) {
         string arg5 = argv[5];
         if (arg5 == "-p") {
             string path = argv[1];
@@ -482,6 +622,9 @@ int main(int argc, char **argv) {
 
             writeDelayFile(path + "/result.csv", results);
         } else {
+            /*
+             * Zwei einzelne Pcaps vom Server und Client vergleichen
+             */
             clientFilename = argv[1];
             serverFilename = argv[2];
             serverIp = argv[3];
@@ -507,7 +650,6 @@ int main(int argc, char **argv) {
             struct result uploadResult = getResults(uploadValues);
             struct result downloadResult = getResults(downloadValues);
 
-            //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(uploadResult, downloadResult);
         }
     } else if (argc == 5) {
@@ -547,7 +689,6 @@ int main(int argc, char **argv) {
             struct result downloadResult = getResults(downloadValues);
 
             string resultPath = path + "/Ergebnis/" + cbrMode + "/";
-            //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(resultPath, uploadResult, downloadResult);
             pimpData(path);
         }
@@ -595,61 +736,9 @@ int main(int argc, char **argv) {
             struct result downloadResult = getResults(downloadValues);
 
             string resultPath = path + "/Ergebnis/" + cbrMode + "/";
-            //printResult(uploadLoss, downloadLoss, uploadDelays, downloadDelays);
             writeResultToFile(resultPath, uploadResult, downloadResult);
             pimpData(path);
         }
     }
-
-    /*
-     * War nur ein Test
-   else if(argc == 3) {
-        string rootPath = argv[1];
-
-        vector<string> directories;
-        directories.push_back(rootPath);
-        while (!directories.empty()) {
-            string currentPath = directories.back();
-            directories.pop_back();
-            string path = "";
-            directories.push_back(path);
-            string globalIpFile = path + "/globalIp";
-            string bwDownloadJson = path + "/download.json";
-            string bwUploadJson = path + "/upload.json";
-            string bandwithParserCall = "python ../BandwithParser.py " + path;
-            system(bandwithParserCall.c_str());
-            for (int i = 0; i < 2; i++) {
-                string cbrMode = "fast";
-                if (i == 0) {
-                    cbrMode = "slow";
-                }
-                clientFilename = path + "/client_cbr_" + cbrMode + ".pcap";
-                serverFilename = path + "/server_cbr_" + cbrMode + ".pcap";
-
-                struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
-                struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
-
-                struct pcapValues downloadValues{};
-                struct pcapValues uploadValues{};
-
-                downloadValues.seqNumsSend = serverValues.seqNumsSend;
-                downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
-                downloadValues.send = serverValues.send;
-                downloadValues.received = clientValues.received;
-
-                uploadValues.seqNumsSend = clientValues.seqNumsSend;
-                uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
-                uploadValues.send = clientValues.send;
-                uploadValues.received = serverValues.received;
-
-                struct result uploadResult = getResults(uploadValues);
-                struct result downloadResult = getResults(downloadValues);
-
-                string resultPath = path + "/Ergebnis/" + cbrMode + "/";
-                writeResultToFile(resultPath, uploadResult, downloadResult);
-            }
-
-        }
-    }*/
     return 0;
 }
