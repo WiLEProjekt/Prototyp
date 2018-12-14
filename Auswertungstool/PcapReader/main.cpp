@@ -28,7 +28,7 @@ struct result {
 };
 
 struct resultpoint {
-    struct timeval ts;
+    uint64_t ts;
     bool loss;
     unsigned long packtesSkipped;
     long duplications;
@@ -174,6 +174,7 @@ struct result getResults(struct pcapValues values) {
         struct resultpoint currentPoint{};
         currentPoint.loss = isLoss;
         currentPoint.delay = delay;
+        currentPoint.ts = recieved;
         points.push_back(currentPoint);
     }
 
@@ -351,7 +352,7 @@ void writeFullTraceFile(const string &filename, vector<resultpoint> result) {
     ofstream uploadDelayFile;
     uploadDelayFile.open(filename);
     for (struct resultpoint rp : result) {
-        uploadDelayFile << rp.ts.tv_sec << "." << rp.ts.tv_usec << ";" << rp.delay << ";" << rp.loss << endl;
+        uploadDelayFile << rp.ts << ";" << rp.delay << ";" << rp.loss << endl;
     }
     uploadDelayFile.flush();
     uploadDelayFile.close();
