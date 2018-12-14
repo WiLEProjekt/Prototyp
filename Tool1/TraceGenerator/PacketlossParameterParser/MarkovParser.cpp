@@ -168,7 +168,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
                         float theoreticalLoss = (S4+S3)*100;
                         float theoreticalavgBurstLength = (S4+S3)/(S1*(p14+p13)+(S2*p23));
                         float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
-                        if(fabs(theoreticalLoss-origLoss) < 0.1 && avgBurstDiff < 0.001){
+                        if(fabs(theoreticalLoss-origLoss) < 0.1 && avgBurstDiff < 720){
                             vector<float> params;
                             params.push_back(theoreticalLoss);
                             params.push_back(theoreticalavgBurstLength);
@@ -185,13 +185,14 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
             }
         }
     }
-
+    cout << possibleParams.size() << endl;
     //Filter 50 best fitting parameter from possibleParams
     vector<vector<float> > top50;
     findTopX(top50, possibleParams, 50, "Markov");
 
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
+    vector<float> dvalues;
     for(int i = 0; i<top50.size(); i++){
         vector<int> generatedSizes = MarkovModel(trace.size(), top50[i][0], top50[i][1], top50[i][2], top50[i][3], top50[i][4]).buildTrace2();
         //calculate distributionfunction
@@ -200,7 +201,8 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
         calcDistFunction(generatedSizes, generatedDistFunction);
 
         //calculate ks test
-        bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
+        float dvalue = 0.0;
+        bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size(), dvalue);
         if(ksdecision){
             found = true;
             p13_estimated=top50[i][0];
@@ -209,10 +211,26 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
             p23_estimated=top50[i][3];
             p14_estimated=top50[i][4];
             break;
+        }else{
+            dvalues.push_back(dvalue);
         }
     }
     if(!found){
-        cout << "No matching parameters found" << endl;
+        cout << "No parameters exist that pass the ks-test" << endl;
+        int minindex = 0;
+        float minvalue = dvalues[0];
+        for(int i = 0; i < dvalues.size()-1; i++){
+            if(dvalues[minindex]>dvalues[i+1]){
+                minindex = i+1;
+                minvalue = dvalues[i+1];
+            }
+        }
+        p13_estimated=top50[minindex][0];
+        p31_estimated=top50[minindex][1];
+        p32_estimated=top50[minindex][2];
+        p23_estimated=top50[minindex][3];
+        p14_estimated=top50[minindex][4];
+        cout << "dwert: " << minvalue << endl;
     }
 
     return new float[6] {p13_estimated, p31_estimated, p32_estimated, p23_estimated, p14_estimated, p41};

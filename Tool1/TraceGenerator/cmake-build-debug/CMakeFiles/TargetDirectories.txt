@@ -1,3 +1,0 @@
-/home/drieke/Dokumente/Prototyp/Tool1/TraceGenerator/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/drieke/Dokumente/Prototyp/Tool1/TraceGenerator/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/drieke/Dokumente/Prototyp/Tool1/TraceGenerator/cmake-build-debug/CMakeFiles/TraceGenerator.dir

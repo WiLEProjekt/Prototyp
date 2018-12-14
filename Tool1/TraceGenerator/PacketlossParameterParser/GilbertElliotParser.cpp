@@ -163,15 +163,15 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
     for (int p = 1; p < 51; p++) {
         for (int r = 50; r < 101; r++) {
             for (int h = 1; h < 51; h++) {
-                for (int k = 50; k < 101; k++){
+                for (int k = 50; k < 100; k++){
                     float pf = (float) p / 100;
                     float rf = (float) r / 100;
                     float hf = (float) h / 100;
                     float kf = (float) k / 100;
-                    float theoreticalLoss = ((1.0f-kf)*(rf/(pf+rf)))+((1-hf)*(pf/(pf+rf)))*100;
+                    float theoreticalLoss = (((1.0f-kf)*(rf/(pf+rf)))+((1-hf)*(pf/(pf+rf))))*100;
                     float theoreticalavgBurstLength = (1.0f/(1.0f-(1.0f-rf)*(1.0f-hf)))*(1.0f+(1.0f-kf));
                     float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
-                    if(fabs(theoreticalLoss-origLoss)<0.1 && avgBurstDiff < 0.2){
+                    if(fabs(theoreticalLoss-origLoss)<0.1 && avgBurstDiff < 720){
                         vector<float> params;
                         params.push_back(theoreticalLoss);
                         params.push_back(theoreticalavgBurstLength);
@@ -186,6 +186,7 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
             }
         }
     }
+    cout << possibleParams.size() << endl;
     float p=0, r=0, k=0, h=0;
     //Filter 50 best fitting parameter from possibleParams
     vector<vector<float> > top50;
@@ -193,8 +194,9 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
 
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
-
+    vector<float> dvalues;
     for(int i = 0; i<top50.size(); i++){
+        cout <<" p: " << top50[i][0] << " r: " << top50[i][1] << " k: " << top50[i][2] <<" h: " << top50[i][3] << endl;
         vector<int> generatedSizes = GilbertElliotModel(trace.size(), top50[i][0], top50[i][1], top50[i][2], top50[i][3]).buildTrace2();
         //calculate distributionfunction
 
@@ -202,8 +204,8 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
         vector<vector<float> > generatedDistFunction;
         calcDistFunction(generatedSizes, generatedDistFunction);
         //calculate ks test
-
-        bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size());
+        float dvalue = 0.0;
+        bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size(), dvalue);
         if(ksdecision){
             //cout << "Parameters found: " << "p: " << top50[i][0] << " r: " << top50[i][1] << " h: " << top50[i][2] << endl;
             found = true;
@@ -212,10 +214,25 @@ float *GilbertElliotParser::bruteForceParameter(vector<bool> trace) {
             k=top50[i][2];
             h=top50[i][3];
             break;
+        }else{
+            dvalues.push_back(dvalue);
         }
     }
     if(!found){
-        cout << "No matching parameters found" << endl;
+        cout << "No parameters exist that pass the ks-test" << endl;
+        int minindex = 0;
+        float minvalue = dvalues[0];
+        for(int i = 0; i < dvalues.size()-1; i++){
+            if(dvalues[minindex]>dvalues[i+1]){
+                minindex = i+1;
+                minvalue = dvalues[i+1];
+            }
+        }
+        p=top50[minindex][0];
+        r=top50[minindex][1];
+        k=top50[minindex][2];
+        h=top50[minindex][3];
+        cout << "dwert: " << minvalue << endl;
     }
 
     return new float[4] {p, r, k, h};

@@ -1,0 +1,1 @@
+sudo python rgm3800-rev25.py -d /dev/ttyUSB0

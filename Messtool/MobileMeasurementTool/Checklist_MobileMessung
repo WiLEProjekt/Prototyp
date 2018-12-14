@@ -1,0 +1,36 @@
+Aufbau Client:
+- Beim Gps: 
+	Ist Parameter interval auf 1 second?
+	Ist Parameter gmouse on?
+- Usb-Stick mit funktionierender Sim?
+- In Ubuntu: 
+	- Einstellung Ethernet Connected ist "turned on"?
+	- Ist WLAN ausgeschaltet?
+- Aktuelle Fassung des Messtool vom Git?
+- Zeitsynchro aktiviert?
+	- Status von ntp: sudo ntpq -np
+	- Restart ntp: sudo systemctl restart ntp 
+
+
+Aufbau Server:
+- Aktueller Code von Git auf Externe Festplatte?
+----- sonst Speicherprobleme!
+- Zeitsynchro aktiviert? 	
+	- Status von ntp: sudo ntpq -np
+	- Restart ntp: sudo systemctl restart ntp 
+
+Durchfuehrung der Messung: 
+- Per ssh mit Cordelia verbinden: 
+	Befehl:	ssh dlaniewski@cordelia.informatik.uos.de
+	Auf die externe Festplatte zugreifen: 
+	Befehl: cd /media/dlaniewski/WiLE-ExternHD/Messung_06_12/Git/Prototyp/Messtool/MobileMeasurementTool
+	Server starten: Paremter ip, port und device
+	Befehl: sudo python3 Server.py -i 131.173.33.228 -p 50000 -n enp0s31f6
+
+- den Client auf dem Notebook starten: 
+	Parameter i: ip
+	Param p: port
+	Param b: Bandbreite
+	Param -n: device per inconfig nachgucken	
+	Befehl: sudo python3 ./Client.py -i 131.173.33.228 -p 50000 -b 256 -n <IFCONFIG nachgucken>
+
