@@ -28,7 +28,7 @@ struct result {
 };
 
 struct resultpoint {
-    struct timeval ts;
+    uint64_t ts;
     bool loss;
     unsigned long packtesSkipped;
     long duplications;
@@ -173,9 +173,12 @@ struct result getResults(struct pcapValues values) {
     for (auto &send: values.send) {
         bool isLoss;
         uint64_t delay{};
+        struct resultpoint currentPoint{};
         auto recieved = values.received.find(send.first);
+
+        uint64_t recievedTs = getMillisFromTimeval(recieved->second);
+
         if (recieved != values.received.end()) {
-            uint64_t recievedTs = getMillisFromTimeval(recieved->second);
             uint64_t sendTs = getMillisFromTimeval(send.second);
             delay = recievedTs - sendTs;
             loss.push_back(true);
@@ -186,9 +189,9 @@ struct result getResults(struct pcapValues values) {
             isLoss = false;
         }
         delays.push_back(delay);
-        struct resultpoint currentPoint{};
         currentPoint.loss = isLoss;
         currentPoint.delay = delay;
+        currentPoint.ts = recievedTs;
         points.push_back(currentPoint);
     }
     cout << "delays and loss finished" << endl;
@@ -426,7 +429,7 @@ void writeFullTraceFile(const string &filename, vector<resultpoint> result) {
     ofstream uploadDelayFile;
     uploadDelayFile.open(filename);
     for (struct resultpoint rp : result) {
-        uploadDelayFile << rp.ts.tv_sec << "." << rp.ts.tv_usec << ";" << rp.delay << ";" << rp.loss << endl;
+        uploadDelayFile << rp.ts << ";" << rp.delay << ";" << rp.loss << endl;
     }
     uploadDelayFile.flush();
     uploadDelayFile.close();
