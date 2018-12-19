@@ -42,7 +42,7 @@ if __name__ == "__main__":
     origin = parts[0] + "_" + parts[1] + "_" + parts[2] + "_" + parts[3] + "_MapAttributes.txt"
 
     result_file = open(origin, "w") 
-    result_file.write("Timestamp_GPS, Cellid, Latitude, Longtitude, Signalstrength, Diff_TS_GPS_SS \n")
+    result_file.write("Timestamp_GPS, Cellid, Latitude, Longtitude, GPS_activated, NumberSatellites ,Signalstrength, Diff_TS_GPS_SS \n")
     gps_file=open(gps_path,'r')
     print(gps_file.name)
     ts_dmy = ""
@@ -57,6 +57,8 @@ if __name__ == "__main__":
             lon_rad = convertToDecimal(float(items[4]))
             ts = datetime.datetime.strptime((ts_dmy + " " + ts_hms), '%d%m%y %H%M%S')
             ts_unix = time.mktime(ts.timetuple()) + (float(ms) / 1000) + 3600 # plus 3600 (= 60 sec * 60 min) because different time offset 
+            numberSat = items[7]
+            gps_activated = items[6]
             # find nearest signalstrength to textfile, within 10 seconds timediff
             signalstrength_file = open(signalstrength_path,'r')
             min_ts_diff = 10.0 # in seconds
@@ -66,10 +68,17 @@ if __name__ == "__main__":
                 if items[1] == "LTE":
                     ts_diff = abs(float(items[0]) - ts_unix)
                     if ts_diff < min_ts_diff:
-                        signalstrength = items[4].split("d")[0]
                         min_ts_diff = ts_diff
-                        cellid = int(items[2])                       
-            result_file.write(str(ts_unix) + "," + str(cellid) + "," + str(lat_rad) + "," + str(lon_rad) + "," + str(signalstrength) + "," + str(min_ts_diff) + "\n")
+                        try:
+                            signalstrength = items[4].split("d")[0]
+                        except ValueError:
+                            signalstrength = 0                   
+                        try:
+                            cellid = int(items[2])
+                        except ValueError:
+                            cellid = 0                        
+            result_file.write(str(ts_unix) + "," + str(cellid) + "," + str(lat_rad) + "," + str(lon_rad) + "," + str(gps_activated) + "," + str(numberSat) + "," + str(signalstrength) + "," + str(min_ts_diff) + "\n")
+            result_file.flush()
                
     gps_file.close()
     result_file.close()
