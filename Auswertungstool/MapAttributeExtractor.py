@@ -39,12 +39,11 @@ if __name__ == "__main__":
 
     #concat output filename
     parts = gps_path.split('/')[1].split('_')
-    origin = parts[0] + "_" + parts[1] + "_" + parts[2] + "_" + parts[3] + "_MapAttributes.txt"
+    origin = parts[0] + "_" + parts[1] + "_" + parts[2] + "_" + parts[3] + "_MapAttributes.csv"
 
     result_file = open(origin, "w") 
-    result_file.write("Timestamp_GPS, Cellid, Latitude, Longtitude, GPS_activated, NumberSatellites ,Signalstrength, Diff_TS_GPS_SS \n")
+    result_file.write("Timestamp_GPS,Technology,Cellid, Latitude, Longtitude, GPS_activated, NumberSatellites ,Signalstrength, Diff_TS_GPS_SS \n")
     gps_file=open(gps_path,'r')
-    print(gps_file.name)
     ts_dmy = ""
     for line in gps_file:
         signalstrength = 0
@@ -56,28 +55,35 @@ if __name__ == "__main__":
             lat_rad = convertToDecimal(float(items[2])) 
             lon_rad = convertToDecimal(float(items[4]))
             ts = datetime.datetime.strptime((ts_dmy + " " + ts_hms), '%d%m%y %H%M%S')
-            ts_unix = time.mktime(ts.timetuple()) + (float(ms) / 1000) + 3600 # plus 3600 (= 60 sec * 60 min) because different time offset 
+            ts_unix = time.mktime(ts.timetuple()) + (float(ms) / 1000) + 3600  # plus 3600 (= 60 sec * 60 min) because different time offset 
             numberSat = items[7]
             gps_activated = items[6]
             # find nearest signalstrength to textfile, within 10 seconds timediff
             signalstrength_file = open(signalstrength_path,'r')
-            min_ts_diff = 10.0 # in seconds
+            min_ts_diff = 2.0 # in seconds
             cellid = 0
+            technology = ""
             for line in signalstrength_file:
                 items = line.split(';') # timestamp , technology, cellid, dont know, signalstrength, dont know...
-                if items[1] == "LTE":
-                    ts_diff = abs(float(items[0]) - ts_unix)
-                    if ts_diff < min_ts_diff:
-                        min_ts_diff = ts_diff
-                        try:
+                ts_diff = abs(float(items[0]) - ts_unix)
+                if ts_diff < min_ts_diff:
+                    min_ts_diff = ts_diff
+                    technology = items[1]
+                    try:                  
+                        if items[4] == "Unknown":
+                            signalstrength = 0
+                        if items[4] == "None":
+                            signalstrength = 0
+                        else:
                             signalstrength = items[4].split("d")[0]
-                        except ValueError:
-                            signalstrength = 0                   
-                        try:
-                            cellid = int(items[2])
-                        except ValueError:
-                            cellid = 0                        
-            result_file.write(str(ts_unix) + "," + str(cellid) + "," + str(lat_rad) + "," + str(lon_rad) + "," + str(gps_activated) + "," + str(numberSat) + "," + str(signalstrength) + "," + str(min_ts_diff) + "\n")
+                    except ValueError:
+                        signalstrength = 0                   
+                    try:
+                        cellid = int(items[2])
+                    except ValueError:
+                        cellid = 0                        
+            result_file.write(str(ts_unix) + "," + str(technology) + "," + str(cellid) + "," + str(lat_rad) + ",") 
+            result_file.write(str(lon_rad) + "," + str(gps_activated) + "," + str(numberSat) + "," + str(signalstrength) + "," + str(min_ts_diff) + "\n")
             result_file.flush()
                
     gps_file.close()
