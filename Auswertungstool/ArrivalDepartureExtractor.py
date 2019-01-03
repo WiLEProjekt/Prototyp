@@ -14,8 +14,8 @@ def squaredDistanceBetweenLocation(fromLat, fromLon, toLat, toLon):
 if __name__ == "__main__":
     argv = sys.argv[1:]
 
-    mapAttr_path = "2018-12-19_09_14_08_MapAttributes.csv"
-    arrDep_path = "An_Ab_Mue_Osna_Bahnhoefe.csv"
+    mapAttr_path = ""
+    arrDep_path = ""
 
     try:
         opts, args = getopt.getopt(argv, "hm:b:", ["mapAttributes", "bahnhoefe"])
@@ -31,11 +31,15 @@ if __name__ == "__main__":
         elif opt in ("-b", "--bahnhoefe"):
             arrDep_path = "./" + arg
 
+    if mapAttr_path == "" or arrDep_path=="":
+        print("Parameters: -m <MapAttributes_filepath> -s <an_ab_bahnhoefe_filepath>")
+        sys.exit()
+
     #concat output filename
     parts = mapAttr_path.split('_')
-    origin = parts[0] + "_" + parts[1] + "_" + parts[2] + "_" + parts[3] + "_MapAttributes.csv"
+    origin = parts[0] + "_" + parts[1] + "_" + parts[2] + "_" + parts[3] + "_Timestamp_Stations_Tunnel.csv"
 
-    result_file = open("Timestamp_Stations_Tunnel", "w") 
+    result_file = open(origin, "w") 
     result_file.write("Timestamp_Unix\n")
 
     arrDep_file=open(arrDep_path,'r')
