@@ -1,0 +1,2 @@
+#include <SmallestQuadrats.h>
+

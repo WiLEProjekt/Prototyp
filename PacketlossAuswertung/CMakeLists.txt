@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.8)
+project(PacketlossAuswertung)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/src)
+add_executable(packetloss src/main.cpp src/Generator.cpp src/SmallestQuadrats.cpp src/io.cpp)
