@@ -31,6 +31,7 @@ struct delayPoint {
     uint64_t recievedTs;
     int64_t delay;
     bool packetRecieved;
+    unsigned long seqNum;
 };
 
 struct pcapValues {
@@ -182,6 +183,7 @@ struct result getResults(struct pcapValues values) {
                     lossPoint.recievedTs = currTs;
                     lossPoint.delay = 0;
                     lossPoint.packetRecieved = false;
+                    lossPoint.seqNum = 0;
                     points.push_back(lossPoint);
                 }
                 lossCounter = 0;
@@ -196,6 +198,7 @@ struct result getResults(struct pcapValues values) {
             currentPoint.delay = delay;
             currentPoint.recievedTs = recievedTs;
             currentPoint.packetRecieved = true;
+            currentPoint.seqNum = recieved->first;
             points.push_back(currentPoint);
         } else {
             lossCounter++;
@@ -409,7 +412,7 @@ void writeFullTraceFile(const string &filename, vector<delayPoint> result) {
     uploadDelayFile.open(filename);
 
     for (struct delayPoint rp : result) {
-        uploadDelayFile << rp.recievedTs << ";" << rp.delay << ";" << rp.packetRecieved << endl;
+        uploadDelayFile << rp.recievedTs << ";" << rp.delay << ";" << rp.packetRecieved << rp.seqNum << endl;
     }
     uploadDelayFile.flush();
     uploadDelayFile.close();
