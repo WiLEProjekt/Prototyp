@@ -9,6 +9,9 @@
 #include <iostream>
 #include <string>
 #include <Generator.h>
+#include <io.h>
+#include <SmallestQuadrats.h>
+
 using namespace std;
 
 void usage(){
@@ -82,6 +85,11 @@ int main(int argc, char* argv[]){
             wrongArguments();
             return -1;
         }
+        vector<bool> originalTrace = readBinaryTrace(pathToGivenTrace);
+        vector<int> origSizes;
+        calcLoss(originalTrace, origSizes);
+        vector<vector<float> > origECDF;
+        calculateECDF(origSizes, origECDF);
     }
 
 }
