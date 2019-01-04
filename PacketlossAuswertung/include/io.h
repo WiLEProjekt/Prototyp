@@ -7,6 +7,11 @@
 
 using namespace std;
 
+/**
+ * Reads the Trace and converts the string character-wise into bools
+ * @param filename - the path to the Inputfile
+ * @return
+ */
 vector<bool> readBinaryTrace(string filename);
 
 #endif //PACKETLOSSAUSWERTUNG_IO_H

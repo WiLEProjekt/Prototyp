@@ -8,7 +8,6 @@
  */
 #include <iostream>
 #include <string>
-#include <Generator.h>
 #include <io.h>
 #include <SmallestQuadrats.h>
 
@@ -34,14 +33,14 @@ int main(int argc, char* argv[]){
     }else{
         string pathToGivenTrace = argv[1];
         string model = argv[2];
-        float p, r, k, h, p13, p31, p32, p23, p14;
+        float p, r, k=1.0, h=0.0, p13, p31, p32, p23, p14;
         if(model == "Bernoulli"){
             if(argc != 4){
                 wrongArguments();
                 return -1;
             }else{
                 p = stof(argv[3]);
-
+                r = 1.0-p;
             }
         }else if(model == "SimpleGilbert"){
             if(argc != 5){
@@ -85,11 +84,26 @@ int main(int argc, char* argv[]){
             wrongArguments();
             return -1;
         }
+
+        /*
+         * Calculate ECDF of the Inputtrace as reference ECDF, to which the ECDFs of the Models will be fitted
+         */
         vector<bool> originalTrace = readBinaryTrace(pathToGivenTrace);
         vector<int> origSizes;
         calcLoss(originalTrace, origSizes);
         vector<vector<float> > origECDF;
         calculateECDF(origSizes, origECDF);
+
+        /*
+         * Fit the ECDFs
+         */
+        long tracesize = originalTrace.size();
+        if(model == "Markov"){
+            cout << fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14) << endl;
+        }else{
+            cout << fitGilbert(tracesize, origECDF, p, r, k, h) << endl;
+        }
+
     }
 
 }

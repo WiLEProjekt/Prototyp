@@ -11,33 +11,27 @@ float generateRandomNumber(){
     return(distribution(randomGenerator));
 }
 
-void calculateBursts(vector<bool> &trace, int &i, int &losscounter, int &receivecounter, int &temp, vector<int> &genSizes){
+void calculateBursts(vector<bool> &trace, int &i, int &temp, vector<int> &genSizes){
     if(i > 1){
         if(!trace[i-1] && !trace[i-2]){
-            losscounter++;
             temp--;
         }else if(trace[i-1] && trace[i-2]){
-            receivecounter++;
             temp++;
         }else{
             genSizes.push_back(temp);
             temp = 0;
             if(!trace[i-1]){
-                losscounter++;
                 temp--;
             }
             else if(trace[i-1]) {
-                receivecounter++;
                 temp++;
             }
         }
     }else if(i==1){
         if(!trace[i-1]){
-            losscounter++;
             temp--;
         }
         else if(trace[i-1]){
-            receivecounter++;
             temp++;
         }
     }
@@ -49,8 +43,6 @@ vector<int> buildGilbertElliot(long numPackets, float p, float r, float k, float
     bool good = true; // 1 = good state, 0 = bad state
     bool send; // 0 = loss, 1 = successfully send, or no loss
     int temp = 0;
-    int losscounter = 0;
-    int receivecounter = 0;
     for (int i = 0; i < numPackets + 1; i++) {
         //generate Trace
         if (good) { //in good state
@@ -70,7 +62,7 @@ vector<int> buildGilbertElliot(long numPackets, float p, float r, float k, float
         }
 
         //calculate burstsizes
-        calculateBursts(trace, i, losscounter, receivecounter, temp, gensizes);
+        calculateBursts(trace, i, temp, gensizes);
     }
     return(gensizes);
 }
@@ -79,8 +71,6 @@ vector<int> buildMarkov(long numPackets, float p13, float p14, float p23, float 
     vector<bool> trace;
     vector<int> gensizes;
     int temp = 0;
-    int losscounter = 0;
-    int receivecounter = 0;
     int state = 1;
 
     for (int i = 0; i < numPackets + 1; i++) {
@@ -121,7 +111,7 @@ vector<int> buildMarkov(long numPackets, float p13, float p14, float p23, float 
         }
 
         //calculate burstsizes
-        calculateBursts(trace, i, losscounter, receivecounter, temp, gensizes);
+        calculateBursts(trace, i, temp, gensizes);
     }
     return(gensizes);
 }
