@@ -10,6 +10,7 @@
 #include <string>
 #include <io.h>
 #include <SmallestQuadrats.h>
+#include <time.h>
 
 using namespace std;
 
@@ -31,6 +32,7 @@ int main(int argc, char* argv[]){
     if(argc < 4) {
         usage();
     }else{
+        clock_t start = clock();
         string pathToGivenTrace = argv[1];
         string model = argv[2];
         float p, r, k=1.0, h=0.0, p13, p31, p32, p23, p14;
@@ -94,6 +96,9 @@ int main(int argc, char* argv[]){
         vector<vector<float> > origECDF;
         calculateECDF(origSizes, origECDF);
 
+        clock_t stop1 = clock();
+        double elapsed1 = (double) (stop1-start)/CLOCKS_PER_SEC;
+        cout << elapsed1 << "s" << endl;
         /*
          * Fit the ECDFs
          */
@@ -103,6 +108,9 @@ int main(int argc, char* argv[]){
         }else{
             cout << fitGilbert(tracesize, origECDF, p, r, k, h) << endl;
         }
+        clock_t stop = clock();
+        double elapsed = (double) (stop-start)/CLOCKS_PER_SEC;
+        cout << elapsed << "s" << endl;
 
     }
 

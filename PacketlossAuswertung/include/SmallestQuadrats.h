@@ -7,7 +7,7 @@
 #include <cfloat>
 
 using namespace std;
-#define MAXSEED 1
+#define MAXSEED 5
 /**
  * Calculates the ECDF
  * @param sizes - vector with the burstsizes of which the ECDF should be calculated. Equals @Param overallsizes of method calcLoss

@@ -80,23 +80,25 @@ void adjustECDFLengths(vector<vector<float> > &ECDF1, vector<vector<float> > &EC
     }
 }
 
-//TODO: implementieren
 double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2){
+    double difference=0.0;
     if(ECDF1.size() != ECDF2.size()){
         cout << "ECDF1 & ECDF2 have different length. Cannot calculate squared difference. Implementation error somewhere" << endl;
         return -1.0;
     }else{
-
+        for(int i = 0; i<ECDF1.size(); i++){
+            difference += (ECDF1[i][1] - ECDF2[i][1])*(ECDF1[i][1] - ECDF2[i][1]);
+        }
     }
-    return 0.0;
+    return(difference);
 }
 
 //TODO: Evtl. auch lowestDiff zurückgeben
 int fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, float k, float h){
-    vector<vector<float> > tempOrigECDF = origECDF;
     int bestSeed;
     double lowestDiff = DBL_MAX;
     for(int i = 0; i < MAXSEED; i++){
+        vector<vector<float> > tempOrigECDF = origECDF;
         setSeed(i);
         vector<int> burstsizes = buildGilbertElliot(length, p, r, k, h);
         vector<vector<float> > calcECDF;
@@ -110,8 +112,22 @@ int fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, f
     }
     return(bestSeed);
 }
-
-//TODO: ähnlich wie fitGilbert implementieren
+//2x fast das gleiche um Vergleiche zu sparen
 int fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31, float p32, float p23, float p14){
-    cout << endl;
+    int bestSeed;
+    double lowestDiff = DBL_MAX;
+    for(int i = 0; i < MAXSEED; i++){
+        vector<vector<float> > tempOrigECDF = origECDF;
+        setSeed(i);
+        vector<int> burstsizes = buildMarkov(length, p13, p31, p32, p23, p14);
+        vector<vector<float> > calcECDF;
+        calculateECDF(burstsizes, calcECDF);
+        adjustECDFLengths(tempOrigECDF, calcECDF);
+        double squaredDiff = calcSquaredDifference(tempOrigECDF, calcECDF);
+        if(squaredDiff<lowestDiff){
+            bestSeed = i;
+            lowestDiff = squaredDiff;
+        }
+    }
+    return(bestSeed);
 }
