@@ -37,9 +37,28 @@ void adjustECDFLengths(vector<vector<float> > &ECDF1, vector<vector<float> > &EC
  */
 double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2);
 
-int fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, float k, float h);
+/**
+ * Finds best Seed and smallest Squared Difference given Modelparameters for Gilbert Elliot Model
+ * @param length
+ * @param origECDF
+ * @param p
+ * @param r
+ * @param k
+ * @param h
+ */
+void fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, float k, float h);
 
-int fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31, float p32, float p23, float p14);
+/**
+ * Finds best Seed and smallest Squared Difference given Modelparameters for Markov Model
+ * @param length
+ * @param origECDF
+ * @param p13
+ * @param p31
+ * @param p32
+ * @param p23
+ * @param p14
+ */
+void fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31, float p32, float p23, float p14);
 
 
 #endif //PACKETLOSSAUSWERTUNG_SMALLESTQUADRATS_H

@@ -1,7 +1,7 @@
 /**
  * Hilfstool zum Analysieren des Paketverlusts von einem gebebenen Binärtrace
  * Generiert mit unterschiedlichen Seeds des Zufallszahlengenerators Ein Vergleichstrace
- * Gibt den Seed zurück, mit dem die ECDF des generierten Traces mit der ECDF des original Traces am besten passt
+ * Gibt den Seed und den kleinsten quadratischen Abstand aus, mit dem die ECDF des generierten Traces mit der ECDF des original Traces am besten passt
  * Abstandsmaß: Methode der kleinsten Quadrate
  * @param Pfad zum gegebenen Binärtrace
  * @param Modellname und dann die Modellparameter Bernoulli | SimpleGilbert | Gilbert | GilbertElliot | Markov
@@ -95,18 +95,15 @@ int main(int argc, char* argv[]){
         calcLoss(originalTrace, origSizes);
         vector<vector<float> > origECDF;
         calculateECDF(origSizes, origECDF);
-
-        clock_t stop1 = clock();
-        double elapsed1 = (double) (stop1-start)/CLOCKS_PER_SEC;
-        cout << elapsed1 << "s" << endl;
+        //BIS HIER ISTS SCHNELL
         /*
          * Fit the ECDFs
          */
         long tracesize = originalTrace.size();
         if(model == "Markov"){
-            cout << fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14) << endl;
+            fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14);
         }else{
-            cout << fitGilbert(tracesize, origECDF, p, r, k, h) << endl;
+            fitGilbert(tracesize, origECDF, p, r, k, h);
         }
         clock_t stop = clock();
         double elapsed = (double) (stop-start)/CLOCKS_PER_SEC;

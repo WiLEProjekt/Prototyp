@@ -50,20 +50,36 @@ void calcLoss(vector<bool> &trace, vector<int> &overallsizes) {
 }
 
 void adjustECDFLengths(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2){
-    while(ECDF1[0][0] > ECDF2[0][0]){ //add elements at the beginning of ECDF1
-        vector<float> temp;
-        float i = ECDF1[0][0] - 1;
-        temp.push_back(i);
-        temp.push_back(0.0f);
-        ECDF1.insert(ECDF1.begin(), temp);
+    if(ECDF1[0][0] > ECDF2[0][0]){
+        vector<vector<float> > newECDF1;
+        int diff = ECDF1[0][0]-ECDF2[0][0];
+        int start = ECDF1[0][0]-diff;
+        for(int i = start; i<ECDF1[0][0]; i++){
+            vector<float> temp;
+            temp.push_back((float)i);
+            temp.push_back(0.0f);
+            newECDF1.push_back(temp);
+        }
+        for(int i = 0; i<ECDF1.size(); i++){
+            newECDF1.push_back(ECDF1[i]);
+        }
+        ECDF1 = newECDF1;
+    }else if(ECDF2[0][0] > ECDF1[0][0]){
+        vector<vector<float> > newECDF2;
+        int diff = ECDF2[0][0]-ECDF1[0][0];
+        int start = ECDF2[0][0]-diff;
+        for(int i = start; i<ECDF2[0][0]; i++){
+            vector<float> temp;
+            temp.push_back((float)i);
+            temp.push_back(0.0f);
+            newECDF2.push_back(temp);
+        }
+        for(int i = 0; i<ECDF2.size(); i++){
+            newECDF2.push_back(ECDF2[i]);
+        }
+        ECDF2 = newECDF2;
     }
-    while(ECDF2[0][0] > ECDF1[0][0]){ //add elements at the beginning of ECDF2
-        vector<float> temp;
-        float i = ECDF2[0][0] - 1;
-        temp.push_back(i);
-        temp.push_back(0.0f);
-        ECDF2.insert(ECDF2.begin(), temp);
-    }
+
     while(ECDF1[ECDF1.size()-1][0] < ECDF2[ECDF2.size()-1][0]){ //add elements at the end of ECDF1
         vector<float> temp;
         float i = ECDF1[ECDF1.size()-1][0] + 1;
@@ -94,7 +110,7 @@ double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float>
 }
 
 //TODO: Evtl. auch lowestDiff zurückgeben
-int fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, float k, float h){
+void fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, float k, float h){
     int bestSeed;
     double lowestDiff = DBL_MAX;
     for(int i = 0; i < MAXSEED; i++){
@@ -110,10 +126,9 @@ int fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, f
             lowestDiff = squaredDiff;
         }
     }
-    return(bestSeed);
 }
 //2x fast das gleiche um Vergleiche zu sparen
-int fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31, float p32, float p23, float p14){
+void fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31, float p32, float p23, float p14){
     int bestSeed;
     double lowestDiff = DBL_MAX;
     for(int i = 0; i < MAXSEED; i++){
@@ -129,5 +144,5 @@ int fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31
             lowestDiff = squaredDiff;
         }
     }
-    return(bestSeed);
+    cout << "lowest Seed:" << bestSeed << " lowest Diff:" << lowestDiff << endl;
 }
