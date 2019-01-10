@@ -1,114 +1,123 @@
 /**
  * Hilfstool zum Analysieren des Paketverlusts von einem gebebenen Binärtrace
- * Generiert mit unterschiedlichen Seeds des Zufallszahlengenerators Ein Vergleichstrace
+ * Generiert mit unterschiedlichen Seeds des Zufallszahlengenerators ein Vergleichstrace
  * Gibt den Seed und den kleinsten quadratischen Abstand aus, mit dem die ECDF des generierten Traces mit der ECDF des original Traces am besten passt
- * Abstandsmaß: Methode der kleinsten Quadrate
- * @param Pfad zum gegebenen Binärtrace
- * @param Modellname und dann die Modellparameter Bernoulli | SimpleGilbert | Gilbert | GilbertElliot | Markov
+ * Abstandsmaß: Methode der kleinsten Quadrate und Kolmogorov Abstand
+ * @param Pfad zum Sage Script
+ * @param Pfad zum Binärtrace
  */
 #include <iostream>
 #include <string>
+#include <time.h>
 #include <io.h>
 #include <SmallestQuadrats.h>
-#include <time.h>
+#include <sage.h>
+#include <paramCalculator.h>
+
 
 using namespace std;
 
 void usage(){
-    cout << "usage: ./packetloss <path to binary file> <model> <list of modelparameter>" << endl;
-    cout << "Models:" << endl;
-    cout << "\tGilbertElliot\t <p [0-1]> <r [0-1]> <k [0-1]> <h [0-1]>" << endl
-                                    << "\tGilbert\t\t\t <p [0-1]> <r [0-1]> <h [0-1]>" << endl
-                                    << "\tSimpleGilbert\t <p [0-1]> <r [0-1]" << endl
-                                    << "\tBernoulli\t\t <p [0-1]>" << endl
-                                    << "\tMarkov\t\t\t <p13> <p31> <p32> <p23> <p14>" << endl;
-}
-
-void wrongArguments(){
-    cout << "Wrong Arguments given" << endl;
+    cout << "usage: ./packetloss <path to sagemath python script> <path to binary file>" << endl;
 }
 
 int main(int argc, char* argv[]){
-    if(argc < 4) {
+    if (argc < 3) {
         usage();
-    }else{
+        return 0;
+    } else {
         clock_t start = clock();
-        string pathToGivenTrace = argv[1];
-        string model = argv[2];
-        float p, r, k=1.0, h=0.0, p13, p31, p32, p23, p14;
-        if(model == "Bernoulli"){
-            if(argc != 4){
-                wrongArguments();
-                return -1;
-            }else{
-                p = stof(argv[3]);
-                r = 1.0-p;
-            }
-        }else if(model == "SimpleGilbert"){
-            if(argc != 5){
-                wrongArguments();
-                return -1;
-            }else{
-                p = stof(argv[3]);
-                r = stof(argv[4]);
-            }
-        }else if(model == "Gilbert"){
-            if(argc != 6){
-                wrongArguments();
-                return -1;
-            }else{
-                p = stof(argv[3]);
-                r = stof(argv[4]);
-                h = stof(argv[5]);
-            }
-        }else if(model == "GilbertElliot"){
-            if(argc != 7){
-                wrongArguments();
-                return -1;
-            }else{
-                p = stof(argv[3]);
-                r = stof(argv[4]);
-                k = stof(argv[5]);
-                h = stof(argv[6]);
-            }
-        }else if(model == "Markov"){
-            if(argc != 8){
-                wrongArguments();
-                return -1;
-            }else{
-                p13 = stof(argv[3]);
-                p31 = stof(argv[4]);
-                p32 = stof(argv[5]);
-                p23 = stof(argv[6]);
-                p14 = stof(argv[7]);
-            }
-        }else{
-            wrongArguments();
-            return -1;
-        }
+        string sagescript = argv[1];
+        string pathToGivenTrace = argv[2];
 
-        /*
-         * Calculate ECDF of the Inputtrace as reference ECDF, to which the ECDFs of the Models will be fitted
-         */
+        cout << "Processing Inputtrace" << endl;
         vector<bool> originalTrace = readBinaryTrace(pathToGivenTrace);
         vector<int> origSizes;
         calcLoss(originalTrace, origSizes);
         vector<vector<float> > origECDF;
         calculateECDF(origSizes, origECDF);
-        //BIS HIER ISTS SCHNELL
-        /*
-         * Fit the ECDFs
-         */
-        long tracesize = originalTrace.size();
-        if(model == "Markov"){
-            fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14);
-        }else{
-            fitGilbert(tracesize, origECDF, p, r, k, h);
+
+        cout << "Calculating Bernoulli Model-Parameter" << endl;
+        double pBernoulli, rBernoulli;
+        getBernoulliParams(originalTrace, pBernoulli);
+        rBernoulli = 1.0 - pBernoulli;
+
+        cout << "Calculating Simple-Gilbert Model-Parameter" << endl;
+        double pSimpleGilbert,rSimpleGilbert;
+        getSimpleGilbertParams(originalTrace, pSimpleGilbert, rSimpleGilbert);
+
+        cout << "Calculating Gilbert Model-Parameter" << endl;
+        double pGilbert, rGilbert, kGilbert, hGilbert;
+        string pythonCommand = "sage --python " + sagescript + " " + pathToGivenTrace + " gilbert";
+        int sageStatus = system(pythonCommand.c_str());
+        if (sageStatus < 0) {
+            cout << "An Error occured while executing Sagemath" << endl;
+            return 0;
         }
+        vector<vector<double>> transitionmatrixGilbert;
+        vector<vector<double>> emissionmatrixGilbert;
+        vector<double> initialprobabilitiesGilbert;
+        readMatrixFile(transitionmatrixGilbert, emissionmatrixGilbert, initialprobabilitiesGilbert);
+        pGilbert = transitionmatrixGilbert[0][1];
+        rGilbert = transitionmatrixGilbert[1][0];
+        kGilbert = emissionmatrixGilbert[0][1];
+        hGilbert = emissionmatrixGilbert[1][1];
+
+        cout << "Calculating Gilbert-Elliot Model-Parameter" << endl;
+        double pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot;
+        pythonCommand = "sage --python " + sagescript + " " + pathToGivenTrace + " gilbertelliot";
+        sageStatus = system(pythonCommand.c_str());
+        if (sageStatus < 0) {
+            cout << "An Error occured while executing Sagemath" << endl;
+            return 0;
+        }
+        vector<vector<double>> transitionmatrixGilbertElliot;
+        vector<vector<double>> emissionmatrixGilbertElliot;
+        vector<double> initialprobabilitiesGilbertElliot;
+        readMatrixFile(transitionmatrixGilbertElliot, emissionmatrixGilbertElliot, initialprobabilitiesGilbertElliot);
+        pGilbertElliot = transitionmatrixGilbertElliot[0][1];
+        rGilbertElliot = transitionmatrixGilbertElliot[1][0];
+        kGilbertElliot = emissionmatrixGilbertElliot[0][1];
+        hGilbertElliot = emissionmatrixGilbertElliot[1][1];
+
+        cout << "Calculating Markov Model-Parameter" << endl;
+        double p13, p31, p32, p23, p14, p41;
+        pythonCommand = "sage --python " + sagescript + " " + pathToGivenTrace + " markov";
+        sageStatus = system(pythonCommand.c_str());
+        if (sageStatus < 0) {
+            cout << "An Error occured while executing Sagemath" << endl;
+            return 0;
+        }
+        vector<vector<double>> transitionmatrixMarkov;
+        vector<vector<double>> emissionmatrixMarkov;
+        vector<double> initialprobabilitiesMarkov;
+        readMatrixFile(transitionmatrixMarkov, emissionmatrixMarkov, initialprobabilitiesMarkov);
+        p13 = transitionmatrixMarkov[0][2];
+        p31 = transitionmatrixMarkov[2][0];
+        p32 = transitionmatrixMarkov[2][1];
+        p23 = transitionmatrixMarkov[1][2];
+        p14 = transitionmatrixMarkov[0][3];
+        p41 = transitionmatrixMarkov[3][0];
+
+        cout << "Fitting Bernoulli" << endl;
+        long tracesize = originalTrace.size();
+        fitGilbert(tracesize, origECDF, pBernoulli, rBernoulli, 1.0, 0.0);
+
+        cout << "Fitting Simple-Gilbert" << endl;
+        fitGilbert(tracesize, origECDF, pSimpleGilbert, rSimpleGilbert, 1.0, 0.0);
+
+        cout << "Fitting Gilbert" << endl;
+        fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert);
+
+        cout << "Fitting Gilbert-Elliot" << endl;
+        fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot);
+
+        cout << "Fitting Markov" << endl;
+        fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14);
+
         clock_t stop = clock();
         double elapsed = (double) (stop-start)/CLOCKS_PER_SEC;
         cout << elapsed << "s" << endl;
-
     }
 
 }
