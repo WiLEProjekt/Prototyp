@@ -557,7 +557,7 @@ struct tc_netem_qopt {
 
 struct tc_netem_rnd_number_generator {
 	__u32   loss_seed;	/* seed for random number generator in packet loss models */
-	__u32	delay_corr_seed; /* seed for random number of correlation */
+	__u32	delay_seed; 	/* seed for random number of delay */
 	__u32	corrupt_corr_seed; /* seed for random number of correlation */
 	__u32	reorder_corr_seed; /* seed for random number of correlation */
 	__u32	duplication_corr_seed; /* seed for random number of correlation */

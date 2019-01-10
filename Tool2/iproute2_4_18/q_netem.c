@@ -41,16 +41,16 @@ static void explain(void)
 {
 	fprintf(stderr,
 "Usage: ... netem [ limit PACKETS ]\n" \
-"                 [ delay TIME [ JITTER [CORRELATION]]]\n" \
-"                 [ distribution {uniform|normal|pareto|paretonormal} ]\n" \
+"                 [ delay [seed SEED_INT] TIME [ JITTER [CORRELATION]]]\n" \
+"                 	[ distribution {uniform|normal|pareto|paretonormal} ]\n" \
 "                 [ delay trace [FILEPATH]\n" \
-"                 [ corrupt PERCENT [CORRELATION [CORRELATION_SEED]]]\n" \
-"                 [ duplicate PERCENT [CORRELATION [CORRELATION_SEED]]]\n" \
-"                 [ loss [seed [SEED_INT]] random PERCENT [CORRELATION]]\n" \
-"                 [ loss [seed [SEED_INT]] state P13 [P31 [P32 [P23 P14]]]\n" \
-"                 [ loss [seed [SEED_INT]] gemodel PERCENT [R [1-H [1-K]]]\n" \
+"                 [ loss [seed SEED_INT] random PERCENT [CORRELATION]]\n" \
+"                 [ loss [seed SEED_INT] state P13 [P31 [P32 [P23 P14]]]\n" \
+"                 [ loss [seed SEED_INT] gemodel PERCENT [R [1-H [1-K]]]\n" \
 "                 [ loss trace [FILEPATH]\n" \
 "                 [ ecn ]\n" \
+"                 [ corrupt PERCENT [CORRELATION [CORRELATION_SEED]]]\n" \
+"                 [ duplicate PERCENT [CORRELATION [CORRELATION_SEED]]]\n" \
 "                 [ reorder PRECENT [CORRELATION [CORRELATION_SEED]] [ gap DISTANCE ]]\n" \
 "                 [ rate RATE [PACKETOVERHEAD] [CELLSIZE] [CELLOVERHEAD]]\n");
 }
@@ -373,6 +373,17 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			   matches(*argv, "delay") == 0) {
 			NEXT_ARG();
 
+			if (!strcmp(*argv, "seed")) {
+				if (NEXT_IS_NUMBER())
+				{
+					NEXT_ARG();
+					++present[TCA_NETEM_SEED];
+					qseed.delay_seed = convertToUnsignedInt(*argv);
+					printf("qseed.delay_seed: %u\n", qseed.delay_seed);
+					NEXT_ARG();
+				} 
+			}
+
 			if (!strcmp(*argv, "trace")) {
 				NEXT_ARG();				
 				++present[TCA_NETEM_DELAY_TRACE];
@@ -440,13 +451,6 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 						return -1;
 					}
 				}
-
-				if (NEXT_IS_NUMBER()) {
-					NEXT_ARG();
-					++present[TCA_NETEM_SEED];
-					qseed.delay_corr_seed = convertToUnsignedInt(*argv);
-					printf("qseed.delay_corr_seed: %u\n", qseed.delay_corr_seed);
-				} 
 			}
 
 		} else if (matches(*argv, "loss") == 0 ||
