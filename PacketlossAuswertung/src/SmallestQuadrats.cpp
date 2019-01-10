@@ -110,7 +110,7 @@ double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float>
 }
 
 //TODO: Evtl. auch lowestDiff zurückgeben
-void fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, float k, float h){
+void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h){
     int bestSeed;
     double lowestDiff = DBL_MAX;
     for(int i = 0; i < MAXSEED; i++){
@@ -128,7 +128,7 @@ void fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, 
     }
 }
 //2x fast das gleiche um Vergleiche zu sparen
-void fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31, float p32, float p23, float p14){
+void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14){
     int bestSeed;
     double lowestDiff = DBL_MAX;
     for(int i = 0; i < MAXSEED; i++){

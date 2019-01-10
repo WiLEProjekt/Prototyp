@@ -46,7 +46,7 @@ double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float>
  * @param k
  * @param h
  */
-void fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, float k, float h);
+void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h);
 
 /**
  * Finds best Seed and smallest Squared Difference given Modelparameters for Markov Model
@@ -58,7 +58,7 @@ void fitGilbert(long length, vector<vector<float> > origECDF, float p, float r, 
  * @param p23
  * @param p14
  */
-void fitMarkov(long length, vector<vector<float> > origECDF, float p13, float p31, float p32, float p23, float p14);
+void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14);
 
 
 #endif //PACKETLOSSAUSWERTUNG_SMALLESTQUADRATS_H
