@@ -108,10 +108,26 @@ double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float>
     }
     return(difference);
 }
+//TODO: Beide Distanzmaße gleichzeitig berechnen für bessere Performance!
+double calcKolmogorovDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2){
+    double difference=0.0;
+    if(ECDF1.size() != ECDF2.size()){
+        cout << "ECDF1 & ECDF2 have different length. Cannot calculate squared difference. Implementation error somewhere" << endl;
+        return -1.0;
+    }else{
+        for(int i = 0; i<ECDF1.size(); i++){
+            float dnew = fabs(ECDF1[i][1]-ECDF2[i][1]);
+            if(dnew > difference){
+                difference = dnew;
+            }
+        }
+    }
+    return(difference);
+}
 
-//TODO: Evtl. auch lowestDiff zurückgeben
-void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h){
+int fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizes){
     int bestSeed;
+    vector<int> bestBurstsizes; //Burstsizes corresponding to generated trace with bestSeed
     double lowestDiff = DBL_MAX;
     for(int i = 0; i < MAXSEED; i++){
         vector<vector<float> > tempOrigECDF = origECDF;
@@ -123,13 +139,17 @@ void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r
         double squaredDiff = calcSquaredDifference(tempOrigECDF, calcECDF);
         if(squaredDiff<lowestDiff){
             bestSeed = i;
+            bestBurstsizes = burstsizes;
             lowestDiff = squaredDiff;
         }
     }
+    returnBurstsizes = bestBurstsizes;
+    return(bestSeed);
 }
-//2x fast das gleiche um Vergleiche zu sparen
-void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14){
+//Similar to fitGilbert, however saves many comparisons
+int fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizes){
     int bestSeed;
+    vector<int> bestBurstsizes; //Burstsizes corresponding to generated trace with bestSeed
     double lowestDiff = DBL_MAX;
     for(int i = 0; i < MAXSEED; i++){
         vector<vector<float> > tempOrigECDF = origECDF;
@@ -141,8 +161,10 @@ void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double 
         double squaredDiff = calcSquaredDifference(tempOrigECDF, calcECDF);
         if(squaredDiff<lowestDiff){
             bestSeed = i;
+            bestBurstsizes = burstsizes;
             lowestDiff = squaredDiff;
         }
     }
-    cout << "lowest Seed:" << bestSeed << " lowest Diff:" << lowestDiff << endl;
+    returnBurstsizes = bestBurstsizes;
+    return(bestSeed);
 }

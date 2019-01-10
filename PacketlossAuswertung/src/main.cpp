@@ -18,17 +18,18 @@
 using namespace std;
 
 void usage(){
-    cout << "usage: ./packetloss <path to sagemath python script> <path to binary file>" << endl;
+    cout << "usage: ./packetloss <path to sagemath python script> <path to binary file> <path to output folder>" << endl;
 }
 
 int main(int argc, char* argv[]){
-    if (argc < 3) {
+    if (argc < 4) {
         usage();
         return 0;
     } else {
         clock_t start = clock();
         string sagescript = argv[1];
         string pathToGivenTrace = argv[2];
+        string outputPath = argv[3];
 
         cout << "Processing Inputtrace" << endl;
         vector<bool> originalTrace = readBinaryTrace(pathToGivenTrace);
@@ -101,19 +102,29 @@ int main(int argc, char* argv[]){
 
         cout << "Fitting Bernoulli" << endl;
         long tracesize = originalTrace.size();
-        fitGilbert(tracesize, origECDF, pBernoulli, rBernoulli, 1.0, 0.0);
+        vector<int> bernoulliBursts;
+        int seedBernoulli = fitGilbert(tracesize, origECDF, pBernoulli, rBernoulli, 1.0, 0.0, bernoulliBursts);
+        writeBursts(outputPath+"/FittedBernoulli.txt", bernoulliBursts);
 
         cout << "Fitting Simple-Gilbert" << endl;
-        fitGilbert(tracesize, origECDF, pSimpleGilbert, rSimpleGilbert, 1.0, 0.0);
+        vector<int> simpleGilbertBursts;
+        int seedSimpleGilbert = fitGilbert(tracesize, origECDF, pSimpleGilbert, rSimpleGilbert, 1.0, 0.0, simpleGilbertBursts);
+        writeBursts(outputPath+"/FittedSimpleGilbert.txt", simpleGilbertBursts);
 
         cout << "Fitting Gilbert" << endl;
-        fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert);
+        vector<int> gilbertBursts;
+        int seedGilbert = fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert, gilbertBursts);
+        writeBursts(outputPath+"/FittedGilbert.txt", gilbertBursts);
 
         cout << "Fitting Gilbert-Elliot" << endl;
-        fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot);
+        vector<int> gilbertElliotBursts;
+        int seedGilbertElliot = fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot, gilbertElliotBursts);
+        writeBursts(outputPath+"/FittedGilbertElliot.txt", gilbertElliotBursts);
 
         cout << "Fitting Markov" << endl;
-        fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14);
+        vector<int> markovBursts;
+        int seedMarkov = fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14, markovBursts);
+        writeBursts(outputPath+"/FittedMarkov.txt", markovBursts);
 
         clock_t stop = clock();
         double elapsed = (double) (stop-start)/CLOCKS_PER_SEC;

@@ -10,3 +10,13 @@ vector<bool> readBinaryTrace(string filename){
     }
     return trace;
 }
+
+void writeBursts(string output, vector<int> &bursts){
+    fstream fout;
+    fout.open(output, ios::out);
+    for(int i = 0; i<bursts.size(); i++){
+        fout << bursts[i];
+        fout << "\n";
+    }
+    fout.close();
+}
