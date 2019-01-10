@@ -31,6 +31,7 @@ struct result {
 
 struct resultPoint {
     uint64_t recievedTs;
+    double recievedTsAsDouble;
     int64_t delay;
     bool packetRecieved;
     unsigned long seqNum;
@@ -166,9 +167,9 @@ struct result getResults(struct pcapValues values) {
         if (recieved != values.received.end()) {
             if(lossCounter > 0){
                 int64_t tsDiff = recievedTs - lastTs;
-                long double step = (long double)tsDiff / lossCounter;
+                double step = (double)tsDiff / lossCounter;
                 for(int i = 1; i < lossCounter - 1; i++){
-                    auto currTs = (uint64_t)((long double)lastTs + step * i);
+                    auto currTs = (uint64_t)((double)lastTs + step * i);
                     struct resultPoint lossPoint{};
                     lossPoint.recievedTs = currTs;
                     lossPoint.delay = 0;
@@ -495,11 +496,6 @@ vector<string> split(string str, const string &token){
     return result;
 }
 
-unsigned long convertToBetterTimestamp(double ts){
-    //TODO
-    return 1337;
-}
-
 vector<struct signalStrength> getSigStrenghts(const string &filename) {
     vector<struct signalStrength> result;
     ifstream file;
@@ -514,7 +510,7 @@ vector<struct signalStrength> getSigStrenghts(const string &filename) {
         string sigStrCut = sigStrString.substr(0, sigStrString.find("dBm", 0) - 1);
         stringstream(sigStrCut) >> currentSigStr.sigStr;
         stringstream(parts[0]) >> ts;
-        currentSigStr.ts = convertToBetterTimestamp(ts);
+        currentSigStr.ts = ts*1000;
         result.push_back(currentSigStr);
     }
     file.close();
@@ -522,7 +518,7 @@ vector<struct signalStrength> getSigStrenghts(const string &filename) {
 }
 
 signalStrength getNextSigStr(unsigned long ts, vector<signalStrength> sigStr){
-    const unsigned long MAX_DIFF = 2000;
+    const unsigned long MAX_DIFF = 2000000;
     signalStrength result{};
     for(unsigned long i = 0; i < sigStr.size(); i++){
         unsigned long currentTs = sigStr.at(i).ts;
@@ -541,6 +537,8 @@ signalStrength getNextSigStr(unsigned long ts, vector<signalStrength> sigStr){
                     result.type = "NONE";
                     result.ts = ts;
                     result.sigStr = 0;
+                } else {
+                    result = sigStr[i];
                 }
             } else {
                 if(diffBefore < MAX_DIFF){
@@ -553,20 +551,22 @@ signalStrength getNextSigStr(unsigned long ts, vector<signalStrength> sigStr){
             }
         }
     }
+    return result;
 }
 
-void addSigStrengthToResult(result result, const vector<signalStrength> &sigStrengths) {
-    for(resultPoint rp: result.fullResult){
+result addSigStrengthToResult(result& result, const vector<signalStrength> &sigStrengths) {
+    for(resultPoint& rp: result.fullResult){
         signalStrength sigStr = getNextSigStr(rp.recievedTs, sigStrengths);
         rp.sigStrength = sigStr.sigStr;
         rp.type = sigStr.type;
     }
+    return result;
 }
 
 int main(int argc, char **argv) {
     if (argc < 5 && argc != 2) {
         cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp]" << endl;
-        cout << "PcapReader [client.pcap] [server.pcap] [serverIp] [locale clientIp] [global clientIp] -m" << endl;
+        cout << "PcapReader [client.pcap] [server.pcap] [signal.csv] [global clientIp] -m" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp]" << endl;
         cout << "PcapReader [path to pcaps] [serverIp] [locale clientIp] [global clientIp] -p" << endl;
         cout << "PcapReader [path to pcaps]" << endl;
@@ -579,71 +579,73 @@ int main(int argc, char **argv) {
     string localeClientIp;
     string globalClientIp;
 
-    if(argc == 7){
+    if(argc == 6){
         /*
          * Zwei einzelne Pcaps vom Server und Client aus MobileMessung vergleichen
          */
-        clientFilename = argv[1];
-        serverFilename = argv[2];
-        string sigStrengthFilename = argv[3];
-        serverIp = argv[4];
-        localeClientIp = argv[5];
-        globalClientIp = argv[6];
+        string lastArg = argv[5];
+        if(lastArg == "-m") {
+            clientFilename = argv[1];
+            serverFilename = argv[2];
+            string sigStrengthFilename = argv[3];
+            serverIp = "131.173.33.228";
+            localeClientIp = "192.168.8.100";
+            globalClientIp = argv[4];
 
-        struct pcapValues clientValues = readMobilePcapFile(clientFilename, localeClientIp, serverIp);
-        struct pcapValues serverValues = readMobilePcapFile(serverFilename, serverIp, globalClientIp);
+            struct pcapValues clientValues = readMobilePcapFile(clientFilename, localeClientIp, serverIp);
+            struct pcapValues serverValues = readMobilePcapFile(serverFilename, serverIp, globalClientIp);
 
-        struct pcapValues downloadValues{};
-        struct pcapValues uploadValues{};
+            struct pcapValues downloadValues{};
+            struct pcapValues uploadValues{};
 
-        downloadValues.seqNumsSend = serverValues.seqNumsSend;
-        downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
-        downloadValues.send = serverValues.send;
-        downloadValues.received = clientValues.received;
+            downloadValues.seqNumsSend = serverValues.seqNumsSend;
+            downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+            downloadValues.send = serverValues.send;
+            downloadValues.received = clientValues.received;
 
-        uploadValues.seqNumsSend = clientValues.seqNumsSend;
-        uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
-        uploadValues.send = clientValues.send;
-        uploadValues.received = serverValues.received;
+            uploadValues.seqNumsSend = clientValues.seqNumsSend;
+            uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+            uploadValues.send = clientValues.send;
+            uploadValues.received = serverValues.received;
 
-        struct result downloadResult = getResults(downloadValues);
-        vector<struct signalStrength> tsSigStr = getSigStrenghts(sigStrengthFilename);
-        addSigStrengthToResult(downloadResult, tsSigStr);
+            struct result downloadResult = getResults(downloadValues);
+            vector<struct signalStrength> tsSigStr = getSigStrenghts(sigStrengthFilename);
+            downloadResult = addSigStrengthToResult(downloadResult, tsSigStr);
 
-        writeResultToFile(downloadResult);
-    } else if (argc == 6) {
-        string arg5 = argv[5];
+            writeResultToFile(downloadResult);
+        } else {
+            string arg5 = argv[5];
 
-        /*
-         * Zwei einzelne Pcaps vom Server und Client vergleichen
-         */
-        clientFilename = argv[1];
-        serverFilename = argv[2];
-        serverIp = argv[3];
-        localeClientIp = argv[4];
-        globalClientIp = arg5;
+            /*
+             * Zwei einzelne Pcaps vom Server und Client vergleichen
+             */
+            clientFilename = argv[1];
+            serverFilename = argv[2];
+            serverIp = argv[3];
+            localeClientIp = argv[4];
+            globalClientIp = arg5;
 
-        struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
-        struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
+            struct pcapValues clientValues = readPcapFile(clientFilename, localeClientIp, serverIp);
+            struct pcapValues serverValues = readPcapFile(serverFilename, serverIp, globalClientIp);
 
-        struct pcapValues downloadValues{};
-        struct pcapValues uploadValues{};
+            struct pcapValues downloadValues{};
+            struct pcapValues uploadValues{};
 
-        downloadValues.seqNumsSend = serverValues.seqNumsSend;
-        downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
-        downloadValues.send = serverValues.send;
-        downloadValues.received = clientValues.received;
+            downloadValues.seqNumsSend = serverValues.seqNumsSend;
+            downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+            downloadValues.send = serverValues.send;
+            downloadValues.received = clientValues.received;
 
-        uploadValues.seqNumsSend = clientValues.seqNumsSend;
-        uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
-        uploadValues.send = clientValues.send;
-        uploadValues.received = serverValues.received;
+            uploadValues.seqNumsSend = clientValues.seqNumsSend;
+            uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+            uploadValues.send = clientValues.send;
+            uploadValues.received = serverValues.received;
 
-        struct result uploadResult = getResults(uploadValues);
-        struct result downloadResult = getResults(downloadValues);
+            struct result uploadResult = getResults(uploadValues);
+            struct result downloadResult = getResults(downloadValues);
 
-        writeResultToFile(uploadResult, downloadResult);
-
+            writeResultToFile(uploadResult, downloadResult);
+        }
     } else if (argc == 5) {
         string path = argv[1];
         serverIp = argv[2];
