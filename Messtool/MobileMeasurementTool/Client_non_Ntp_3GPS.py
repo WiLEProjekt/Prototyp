@@ -74,7 +74,7 @@ def signalstrength(killevent, measurementId):
                     output.write(";" + str(value))
                 #output.flush()
         output.write("\n")
-        time.sleep(0.5)
+        time.sleep(0.1)
     output.close()
 
 def logGPS(filepath, deviceNumber, killevent):
