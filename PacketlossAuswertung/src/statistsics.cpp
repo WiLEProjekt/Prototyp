@@ -10,7 +10,7 @@ double caldStandarddeviation(vector<double> input, double mean){
     for(int i=0; i<input.size(); i++){
         sum = sum + ((input.at(i)-mean)*(input.at(i)-mean));
     }
-    return(sqrt(1/(input.size()-1)*sum));
+    return(sqrt(sum/(input.size()-1))); //-1 = Bessel correction
 }
 
 void calculateECDF(vector<int> &sizes, vector<vector<float> > &ECDF){
