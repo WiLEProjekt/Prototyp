@@ -7,7 +7,7 @@
 #include <cfloat>
 
 using namespace std;
-#define MAXSEED 5
+#define MAXSEED 100
 /**
  * Calculates the ECDF
  * @param sizes - vector with the burstsizes of which the ECDF should be calculated. Equals @Param overallsizes of method calcLoss
@@ -30,20 +30,29 @@ void calcLoss(vector<bool> &trace, vector<int> &overallsizes);
 void adjustECDFLengths(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2);
 
 /**
- * Calculates the Squared difference of two ECDFs and returns the result
- * @param ECDF1
- * @param ECDF2
+ * Calculates the Squared difference of two values and returns the result
+ * @param value1
+ * @param value2
  * @return
  */
-double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2);
+double calcSquaredDifference(float value1, float value2);
 
 /**
- * Calculates the Kolmogorov-distance of two ECDFs and returns the result
- * @param ECDF1
- * @param ECDF2
+ * Calculates the Kolmogorov-distance of two values and returns the result
+ * @param value1
+ * @param value2
  * @return
  */
-double calcKolmogorovDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2);
+double calcKolmogorovDistance(float value1, float value2);
+
+/**
+ * Calculates the Kolmogorov and Suared distance of two given ECDFs
+ * @param ECDF1
+ * @param ECDF2
+ * @param kolmogorovDistance
+ * @param squaredDifference
+ */
+void calcDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2, double &kolmogorovDistance, double &squaredDifference);
 
 /**
  * Finds best Seed and smallest Squared Difference given Modelparameters for Gilbert Elliot Model
@@ -54,8 +63,7 @@ double calcKolmogorovDistance(vector<vector<float> > &ECDF1, vector<vector<float
  * @param k
  * @param h
  */
-
-int fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizes);
+void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference);
 
 /**
  * Finds best Seed and smallest Squared Difference given Modelparameters for Markov Model
@@ -67,7 +75,7 @@ int fitGilbert(long length, vector<vector<float> > origECDF, double p, double r,
  * @param p23
  * @param p14
  */
-int fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizes);
+void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference);
 
 
 #endif //PACKETLOSSAUSWERTUNG_SMALLESTQUADRATS_H

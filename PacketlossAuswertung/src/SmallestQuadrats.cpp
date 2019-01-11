@@ -96,39 +96,43 @@ void adjustECDFLengths(vector<vector<float> > &ECDF1, vector<vector<float> > &EC
     }
 }
 
-double calcSquaredDifference(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2){
-    double difference=0.0;
-    if(ECDF1.size() != ECDF2.size()){
-        cout << "ECDF1 & ECDF2 have different length. Cannot calculate squared difference. Implementation error somewhere" << endl;
-        return -1.0;
-    }else{
-        for(int i = 0; i<ECDF1.size(); i++){
-            difference += (ECDF1[i][1] - ECDF2[i][1])*(ECDF1[i][1] - ECDF2[i][1]);
-        }
-    }
+double calcSquaredDifference(float value1, float value2){
+    double difference = (value1 - value2)*(value1 - value2);
     return(difference);
 }
 //TODO: Beide Distanzmaße gleichzeitig berechnen für bessere Performance!
-double calcKolmogorovDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2){
-    double difference=0.0;
-    if(ECDF1.size() != ECDF2.size()){
-        cout << "ECDF1 & ECDF2 have different length. Cannot calculate squared difference. Implementation error somewhere" << endl;
-        return -1.0;
-    }else{
-        for(int i = 0; i<ECDF1.size(); i++){
-            float dnew = fabs(ECDF1[i][1]-ECDF2[i][1]);
-            if(dnew > difference){
-                difference = dnew;
-            }
-        }
-    }
+double calcKolmogorovDistance(float value1, float value2){
+    double difference = fabs(value1-value2);
     return(difference);
 }
 
-int fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizes){
-    int bestSeed;
-    vector<int> bestBurstsizes; //Burstsizes corresponding to generated trace with bestSeed
-    double lowestDiff = DBL_MAX;
+void calcDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2, double &kolmogorovDistance, double &squaredDifference){
+    if(ECDF1.size() != ECDF2.size()){
+        cout << "ECDF1 & ECDF2 have different length. Cannot calculate squared difference. Implementation error somewhere" << endl;
+    }else{
+        double kolmogorovDistanceLocal=0.0;
+        double squaredDifferenceLocal = 0.0;
+        for(int i = 0; i<ECDF1.size(); i++){
+            //Calculate Kolmogorov distance
+            double tempKolmogorovDistance = calcKolmogorovDistance(ECDF1[i][1], ECDF2[i][1]);
+            if(tempKolmogorovDistance > kolmogorovDistanceLocal){
+                kolmogorovDistanceLocal = tempKolmogorovDistance;
+            }
+            //Calculate Squared distance
+            squaredDifferenceLocal += calcSquaredDifference(ECDF1[i][1], ECDF2[i][1]);
+        }
+        kolmogorovDistance = kolmogorovDistanceLocal;
+        squaredDifference = squaredDifferenceLocal;
+    }
+}
+
+void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference){
+    int bestSeedKolmogorov, bestSeedLeastSquared;
+    vector<int> bestBurstsizesKolmogorov, bestBurstsizesLeastSquared; //Burstsizes corresponding to generated trace with bestSeed
+    double lowestDiffKolmogorov = DBL_MAX;
+    double lowestDiffLeastSquared = DBL_MAX;
+    double tempKolmogorovDistance;
+    double tempLeastSquared;
     for(int i = 0; i < MAXSEED; i++){
         vector<vector<float> > tempOrigECDF = origECDF;
         setSeed(i);
@@ -136,21 +140,36 @@ int fitGilbert(long length, vector<vector<float> > origECDF, double p, double r,
         vector<vector<float> > calcECDF;
         calculateECDF(burstsizes, calcECDF);
         adjustECDFLengths(tempOrigECDF, calcECDF);
-        double squaredDiff = calcSquaredDifference(tempOrigECDF, calcECDF);
-        if(squaredDiff<lowestDiff){
-            bestSeed = i;
-            bestBurstsizes = burstsizes;
-            lowestDiff = squaredDiff;
+
+        calcDistance(tempOrigECDF, calcECDF, tempKolmogorovDistance, tempLeastSquared);
+        //kolmogorov
+        if(tempKolmogorovDistance<lowestDiffKolmogorov){
+            bestSeedKolmogorov = i;
+            bestBurstsizesKolmogorov = burstsizes;
+            lowestDiffKolmogorov = tempKolmogorovDistance;
+        }
+        //Least Squared
+        if(tempLeastSquared < lowestDiffLeastSquared){
+            bestSeedLeastSquared = i;
+            bestBurstsizesLeastSquared = burstsizes;
+            lowestDiffLeastSquared = tempLeastSquared;
         }
     }
-    returnBurstsizes = bestBurstsizes;
-    return(bestSeed);
+    returnBurstsizesKolmogorov = bestBurstsizesKolmogorov;
+    returnBurstsizesLeastSquared = bestBurstsizesLeastSquared;
+    seedKolmogorov = bestSeedKolmogorov;
+    kolmogorovDistance = lowestDiffKolmogorov;
+    seedLeastSquared = bestSeedLeastSquared;
+    LeastSquaredDifference = lowestDiffLeastSquared;
 }
 //Similar to fitGilbert, however saves many comparisons
-int fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizes){
-    int bestSeed;
-    vector<int> bestBurstsizes; //Burstsizes corresponding to generated trace with bestSeed
-    double lowestDiff = DBL_MAX;
+void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference){
+    int bestSeedKolmogorov, bestSeedLeastSquared;
+    vector<int> bestBurstsizesKolmogorov, bestBurstsizesLeastSquared; //Burstsizes corresponding to generated trace with bestSeed
+    double lowestDiffKolmogorov = DBL_MAX;
+    double lowestDiffLeastSquared = DBL_MAX;
+    double tempKolmogorovDistance;
+    double tempLeastSquared;
     for(int i = 0; i < MAXSEED; i++){
         vector<vector<float> > tempOrigECDF = origECDF;
         setSeed(i);
@@ -158,13 +177,25 @@ int fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p
         vector<vector<float> > calcECDF;
         calculateECDF(burstsizes, calcECDF);
         adjustECDFLengths(tempOrigECDF, calcECDF);
-        double squaredDiff = calcSquaredDifference(tempOrigECDF, calcECDF);
-        if(squaredDiff<lowestDiff){
-            bestSeed = i;
-            bestBurstsizes = burstsizes;
-            lowestDiff = squaredDiff;
+
+        calcDistance(tempOrigECDF, calcECDF, tempKolmogorovDistance, tempLeastSquared);
+        //kolmogorov
+        if(tempKolmogorovDistance<lowestDiffKolmogorov){
+            bestSeedKolmogorov = i;
+            bestBurstsizesKolmogorov = burstsizes;
+            lowestDiffKolmogorov = tempKolmogorovDistance;
+        }
+        //Least Squared
+        if(tempLeastSquared < lowestDiffLeastSquared){
+            bestSeedLeastSquared = i;
+            bestBurstsizesLeastSquared = burstsizes;
+            lowestDiffLeastSquared = tempLeastSquared;
         }
     }
-    returnBurstsizes = bestBurstsizes;
-    return(bestSeed);
+    returnBurstsizesKolmogorov = bestBurstsizesKolmogorov;
+    returnBurstsizesLeastSquared = bestBurstsizesLeastSquared;
+    seedKolmogorov = bestSeedKolmogorov;
+    kolmogorovDistance = lowestDiffKolmogorov;
+    seedLeastSquared = bestSeedLeastSquared;
+    LeastSquaredDifference = lowestDiffLeastSquared;
 }

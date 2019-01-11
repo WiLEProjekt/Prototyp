@@ -102,29 +102,60 @@ int main(int argc, char* argv[]){
 
         cout << "Fitting Bernoulli" << endl;
         long tracesize = originalTrace.size();
-        vector<int> bernoulliBursts;
-        int seedBernoulli = fitGilbert(tracesize, origECDF, pBernoulli, rBernoulli, 1.0, 0.0, bernoulliBursts);
-        writeBursts(outputPath+"/FittedBernoulli.txt", bernoulliBursts);
+        vector<int> bernoulliBurstsKolmogorov, bernoulliBurstsLeastSquared;
+        int bernoulliSeedKolmogorov, bernoulliSeedLeastSquared;
+        double bernoulliKolmogorovDistance, bernoulliLeastSquaredDifference;
+        fitGilbert(tracesize, origECDF, pBernoulli, rBernoulli, 1.0, 0.0, bernoulliBurstsKolmogorov, bernoulliSeedKolmogorov, bernoulliKolmogorovDistance, bernoulliBurstsLeastSquared, bernoulliSeedLeastSquared, bernoulliLeastSquaredDifference);
+        writeBursts(outputPath+"/FittedBernoulliKolmogorov.txt", bernoulliBurstsKolmogorov);
+        writeBursts(outputPath+"/FittedBernoulliLeastSquared.txt", bernoulliBurstsLeastSquared);
+        cout << "Bernoulli:" << endl;
+        cout << "\tKolmogorov:   Seed: " << bernoulliSeedKolmogorov << " Distance: " << bernoulliKolmogorovDistance << endl;
+        cout << "\tLeastSquared: Seed: " << bernoulliSeedLeastSquared << " Difference: " << bernoulliLeastSquaredDifference << endl;
+
 
         cout << "Fitting Simple-Gilbert" << endl;
-        vector<int> simpleGilbertBursts;
-        int seedSimpleGilbert = fitGilbert(tracesize, origECDF, pSimpleGilbert, rSimpleGilbert, 1.0, 0.0, simpleGilbertBursts);
-        writeBursts(outputPath+"/FittedSimpleGilbert.txt", simpleGilbertBursts);
+        vector<int> simpleGilbertBurstsKolmogorov, simpleGilbertBurstsLeastSquared;
+        int simpleGilbertSeedKolmogorov, simpleGilbertSeedLeastSquared;
+        double simpleGilbertKolmogorovDistance, simpleGilbertLeastSquaredDifference;
+        fitGilbert(tracesize, origECDF, pSimpleGilbert, rSimpleGilbert, 1.0, 0.0, simpleGilbertBurstsKolmogorov, simpleGilbertSeedKolmogorov, simpleGilbertKolmogorovDistance, simpleGilbertBurstsLeastSquared, simpleGilbertSeedLeastSquared, simpleGilbertLeastSquaredDifference);
+        writeBursts(outputPath+"/FittedSimpleGilbertKolmogorov.txt", simpleGilbertBurstsKolmogorov);
+        writeBursts(outputPath+"/FittedSimpleGilbertLeastSquared.txt", simpleGilbertBurstsLeastSquared);
+        cout << "Simple-Gilbert:" << endl;
+        cout << "\tKolmogorov:   Seed: " << simpleGilbertSeedKolmogorov << " Distance: " << simpleGilbertKolmogorovDistance << endl;
+        cout << "\tLeastSquared: Seed: " << simpleGilbertSeedLeastSquared << " Difference: " << simpleGilbertLeastSquaredDifference << endl;
 
         cout << "Fitting Gilbert" << endl;
-        vector<int> gilbertBursts;
-        int seedGilbert = fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert, gilbertBursts);
-        writeBursts(outputPath+"/FittedGilbert.txt", gilbertBursts);
+        vector<int> GilbertBurstsKolmogorov, GilbertBurstsLeastSquared;
+        int GilbertSeedKolmogorov, GilbertSeedLeastSquared;
+        double GilbertKolmogorovDistance, GilbertLeastSquaredDifference;
+        fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert,GilbertBurstsKolmogorov, GilbertSeedKolmogorov, GilbertKolmogorovDistance, GilbertBurstsLeastSquared, GilbertSeedLeastSquared, GilbertLeastSquaredDifference);
+        writeBursts(outputPath+"/FittedGilbertKolmogorov.txt", GilbertBurstsKolmogorov);
+        writeBursts(outputPath+"/FittedGilbertLeastSquared.txt", GilbertBurstsLeastSquared);
+        cout << "Gilbert:" << endl;
+        cout << "\tKolmogorov:   Seed: " << GilbertSeedKolmogorov << " Distance: " << GilbertKolmogorovDistance << endl;
+        cout << "\tLeastSquared: Seed: " << GilbertSeedLeastSquared << " Difference: " << GilbertLeastSquaredDifference << endl;
 
         cout << "Fitting Gilbert-Elliot" << endl;
-        vector<int> gilbertElliotBursts;
-        int seedGilbertElliot = fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot, gilbertElliotBursts);
-        writeBursts(outputPath+"/FittedGilbertElliot.txt", gilbertElliotBursts);
+        vector<int> GilbertElliotBurstsKolmogorov, GilbertElliotBurstsLeastSquared;
+        int GilbertElliotSeedKolmogorov, GilbertElliotSeedLeastSquared;
+        double GilbertElliotKolmogorovDistance, GilbertElliotLeastSquaredDifference;
+        fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot, GilbertElliotBurstsKolmogorov, GilbertElliotSeedKolmogorov, GilbertElliotKolmogorovDistance, GilbertElliotBurstsLeastSquared, GilbertElliotSeedLeastSquared, GilbertElliotLeastSquaredDifference);
+        writeBursts(outputPath+"/FittedGilbertElliotKolmogorov.txt", GilbertElliotBurstsKolmogorov);
+        writeBursts(outputPath+"/FittedGilbertElliotSquared.txt", GilbertElliotBurstsLeastSquared);
+        cout << "Gilbert-Elliot:" << endl;
+        cout << "\tKolmogorov:   Seed: " << GilbertElliotSeedKolmogorov << " Distance: " << GilbertElliotKolmogorovDistance << endl;
+        cout << "\tLeastSquared: Seed: " << GilbertElliotSeedLeastSquared << " Difference: " << GilbertElliotLeastSquaredDifference << endl;
 
         cout << "Fitting Markov" << endl;
-        vector<int> markovBursts;
-        int seedMarkov = fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14, markovBursts);
-        writeBursts(outputPath+"/FittedMarkov.txt", markovBursts);
+        vector<int> markovBurstsKolmogorov, markovBurstsLeastSquared;
+        int markovSeedKolmogorov, markovSeedLeastSquared;
+        double markovKolmogorovDistance, markovLeastSquaredDifference;
+        fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14, markovBurstsKolmogorov, markovSeedKolmogorov, markovKolmogorovDistance, markovBurstsLeastSquared, markovSeedLeastSquared, markovLeastSquaredDifference);
+        writeBursts(outputPath+"/FittedMarkovKolmogorov.txt", markovBurstsKolmogorov);
+        writeBursts(outputPath+"/FittedMarkovSquared.txt", markovBurstsLeastSquared);
+        cout << "Markov:" << endl;
+        cout << "\tKolmogorov:   Seed: " << markovSeedKolmogorov << " Distance: " << markovKolmogorovDistance << endl;
+        cout << "\tLeastSquared: Seed: " << markovSeedLeastSquared << " Difference: " << markovLeastSquaredDifference << endl;
 
         clock_t stop = clock();
         double elapsed = (double) (stop-start)/CLOCKS_PER_SEC;
