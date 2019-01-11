@@ -8,6 +8,23 @@
 
 using namespace std;
 #define MAXSEED 100
+
+/**
+ * calculates the mean of a given vector
+ * @param input
+ * @return mean
+ */
+double calcMean(vector<double> input);
+
+/**
+ * calculates the standarddeviation of a given vector
+ * @param input
+ * @param mean
+ * @return
+ */
+double caldStandarddeviation(vector<double> input, double mean);
+
+vector<double> calcConfidenceIntervall(vector<double> input);
 /**
  * Calculates the ECDF
  * @param sizes - vector with the burstsizes of which the ECDF should be calculated. Equals @Param overallsizes of method calcLoss
@@ -62,8 +79,16 @@ void calcDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2, 
  * @param r
  * @param k
  * @param h
+ * @param returnBurstsizesKolmogorov
+ * @param seedKolmogorov
+ * @param kolmogorovDistance
+ * @param returnBurstsizesLeastSquared
+ * @param seedLeastSquared
+ * @param LeastSquaredDifference
+ * @param KolmogorovDistances
+ * @param LeastSquaresDistances
  */
-void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference);
+void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference, vector<double> &KolmogorovDistances, vector<double> &LeastSquaresDistances);
 
 /**
  * Finds best Seed and smallest Squared Difference given Modelparameters for Markov Model
@@ -74,8 +99,16 @@ void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r
  * @param p32
  * @param p23
  * @param p14
+ * @param returnBurstsizesKolmogorov
+ * @param seedKolmogorov
+ * @param kolmogorovDistance
+ * @param returnBurstsizesLeastSquared
+ * @param seedLeastSquared
+ * @param LeastSquaredDifference
+ * @param KolmogorovDistances
+ * @param LeastSquaresDistances
  */
-void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference);
+void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference, vector<double> &KolmogorovDistances, vector<double> &LeastSquaresDistances);
 
 
 #endif //PACKETLOSSAUSWERTUNG_SMALLESTQUADRATS_H

@@ -1,5 +1,17 @@
-#include <SmallestQuadrats.h>
+#include <statistsics.h>
 #include <Generator.h>
+
+double calcMean(vector<double> input){
+    return(accumulate(input.begin(), input.end(), 0.0)/input.size());
+}
+
+double caldStandarddeviation(vector<double> input, double mean){
+    double sum=0;
+    for(int i=0; i<input.size(); i++){
+        sum = sum + ((input.at(i)-mean)*(input.at(i)-mean));
+    }
+    return(sqrt(1/(input.size()-1)*sum));
+}
 
 void calculateECDF(vector<int> &sizes, vector<vector<float> > &ECDF){
     sort(sizes.begin(), sizes.end());
@@ -97,13 +109,11 @@ void adjustECDFLengths(vector<vector<float> > &ECDF1, vector<vector<float> > &EC
 }
 
 double calcSquaredDifference(float value1, float value2){
-    double difference = (value1 - value2)*(value1 - value2);
-    return(difference);
+     return((value1 - value2)*(value1 - value2));
 }
-//TODO: Beide Distanzmaße gleichzeitig berechnen für bessere Performance!
+
 double calcKolmogorovDistance(float value1, float value2){
-    double difference = fabs(value1-value2);
-    return(difference);
+    return(fabs(value1-value2));
 }
 
 void calcDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2, double &kolmogorovDistance, double &squaredDifference){
@@ -126,7 +136,7 @@ void calcDistance(vector<vector<float> > &ECDF1, vector<vector<float> > &ECDF2, 
     }
 }
 
-void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference){
+void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r, double k, double h, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference, vector<double> &KolmogorovDistances, vector<double> &LeastSquaresDistances){
     int bestSeedKolmogorov, bestSeedLeastSquared;
     vector<int> bestBurstsizesKolmogorov, bestBurstsizesLeastSquared; //Burstsizes corresponding to generated trace with bestSeed
     double lowestDiffKolmogorov = DBL_MAX;
@@ -142,6 +152,8 @@ void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r
         adjustECDFLengths(tempOrigECDF, calcECDF);
 
         calcDistance(tempOrigECDF, calcECDF, tempKolmogorovDistance, tempLeastSquared);
+        KolmogorovDistances.push_back(tempKolmogorovDistance);
+        LeastSquaresDistances.push_back(tempLeastSquared);
         //kolmogorov
         if(tempKolmogorovDistance<lowestDiffKolmogorov){
             bestSeedKolmogorov = i;
@@ -163,7 +175,7 @@ void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r
     LeastSquaredDifference = lowestDiffLeastSquared;
 }
 //Similar to fitGilbert, however saves many comparisons
-void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference){
+void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double p31, double p32, double p23, double p14, vector<int> &returnBurstsizesKolmogorov, int &seedKolmogorov, double &kolmogorovDistance, vector<int> &returnBurstsizesLeastSquared, int &seedLeastSquared, double &LeastSquaredDifference, vector<double> &KolmogorovDistances, vector<double> &LeastSquaresDistances){
     int bestSeedKolmogorov, bestSeedLeastSquared;
     vector<int> bestBurstsizesKolmogorov, bestBurstsizesLeastSquared; //Burstsizes corresponding to generated trace with bestSeed
     double lowestDiffKolmogorov = DBL_MAX;
@@ -179,6 +191,8 @@ void fitMarkov(long length, vector<vector<float> > origECDF, double p13, double 
         adjustECDFLengths(tempOrigECDF, calcECDF);
 
         calcDistance(tempOrigECDF, calcECDF, tempKolmogorovDistance, tempLeastSquared);
+        KolmogorovDistances.push_back(tempKolmogorovDistance);
+        LeastSquaresDistances.push_back(tempLeastSquared);
         //kolmogorov
         if(tempKolmogorovDistance<lowestDiffKolmogorov){
             bestSeedKolmogorov = i;
