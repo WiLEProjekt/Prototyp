@@ -1,0 +1,10 @@
+sudo apt-get install libncurses5-dev gcc make git exuberant-ctags bc libssl-dev bison flex
+
+cp /boot/config-`uname -r`* .config 
+
+make olddefconfig
+
+make localmodconfig
+
+make -jX 
+sudo make modules_install install 
