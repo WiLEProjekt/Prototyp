@@ -17,19 +17,27 @@
 
 using namespace std;
 
+const string metrics[2] = {"Kolmogorov", "LeastSquared"};
+
 void usage(){
-    cout << "usage: ./packetloss <path to sagemath python script> <path to binary file> <path to output folder>" << endl;
+    cout << "usage: ./packetloss <path to sagemath python script> <path to binary file> <path to output folder> <significanceniveau [0-100>" << endl;
+}
+
+void consolePrint(string metric, int bestSeed, double bestDistance, vector<double> &confInterval){
+    cout << "\t" << metric << ":\tBest Seed: " << bestSeed << "\tWith Distance: " << bestDistance << "\tConfidence interval: " << confInterval[0] << "; " << confInterval[1] << endl;
 }
 
 int main(int argc, char* argv[]){
-    if (argc < 4) {
+    if (argc < 5) {
         usage();
         return 0;
     } else {
+
         clock_t start = clock();
         string sagescript = argv[1];
         string pathToGivenTrace = argv[2];
         string outputPath = argv[3];
+        int significanceniveau = stoi(argv[4]);
 
         cout << "Processing Inputtrace" << endl;
         vector<bool> originalTrace = readBinaryTrace(pathToGivenTrace);
@@ -107,11 +115,13 @@ int main(int argc, char* argv[]){
         int bernoulliSeedKolmogorov, bernoulliSeedLeastSquared;
         double bernoulliMinKolmogorovDistance, bernoulliMinLeastSquaredDifference;
         fitGilbert(tracesize, origECDF, pBernoulli, rBernoulli, 1.0, 0.0, bernoulliBurstsKolmogorov, bernoulliSeedKolmogorov, bernoulliMinKolmogorovDistance, bernoulliBurstsLeastSquared, bernoulliSeedLeastSquared, bernoulliMinLeastSquaredDifference, bernoulliKolmogorovDistances, bernoulliLeastSquaresDistances);
+        vector<double> bernoulliConfidenceKolmogorov = calcConfidenceIntervall(bernoulliKolmogorovDistances, significanceniveau);
+        vector<double> bernoulliConfidenceLeastSquared = calcConfidenceIntervall(bernoulliLeastSquaresDistances, significanceniveau);
         writeBursts(outputPath+"/FittedBernoulliKolmogorov.txt", bernoulliBurstsKolmogorov);
         writeBursts(outputPath+"/FittedBernoulliLeastSquared.txt", bernoulliBurstsLeastSquared);
         cout << "Bernoulli:" << endl;
-        cout << "\tKolmogorov:   Seed: " << bernoulliSeedKolmogorov << " Distance: " << bernoulliMinKolmogorovDistance << endl;
-        cout << "\tLeastSquared: Seed: " << bernoulliSeedLeastSquared << " Difference: " << bernoulliMinLeastSquaredDifference << endl;
+        consolePrint(metrics[0], bernoulliSeedKolmogorov, bernoulliMinKolmogorovDistance, bernoulliConfidenceKolmogorov);
+        consolePrint(metrics[1], bernoulliSeedLeastSquared, bernoulliMinLeastSquaredDifference, bernoulliConfidenceLeastSquared);
 
 
         cout << "Fitting Simple-Gilbert" << endl;
@@ -120,11 +130,14 @@ int main(int argc, char* argv[]){
         int simpleGilbertSeedKolmogorov, simpleGilbertSeedLeastSquared;
         double simpleGilbertMinKolmogorovDistance, simpleGilbertMinLeastSquaredDifference;
         fitGilbert(tracesize, origECDF, pSimpleGilbert, rSimpleGilbert, 1.0, 0.0, simpleGilbertBurstsKolmogorov, simpleGilbertSeedKolmogorov, simpleGilbertMinKolmogorovDistance, simpleGilbertBurstsLeastSquared, simpleGilbertSeedLeastSquared, simpleGilbertMinLeastSquaredDifference, simpleGilbertKolmogorovDistances, simpleGilbertLeastSquaresDistances);
+        vector<double> simpleGilbertConfidenceKolmogorov = calcConfidenceIntervall(simpleGilbertKolmogorovDistances, significanceniveau);
+        vector<double> simpleGilbertConfidenceLeastSquared = calcConfidenceIntervall(simpleGilbertLeastSquaresDistances, significanceniveau);
         writeBursts(outputPath+"/FittedSimpleGilbertKolmogorov.txt", simpleGilbertBurstsKolmogorov);
         writeBursts(outputPath+"/FittedSimpleGilbertLeastSquared.txt", simpleGilbertBurstsLeastSquared);
         cout << "Simple-Gilbert:" << endl;
-        cout << "\tKolmogorov:   Seed: " << simpleGilbertSeedKolmogorov << " Distance: " << simpleGilbertMinKolmogorovDistance << endl;
-        cout << "\tLeastSquared: Seed: " << simpleGilbertSeedLeastSquared << " Difference: " << simpleGilbertMinLeastSquaredDifference << endl;
+        consolePrint(metrics[0], simpleGilbertSeedKolmogorov, simpleGilbertMinKolmogorovDistance, simpleGilbertConfidenceKolmogorov);
+        consolePrint(metrics[1], simpleGilbertSeedLeastSquared, simpleGilbertMinLeastSquaredDifference, simpleGilbertConfidenceLeastSquared);
+
 
         cout << "Fitting Gilbert" << endl;
         vector<int> GilbertBurstsKolmogorov, GilbertBurstsLeastSquared;
@@ -132,11 +145,14 @@ int main(int argc, char* argv[]){
         int GilbertSeedKolmogorov, GilbertSeedLeastSquared;
         double GilbertMinKolmogorovDistance, GilbertMinLeastSquaredDifference;
         fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert,GilbertBurstsKolmogorov, GilbertSeedKolmogorov, GilbertMinKolmogorovDistance, GilbertBurstsLeastSquared, GilbertSeedLeastSquared, GilbertMinLeastSquaredDifference, GilbertKolmogorovDistances, GilbertLeastSquaresDistances);
+        vector<double> GilbertConfidenceKolmogorov = calcConfidenceIntervall(GilbertKolmogorovDistances, significanceniveau);
+        vector<double> GilbertConfidenceLeastSquared = calcConfidenceIntervall(GilbertLeastSquaresDistances, significanceniveau);
         writeBursts(outputPath+"/FittedGilbertKolmogorov.txt", GilbertBurstsKolmogorov);
         writeBursts(outputPath+"/FittedGilbertLeastSquared.txt", GilbertBurstsLeastSquared);
         cout << "Gilbert:" << endl;
-        cout << "\tKolmogorov:   Seed: " << GilbertSeedKolmogorov << " Distance: " << GilbertMinKolmogorovDistance << endl;
-        cout << "\tLeastSquared: Seed: " << GilbertSeedLeastSquared << " Difference: " << GilbertMinLeastSquaredDifference << endl;
+        consolePrint(metrics[0], GilbertSeedKolmogorov, GilbertMinKolmogorovDistance, GilbertConfidenceKolmogorov);
+        consolePrint(metrics[1], GilbertSeedLeastSquared, GilbertMinLeastSquaredDifference, GilbertConfidenceLeastSquared);
+
 
         cout << "Fitting Gilbert-Elliot" << endl;
         vector<int> GilbertElliotBurstsKolmogorov, GilbertElliotBurstsLeastSquared;
@@ -144,11 +160,14 @@ int main(int argc, char* argv[]){
         int GilbertElliotSeedKolmogorov, GilbertElliotSeedLeastSquared;
         double GilbertElliotMinKolmogorovDistance, GilbertElliotMinLeastSquaredDifference;
         fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot, GilbertElliotBurstsKolmogorov, GilbertElliotSeedKolmogorov, GilbertElliotMinKolmogorovDistance, GilbertElliotBurstsLeastSquared, GilbertElliotSeedLeastSquared, GilbertElliotMinLeastSquaredDifference, GilbertElliotKolmogorovDistances, GilbertElliotLeastSquaresDistances);
+        vector<double> GilbertElliotConfidenceKolmogorov = calcConfidenceIntervall(GilbertElliotKolmogorovDistances, significanceniveau);
+        vector<double> GilbertElliotConfidenceLeastSquared = calcConfidenceIntervall(GilbertElliotLeastSquaresDistances, significanceniveau);
         writeBursts(outputPath+"/FittedGilbertElliotKolmogorov.txt", GilbertElliotBurstsKolmogorov);
         writeBursts(outputPath+"/FittedGilbertElliotSquared.txt", GilbertElliotBurstsLeastSquared);
         cout << "Gilbert-Elliot:" << endl;
-        cout << "\tKolmogorov:   Seed: " << GilbertElliotSeedKolmogorov << " Distance: " << GilbertElliotMinKolmogorovDistance << endl;
-        cout << "\tLeastSquared: Seed: " << GilbertElliotSeedLeastSquared << " Difference: " << GilbertElliotMinLeastSquaredDifference << endl;
+        consolePrint(metrics[0], GilbertElliotSeedKolmogorov, GilbertElliotMinKolmogorovDistance, GilbertElliotConfidenceKolmogorov);
+        consolePrint(metrics[1], GilbertElliotSeedLeastSquared, GilbertElliotMinLeastSquaredDifference, GilbertElliotConfidenceLeastSquared);
+
 
         cout << "Fitting Markov" << endl;
         vector<int> markovBurstsKolmogorov, markovBurstsLeastSquared;
@@ -156,11 +175,16 @@ int main(int argc, char* argv[]){
         int markovSeedKolmogorov, markovSeedLeastSquared;
         double markovMinKolmogorovDistance, markovMinLeastSquaredDifference;
         fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14, markovBurstsKolmogorov, markovSeedKolmogorov, markovMinKolmogorovDistance, markovBurstsLeastSquared, markovSeedLeastSquared, markovMinLeastSquaredDifference, markovKolmogorovDistances, markovLeastSquaresDistances);
+        vector<double> markovConfidenceKolmogorov = calcConfidenceIntervall(markovKolmogorovDistances, significanceniveau);
+        vector<double> markovConfidenceLeastSquared = calcConfidenceIntervall(markovLeastSquaresDistances, significanceniveau);
         writeBursts(outputPath+"/FittedMarkovKolmogorov.txt", markovBurstsKolmogorov);
         writeBursts(outputPath+"/FittedMarkovSquared.txt", markovBurstsLeastSquared);
         cout << "Markov:" << endl;
-        cout << "\tKolmogorov:   Seed: " << markovSeedKolmogorov << " Distance: " << markovMinKolmogorovDistance << endl;
-        cout << "\tLeastSquared: Seed: " << markovSeedLeastSquared << " Difference: " << markovMinLeastSquaredDifference << endl;
+        consolePrint(metrics[0], markovSeedKolmogorov, markovMinKolmogorovDistance, markovConfidenceKolmogorov);
+        consolePrint(metrics[1], markovSeedLeastSquared, markovMinLeastSquaredDifference, markovConfidenceLeastSquared);
+
+
+        cout << "Calculations are for " << 100-significanceniveau << "% confidence interval" << endl;
 
         clock_t stop = clock();
         double elapsed = (double) (stop-start)/CLOCKS_PER_SEC;

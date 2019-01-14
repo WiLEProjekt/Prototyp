@@ -7,14 +7,27 @@
 #include <cfloat>
 
 using namespace std;
-#define MAXSEED 100
+#define MAXSEED 10
+const double significanceLookupTable[11][2] = { // Standardnormaldistribution
+        {0.8, 0.8416},
+        {0.85, 1.0364},
+        {0.9, 1.2816},
+        {0.925, 1.4395},
+        {0.95, 1.6449},
+        {0.975, 1.96},
+        {0.99, 2.3263},
+        {0.995, 2.5758},
+        {0.999, 3.0902},
+        {0.9995, 3.2905},
+        {0.9999, 3.7190}
+};
 
 /**
  * calculates the mean of a given vector
  * @param input
  * @return mean
  */
-double calcMean(vector<double> input);
+double calcMean(vector<double> &input);
 
 /**
  * calculates the standarddeviation of a given vector
@@ -22,9 +35,15 @@ double calcMean(vector<double> input);
  * @param mean
  * @return
  */
-double caldStandarddeviation(vector<double> input, double mean);
+double calcStandarddeviation(vector<double> &input, double mean);
 
-vector<double> calcConfidenceIntervall(vector<double> input);
+/**
+ * Calculate Confidenceintervall
+ * @param input
+ * @param significance
+ * @return [0] lower bound, [1] upper bound
+ */
+vector<double> calcConfidenceIntervall(vector<double> &input, int significance);
 /**
  * Calculates the ECDF
  * @param sizes - vector with the burstsizes of which the ECDF should be calculated. Equals @Param overallsizes of method calcLoss

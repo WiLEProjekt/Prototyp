@@ -1,16 +1,35 @@
 #include <statistsics.h>
 #include <Generator.h>
 
-double calcMean(vector<double> input){
+double calcMean(vector<double> &input){
     return(accumulate(input.begin(), input.end(), 0.0)/input.size());
 }
 
-double caldStandarddeviation(vector<double> input, double mean){
+double calcStandarddeviation(vector<double> &input, double mean){
     double sum=0;
     for(int i=0; i<input.size(); i++){
         sum = sum + ((input.at(i)-mean)*(input.at(i)-mean));
     }
     return(sqrt(sum/(input.size()-1))); //-1 = Bessel correction
+}
+
+vector<double> calcConfidenceIntervall(vector<double> &input, int significance){
+    double p = 1.0f-(((double)significance/100.0f)/2);
+    double z = 0.0;
+    for(int i = 0; i<sizeof(significanceLookupTable)/ sizeof(significanceLookupTable[0]); i++){
+        if(abs(p-significanceLookupTable[i][0])<0.00001){
+            z = significanceLookupTable[i][1];
+            break;
+        }
+    }
+    double mean = calcMean(input);
+    double sd = calcStandarddeviation(input, mean);
+    double lowerBound = mean-(z*sd/sqrt(input.size()));
+    double upperBound = mean+(z*sd/sqrt(input.size()));
+    vector<double> returnVector;
+    returnVector.push_back(lowerBound);
+    returnVector.push_back(upperBound);
+    return(returnVector);
 }
 
 void calculateECDF(vector<int> &sizes, vector<vector<float> > &ECDF){
