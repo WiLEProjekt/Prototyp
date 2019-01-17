@@ -19,6 +19,8 @@ vector<bool> readBinaryTrace(string filename);
  * @param output - outputpath
  * @param bursts - vector containing the burstsizes
  */
-void writeBursts(string output, vector<int> &bursts);
+void writeVector(string output, vector<int> &outvec);
+
+void writeVector(string output, vector<double> &outvec);
 
 #endif //PACKETLOSSAUSWERTUNG_IO_H
