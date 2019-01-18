@@ -176,6 +176,7 @@ struct result getResults(struct pcapValues values) {
                     lossPoint.packetRecieved = false;
                     lossPoint.seqNum = 0;
                     points.push_back(lossPoint);
+                    loss.push_back(false);
                 }
                 lossCounter = 0;
             }
@@ -193,7 +194,6 @@ struct result getResults(struct pcapValues values) {
             points.push_back(currentPoint);
             lossCounter++;
             delay = 0;
-            loss.push_back(false);
         }
         delays.push_back(delay);
     }
