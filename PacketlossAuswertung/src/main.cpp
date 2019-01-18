@@ -61,6 +61,7 @@ int main(int argc, char* argv[]){
         calcLoss(originalTrace, origSizes);
         vector<vector<float> > origECDF;
         calculateECDF(origSizes, origECDF);
+        writeVector(outputPath+"/OriginalECDF.txt", origSizes);
 
         cout << "Calculating Bernoulli Model-Parameter" << endl;
         double pBernoulli, rBernoulli;
