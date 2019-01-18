@@ -1,0 +1,4 @@
+Im Example ist eine kompilierte Version der GUI.
+Diese benötigt den Data Ordner und kann erweitert werden durch weitere Ordner.
+
+Der NetemEmulator(Gui) ist ein Projekt fuer QT und kann entsprechend eingebunden werden.

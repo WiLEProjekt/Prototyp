@@ -33,21 +33,25 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+/* libs for waitpid or wait */
+#include <sys/types.h>
+#include <sys/wait.h>
+
 static void explain(void)
 {
 	fprintf(stderr,
 "Usage: ... netem [ limit PACKETS ]\n" \
-"                 [ delay TIME [ JITTER [CORRELATION]]]\n" \
+"                 [ delay [seed SEED_INT] TIME [ JITTER [CORRELATION]]]\n" \
+"                 	[ distribution {uniform|normal|pareto|paretonormal} ]\n" \
 "                 [ delay trace [FILEPATH]\n" \
-"                 [ distribution {uniform|normal|pareto|paretonormal} ]\n" \
-"                 [ corrupt PERCENT [CORRELATION]]\n" \
-"                 [ duplicate PERCENT [CORRELATION]]\n" \
-"                 [ loss random PERCENT [CORRELATION]]\n" \
-"                 [ loss state P13 [P31 [P32 [P23 P14]]]\n" \
-"                 [ loss gemodel PERCENT [R [1-H [1-K]]]\n" \
+"                 [ loss [seed SEED_INT] random PERCENT [CORRELATION]]\n" \
+"                 [ loss [seed SEED_INT] state P13 [P31 [P32 [P23 P14]]]\n" \
+"                 [ loss [seed SEED_INT] gemodel PERCENT [R [1-H [1-K]]]\n" \
 "                 [ loss trace [FILEPATH]\n" \
 "                 [ ecn ]\n" \
-"                 [ reorder PRECENT [CORRELATION] [ gap DISTANCE ]]\n" \
+"                 [ corrupt [seed SEED_INT] PERCENT [CORRELATION]]\n" \
+"                 [ duplicate [seed SEED_INT] PERCENT [CORRELATION]]\n" \
+"                 [ reorder [seed SEED_INT] PRECENT [CORRELATION] [ gap DISTANCE ]]\n" \
 "                 [ rate RATE [PACKETOVERHEAD] [CELLSIZE] [CELLOVERHEAD]]\n");
 }
 
@@ -326,6 +330,17 @@ static int countIntValues(const char* filename)
     return ctr;
 }
 
+static unsigned int convertToUnsignedInt(char* string)
+{
+	char* x;
+	for (x = string ; *x ; x++)
+	{
+		if (!isdigit(*x))
+			return 0L;
+	}
+	return (strtoul(string,0L,10));
+}
+
 static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			   struct nlmsghdr *n, const char *dev)
 {
@@ -339,11 +354,13 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	struct tc_netem_gemodel gemodel;
 	struct tc_netem_losstrace losstrace;
 	struct tc_netem_delaytrace delaytrace;
+	struct tc_netem_rnd_number_generator qseed;
 	struct tc_netem_rate rate = {};
 	__s16 *dist_data = NULL;
 	__u16 loss_type = NETEM_LOSS_UNSPEC;
 	int present[__TCA_NETEM_MAX] = {};
 	__u64 rate64 = 0;
+
 
 	for ( ; argc > 0; --argc, ++argv) {
 		if (matches(*argv, "limit") == 0) {
@@ -356,61 +373,62 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			   matches(*argv, "delay") == 0) {
 			NEXT_ARG();
 
+			if (!strcmp(*argv, "seed")) {
+				if (NEXT_IS_NUMBER())
+				{
+					NEXT_ARG();
+					++present[TCA_NETEM_SEED];
+					qseed.delay_seed = convertToUnsignedInt(*argv);
+					printf("qseed.delay_seed: %u\n", qseed.delay_seed);
+					NEXT_ARG();
+				} 
+			}
+
 			if (!strcmp(*argv, "trace")) {
 				NEXT_ARG();				
 				++present[TCA_NETEM_DELAY_TRACE];
-
+				char* filepath = *argv;
+				
 				/* set trace parameter */
-				delaytrace.trlen = countIntValues(*argv) + 1; /* + 1 because of first element flag */
-				if (-1 == delaytrace.trlen) 
+				delaytrace.trlen = countIntValues(filepath) + 1; /* + 1 because of first element flag */
+				if (1 == delaytrace.trlen) 
 				{
-					printf("Error while computing length of trace. Exiting...\n");
-					exit(1);
+					printf("Error while computing length of trace...\n");
+					printf("exit...");
+					exit(EXIT_FAILURE);
 				}
-
-
+				
 				/* create shared memory space */
 				/* first element in shared memory is used as shmdt_lock, the rest are trace values*/
-				key_t key = ftok("shmdelay", 52); 
-				int shmid = shmget(key,delaytrace.trlen*sizeof(__u32),IPC_CREAT); /* create shared memory */
-				delaytrace.trdelay = (__u32 *) shmat(shmid, 0, 0); /* attach pointer to shared */
+				key_t delkey;
+				if (-1 == (delkey = ftok(filepath, 42)))
+				{
+ 					perror("ftok");
+					printf("exit...");
+					exit(EXIT_FAILURE);
+				}				
+				if (-1 == (delaytrace.shmid = shmget(delkey,delaytrace.trlen*sizeof(__u32),IPC_CREAT)))
+				{
+					perror("shmget");
+					printf("exit..\n");
+					exit(EXIT_FAILURE);
+				} 		
+				if ((void *)-1 == (delaytrace.trdelay = (__u32 *) shmat(delaytrace.shmid, 0, 0)))
+				{
+					perror("shmat");
+					printf("exit..\n");
+					exit(EXIT_FAILURE);
+				}
 				*delaytrace.trdelay = 0; /* first element shmdt_lock, rest contains  */
 				delaytrace.trdelay++;
-				if (-1 == parseIntsFromFile(*argv, delaytrace.trdelay) ) 
+
+				
+				if (-1 == parseIntsFromFile(filepath, delaytrace.trdelay) ) 
 				{
 					printf("Error while reading tracefile. Exiting...\n");
-					exit(1);
+					exit(-1);
 				}
-				delaytrace.trdelay--;	
-/*
-				int i;
-				for (i = 0 ; i < delaytrace.trlen ; i++)
-				{
-					printf("%d ", delaytrace.trdelay[i]);
-				}
-*/
-							
-				
-				/* parent and child share the defined shared memory. So parent finish this 
-				process and transfer the parameters to the netem module. The child is responsible to free the shared 					memory (after the netem-module copied the data!). Because of the process communication between 
-				kernel and user space, it is not possible to use futex, pthread_mutex or kernel libraries like 					(linux/	mutex.h) to assure mutual exlcusion of the shared memory. Hence, there is no silver bullet 					solution... and an ugly hack provides a fitting solution:
-				Parent sets shmdt_lock = 0.
-				The child sleeps for 10 seconds, and checks if shmdt_lock == 1. Else sleep... */
-
-				pid_t pid = fork();	
-				if (pid == 0) // child
-				{	
-
-					printf("child id: %i \n", getpid()); /* TODO: only used to check where the child defenitly terminates */
-					do {
-						sleep(10); // in seconds
-					} while (0 == *delaytrace.trdelay);
-					shmdt(delaytrace.trdelay); /* detach trdelay */
-					shmctl(shmid, IPC_RMID, NULL); /* release shared memory */
-					exit(1);
-				}	
-				
-
+				delaytrace.trdelay--;				
 			}
 
 			else if (get_ticks(&opt.latency, *argv)) {
@@ -443,6 +461,20 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			}
 
 			NEXT_ARG();
+			if (!strcmp(*argv, "seed")) {
+				if (NEXT_IS_NUMBER())
+				{
+					NEXT_ARG();
+					++present[TCA_NETEM_SEED];
+					qseed.loss_seed = convertToUnsignedInt(*argv);
+					printf("qseed.loss_seed: %u\n", qseed.loss_seed);
+					NEXT_ARG();
+				} else {
+					explain1("loss seed");
+					return -1;
+				}
+			}
+
 			/* Old (deprecated) random loss model syntax */
 			if (isdigit(argv[0][0]))
 				goto random_loss_model;
@@ -462,6 +494,7 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 						return -1;
 					}
 				}
+
 			} else if (!strcmp(*argv, "state")) {
 				double p13;
 
@@ -553,10 +586,12 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			} else if (!strcmp(*argv, "trace")) {
 				NEXT_ARG();
 				loss_type = NETEM_LOSS_TR;
+				char* filepath = *argv;
+				
 				
 				/* set trace parameter */
-				losstrace.trlen = getLossTraceLength(*argv) + 1; /* + 1 because of first element flag */
-				if (-1 == losstrace.trlen) 
+				losstrace.trlen = getLossTraceLength(filepath) + 1; /* + 1 because of first element flag */
+				if (1 == losstrace.trlen) 
 				{
 					printf("Error while computing length of trace. Exiting...\n");
 					exit(1);
@@ -564,37 +599,34 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 
 				/* create shared memory space */
 				/* first element in shared memory is used as shmdt_lock, the rest are trace values*/
-				key_t key = ftok("shmloss", 42); 
-				int shmid = shmget(key,losstrace.trlen,IPC_CREAT); /* create shared memory */
-				losstrace.trloss = (__u8 *) shmat(shmid, 0, 0); /* attach pointer to shared */
+				key_t losskey;
+				if (-1 == (losskey = ftok(filepath, 42)))
+				{
+ 					perror("ftok");
+					printf("exit...");
+					exit(EXIT_FAILURE);
+				}
+ 
+				if (-1 == (losstrace.shmid = shmget(losskey,losstrace.trlen,IPC_CREAT)))
+				{
+					perror("shmget");
+					printf("exit..\n");
+					exit(EXIT_FAILURE);
+				} 		
+				if ((void *)-1 == (losstrace.trloss = (__u8 *) shmat(losstrace.shmid, 0, 0)))
+				{
+					perror("shmat");
+					printf("exit..\n");
+					exit(EXIT_FAILURE);
+				}
 				*losstrace.trloss = 0; /* first element shmdt_lock, rest contains  */
 				losstrace.trloss++;
-				if (-1 == readLossTraceFile(*argv, losstrace.trloss) ) 
+				if (-1 == readLossTraceFile(filepath, losstrace.trloss) ) 
 				{
 					printf("Error while reading tracefile. Exiting...\n");
 					exit(1);
 				}
 				losstrace.trloss--;				
-				
-				/* parent and child share the defined shared memory. So parent finish this 
-				process and transfer the parameters to the netem module. The child is responsible to free the shared 					memory (after the netem-module copied the data!). Because of the process communication between 
-				kernel and user space, it is not possible to use futex, pthread_mutex or kernel libraries like 					(linux/	mutex.h) to assure mutual exlcusion of the shared memory. Hence, there is no silver bullet 					solution... and an ugly hack provides a fitting solution:
-				Parent sets shmdt_lock = 0.
-				The child sleeps for 10 seconds, and checks if shmdt_lock == 1. Else sleep... */
-
-				pid_t pid = fork();	
-				if (pid == 0) // child
-				{	
-
-					printf("child id: %i \n", getpid()); /* TODO: only used to check where the child defenitly terminates */
-					do {
-						sleep(10); // in seconds
-					} while (0 == *losstrace.trloss);
-					shmdt(losstrace.trloss); /* detach trloss */
-					shmctl(shmid, IPC_RMID, NULL); /* release shared memory */
-					exit(1);
-				}
-				
 			} else {
 				fprintf(stderr, "Unknown loss parameter: %s\n",
 					*argv);
@@ -604,6 +636,18 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			present[TCA_NETEM_ECN] = 1;
 		} else if (matches(*argv, "reorder") == 0) {
 			NEXT_ARG();
+
+			if (!strcmp(*argv, "seed")) {
+				if (NEXT_IS_NUMBER())
+				{
+					NEXT_ARG();
+					++present[TCA_NETEM_SEED];
+					qseed.reorder_seed = convertToUnsignedInt(*argv);
+					printf("qseed.reorder_seed: %u\n", qseed.reorder_seed);
+					NEXT_ARG();
+				} 
+			}
+
 			present[TCA_NETEM_REORDER] = 1;
 			if (get_percent(&reorder.probability, *argv)) {
 				explain1("reorder");
@@ -617,8 +661,21 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 					return -1;
 				}
 			}
+
 		} else if (matches(*argv, "corrupt") == 0) {
 			NEXT_ARG();
+
+			if (!strcmp(*argv, "seed")) {
+				if (NEXT_IS_NUMBER())
+				{
+					NEXT_ARG();
+					++present[TCA_NETEM_SEED];
+					qseed.corrupt_seed = convertToUnsignedInt(*argv);
+					printf("qseed.corrupt_seed: %u\n", qseed.corrupt_seed);
+					NEXT_ARG();
+				} 
+			}
+
 			present[TCA_NETEM_CORRUPT] = 1;
 			if (get_percent(&corrupt.probability, *argv)) {
 				explain1("corrupt");
@@ -632,6 +689,7 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 					return -1;
 				}
 			}
+
 		} else if (matches(*argv, "gap") == 0) {
 			NEXT_ARG();
 			if (get_u32(&opt.gap, *argv, 0)) {
@@ -640,6 +698,18 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			}
 		} else if (matches(*argv, "duplicate") == 0) {
 			NEXT_ARG();
+
+			if (!strcmp(*argv, "seed")) {
+				if (NEXT_IS_NUMBER())
+				{
+					NEXT_ARG();
+					++present[TCA_NETEM_SEED];
+					qseed.duplication_seed = convertToUnsignedInt(*argv);
+					printf("qseed.duplication_seed: %u\n", qseed.duplication_seed);
+					NEXT_ARG();
+				} 
+			}
+
 			if (get_percent(&opt.duplicate, *argv)) {
 				explain1("duplicate");
 				return -1;
@@ -651,6 +721,7 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 					return -1;
 				}
 			}
+
 		} else if (matches(*argv, "distribution") == 0) {
 			NEXT_ARG();
 			dist_data = calloc(sizeof(dist_data[0]), MAX_DIST);
@@ -757,7 +828,11 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	if (present[TCA_NETEM_DELAY_TRACE] &&
 	    addattr_l(n, 1024, TCA_NETEM_DELAY_TRACE, &delaytrace, sizeof(delaytrace)) < 0)
 		return -1;
-	
+
+	if (present[TCA_NETEM_SEED] &&
+	    addattr_l(n, 1024, TCA_NETEM_SEED, &qseed, sizeof(qseed)) < 0)
+		return -1;
+
 /* --------------------------------------------------------------------------------- */
 
 	if (loss_type != NETEM_LOSS_UNSPEC) {
@@ -807,6 +882,54 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 		free(dist_data);
 	}
 	tail->rta_len = (void *) NLMSG_TAIL(n) - (void *) tail;
+	
+	
+	/* parent and child share the defined shared memory. So parent finish this 
+	process and transfer the parameters to the netem module. The parent is responsible to free the shared 		memory (after the netem-module copied the data). Because of the process communication between 
+	kernel and user space, it is not possible to use futex, pthread_mutex or kernel libraries like 		(linux/	mutex.h) to assure mutual exlcusion of the shared memory. Hence, there is no silver bullet 		solution... and an ugly hack provides a fitting solution:
+	First the shmdt_lock (which is the first byte in the shm) is set to 0.
+	The parent sleeps for 1 second, and checks if shmdt_lock == 1. Else sleep again and wake up... */
+
+	if (present[TCA_NETEM_DELAY_TRACE] || loss_type == NETEM_LOSS_TR)
+	{
+		pid_t pid = fork();
+		if (0 != pid) 
+		{
+			int status;
+			if (-1 == waitpid(pid, &status, 0))
+			{
+				perror("waitpid");
+				exit(EXIT_FAILURE);
+			}
+			if (0 != WEXITSTATUS(status))
+			{
+				exit(EXIT_FAILURE);
+			}
+
+			if (present[TCA_NETEM_DELAY_TRACE])
+			{
+				do {
+					sleep(1); 
+				} while (0 == *delaytrace.trdelay);
+				shmdt(delaytrace.trdelay); 
+				shmctl(delaytrace.shmid, IPC_RMID, NULL);
+				printf("free delay shm\n"); 	
+				
+			}	
+
+			if (loss_type == NETEM_LOSS_TR)
+			{
+				do {
+					sleep(1); 
+				} while (0 == *losstrace.trloss);
+				shmdt(losstrace.trloss); 
+				shmctl(losstrace.shmid, IPC_RMID, NULL); 
+				printf("free loss shm\n");
+			}		
+			exit(EXIT_SUCCESS);
+		}	
+	}
+
 	return 0;
 }
 

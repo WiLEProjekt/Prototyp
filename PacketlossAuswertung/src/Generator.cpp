@@ -1,13 +1,13 @@
 #include <Generator.h>
 
 mt19937 randomGenerator; //Mersenne Twister Engine
-uniform_real_distribution<float> distribution;
+uniform_real_distribution<double> distribution;
 
 void setSeed(int seed){
     randomGenerator.seed(seed);
 }
 
-float generateRandomNumber(){
+double generateRandomNumber(){
     return(distribution(randomGenerator));
 }
 
@@ -37,7 +37,7 @@ void calculateBursts(vector<bool> &trace, int &i, int &temp, vector<int> &genSiz
     }
 }
 
-vector<int> buildGilbertElliot(long numPackets, float p, float r, float k, float h){
+vector<int> buildGilbertElliot(long numPackets, double p, double r, double k, double h){
     vector<bool> trace;
     vector<int>gensizes;
     bool good = true; // 1 = good state, 0 = bad state
@@ -46,13 +46,13 @@ vector<int> buildGilbertElliot(long numPackets, float p, float r, float k, float
     for (int i = 0; i < numPackets + 1; i++) {
         //generate Trace
         if (good) { //in good state
-            float randomNumberLossK = generateRandomNumber(); //Random Number that indicates if a packet is lost while being in a state
-            float randomNumberStateP = generateRandomNumber(); //Random number that indicates a state transition from good -> bad
+            double randomNumberLossK = generateRandomNumber(); //Random Number that indicates if a packet is lost while being in a state
+            double randomNumberStateP = generateRandomNumber(); //Random number that indicates a state transition from good -> bad
             send = !(randomNumberLossK <= (1.0 - k)); //Calculate next state
             good = !(randomNumberStateP <= p); //Calculate next state
         } else { //in bad state
-            float randomNumberLossH = generateRandomNumber(); //Random Number that indicates if a packet is lost while being in a state
-            float randomNumberStateR = generateRandomNumber(); //Random number that indicates a state transition from bad -> good
+            double randomNumberLossH = generateRandomNumber(); //Random Number that indicates if a packet is lost while being in a state
+            double randomNumberStateR = generateRandomNumber(); //Random number that indicates a state transition from bad -> good
             send = !(randomNumberLossH <= (1.0 - h));
             good = (randomNumberStateR <= r); //Calculate next state
         }
@@ -67,14 +67,14 @@ vector<int> buildGilbertElliot(long numPackets, float p, float r, float k, float
     return(gensizes);
 }
 
-vector<int> buildMarkov(long numPackets, float p13, float p31, float p32, float p23, float p14, float p41){
+vector<int> buildMarkov(long numPackets, double p13, double p31, double p32, double p23, double p14, double p41){
     vector<bool> trace;
     vector<int> gensizes;
     int temp = 0;
     int state = 1;
 
     for (int i = 0; i < numPackets + 1; i++) {
-        float randomValue = generateRandomNumber();
+        double randomValue = generateRandomNumber();
         bool value;
         switch (state) {
             case 1:

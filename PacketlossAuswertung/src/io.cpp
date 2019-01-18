@@ -10,3 +10,21 @@ vector<bool> readBinaryTrace(string filename){
     }
     return trace;
 }
+
+void writeVector(string output, vector<int> &outvec){
+    fstream fout;
+    fout.open(output, ios::out);
+    for(int i = 0; i<outvec.size(); i++){
+        fout << outvec[i] << endl;
+    }
+    fout.close();
+}
+
+void writeVector(string output, vector<double> &outvec){
+    fstream fout;
+    fout.open(output, ios::out);
+    for(int i = 0; i<outvec.size(); i++){
+        fout << outvec[i] << endl;
+    }
+    fout.close();
+}

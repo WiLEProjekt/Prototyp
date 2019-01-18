@@ -11,7 +11,6 @@
  *
  * Authors:	Stephen Hemminger <shemminger@osdl.org>
  *		Catalin(ux aka Dino) BOIE <catab at umbrella dot ro>
- *		modified by Alexander Ditt, Leonhard Brueggemann
  */
 
 #include <linux/mm.h>
@@ -31,6 +30,9 @@
 #include <net/inet_ecn.h>
 
 #define VERSION "1.3"
+
+#define N 624 /* used in random number generator Mersenne Twister 19937 */
+#define M 397 /* used in random number generator Mersenne Twister 19937 */
 
 /*	Network Emulation Queuing algorithm.
 	====================================
@@ -69,6 +71,11 @@
 		 Fabio Ludovici <fabio.ludovici at yahoo.it>
 */
 
+struct disttable {
+	u32  size;
+	s16 table[0];
+};
+
 struct netem_sched_data {
 	/* internal t(ime)fifo qdisc uses t_root and sch->limit */
 	struct rb_root t_root;
@@ -95,15 +102,29 @@ struct netem_sched_data {
 	struct reciprocal_value cell_size_reciprocal;
 	s32 cell_overhead;
 
+	struct rnd_number_generator {
+		u32 seed; /* seed value might be set for packet loss */
+		u32* vector; /* vector contains the random number */
+		/* vector_idx points to current random number
+		 * vector_idx>N: new vector must be computed
+		 * vector_idx=N+1: vector must be computed first
+		 */
+		int vector_idx; 
+	} loss_rng;
+
 	struct crndstate {
+		struct rnd_number_generator rng;
 		u32 last;
 		u32 rho;
 	} delay_cor, loss_cor, dup_cor, reorder_cor, corrupt_cor;
 
-	struct disttable {
-		u32  size;
-		s16 table[0];
-	} *delay_dist;
+	struct disttable *delay_dist;
+
+	struct delaytrace {
+		u32 trlen; /* length of the trace, sum of integers */ 		
+		u32* trdelay; /* contains current delay trace */
+		u32 p; /* elem pointer, tracks current position in trdelay */
+	} delay_trace;
 
 	enum  {
 		CLG_RANDOM,
@@ -135,12 +156,11 @@ struct netem_sched_data {
 		u32 a3;	/* p32 for 4-states or h for GE */
 		u32 a4;	/* p14 for 4-states or 1-k for GE */
 		u32 a5; /* p23 used only in 4-states */
-		
+
 		/* trace parameters (trlen, trloss equal types of pkt_sched.h) */
 		u32 trlen; /* length of the trace, sum of 0s and 1s */ 		
 		u8* trloss; /* contains current loss trace */
-		u32 p; /* elem pointer, tracks current position in trloss */ // TODO: strictly speaking, it's redundant
-		
+		u32 p; /* elem pointer, tracks current position in trloss */ 
 	} clg;
 
 	struct tc_netem_slot slot_config;
@@ -150,6 +170,7 @@ struct netem_sched_data {
 		s32 bytes_left;
 	} slot;
 
+	struct disttable *slot_dist;
 };
 
 /* Time stamp put into socket buffer control block
@@ -170,13 +191,73 @@ static inline struct netem_skb_cb *netem_skb_cb(struct sk_buff *skb)
 	return (struct netem_skb_cb *)qdisc_skb_cb(skb)->data;
 }
 
+
+static void mersenne_twister_rnd_vector_init (struct rnd_number_generator *rng)
+{
+	const u32 mult = 1812433253ul;
+	//u32 seed = 5489ul; 
+	int i;
+	if (rng->vector)
+	{
+		kfree(rng->vector);
+		rng->vector = NULL;
+		rng->vector_idx = N+1;
+	} 
+	rng->vector = kzalloc(sizeof(u32) * N, GFP_KERNEL);
+	rng->vector_idx = 0;
+
+	for (i = 0; i < N; i++)
+	{
+		rng->vector[i] = rng->seed;
+		rng->seed = mult * (rng->seed ^ (rng->seed >> 30)) + (i+1);
+	}
+}
+
+static void mersenne_twister_rnd_vector_update (u32* const p)
+{
+	static const u32 A[2] = {0, 0x9908B0DF};
+	int i = 0;
+
+	for (; i < N-M; i++)
+	{
+		p[i] = p[i+(M)] ^ (((p[i] & 0x80000000) | (p[i+1] & 0x7FFFFFFF)) >> 1) ^ A[p[i+1] & 1];
+	}
+
+	for (; i < N-1; i++)
+	{
+		p[i] = p[i+(M-N)] ^ (((p[i] & 0x80000000) | (p[i+1] & 0x7FFFFFFF)) >> 1) ^ A[p[i+1] & 1];
+	}
+
+	p[N-1] = p[M-1] ^ (((p[N-1] & 0x80000000) | (p[0] & 0x7FFFFFFF)) >> 1) ^ A[p[0] & 1];
+}
+
+
+static u32 mersenne_twister(struct rnd_number_generator *rng)
+{
+	u32 rnd;
+
+	if (rng->vector_idx >= N)
+	{
+		mersenne_twister_rnd_vector_update(rng->vector);
+		rng->vector_idx = 0;
+	}
+
+	rnd  = rng->vector[(rng->vector_idx)++];
+	rnd ^= (rnd >> 11);             /* Tempering */
+	rnd ^= (rnd <<  7) & 0x9D2C5680;
+	rnd ^= (rnd << 15) & 0xEFC60000;
+	rnd ^= (rnd >> 18);
+
+	return rnd;
+}
+
 /* init_crandom - initialize correlated random number generator
  * Use entropy source for initial seed.
  */
 static void init_crandom(struct crndstate *state, unsigned long rho)
 {
 	state->rho = rho;
-	state->last = prandom_u32();
+	state->last = mersenne_twister(&state->rng);
 }
 
 /* get_crandom - correlated random number generator
@@ -188,10 +269,10 @@ static u32 get_crandom(struct crndstate *state)
 	u64 value, rho;
 	unsigned long answer;
 
-	if (state->rho == 0)	/* no correlation */
-		return prandom_u32();
+	if (!state || state->rho == 0)	/* no correlation */
+		return mersenne_twister(&state->rng);
 
-	value = prandom_u32();
+	value = mersenne_twister(&state->rng);
 	rho = (u64)state->rho + 1;
 	answer = (value * ((1ull<<32) - rho) + state->last * rho) >> 32;
 	state->last = answer;
@@ -205,7 +286,7 @@ static u32 get_crandom(struct crndstate *state)
 static bool loss_4state(struct netem_sched_data *q)
 {
 	struct clgstate *clg = &q->clg;
-	u32 rnd = prandom_u32();
+	u32 rnd = mersenne_twister(&q->loss_rng);
 
 	/*
 	 * Makes a comparison between rnd and the transition
@@ -273,25 +354,18 @@ static bool loss_gilb_ell(struct netem_sched_data *q)
 
 	switch (clg->state) {
 	case GOOD_STATE:
-		if (prandom_u32() < clg->a1)
+		if (mersenne_twister(&q->loss_rng) < clg->a1)
 			clg->state = BAD_STATE;
-		if (prandom_u32() < clg->a4)
-		{
-			printk("GE-EL: PACKET LOSS\n");
+		if (mersenne_twister(&q->loss_rng) < clg->a4)
 			return true;
-		}
 		break;
 	case BAD_STATE:
-		if (prandom_u32() < clg->a2)
+		if (mersenne_twister(&q->loss_rng) < clg->a2)
 			clg->state = GOOD_STATE;
-		if (prandom_u32() > clg->a3)
-		{
-			printk("GE-EL: PACKET LOSS\n");
+		if (mersenne_twister(&q->loss_rng) > clg->a3)
 			return true;
-		}
 	}
-	
-	printk("GE-EL: no packet loss\n");
+
 	return false;
 }
 
@@ -317,24 +391,22 @@ static bool loss_event(struct netem_sched_data *q)
 		* the kernel logs
 		*/
 		return loss_gilb_ell(q);
-	case CLG_TRACE:
-				
+	case CLG_TRACE:				
 		if(q->clg.p==q->clg.trlen)
 		{
-			/* restart packet loss sequence at the beginning */
-			q->clg.p = 0;
+			/* restart packet loss sequence at the beginning, which is the element 1 (elem 0 is a flag) */
+			q->clg.p = 1;
 		}
 		if(q->clg.trloss[q->clg.p]==0)
 		{
-			printk("TR: 0\n"); /* aquivalent to tracefile */
 			q->clg.p++;
 			return true;
 		} else {
-			printk("TR: 1\n"); /* aquivalent to tracefile */
 			q->clg.p++;
 			return false;
 		}
 	}
+
 	return false;	/* not reached */
 }
 
@@ -469,6 +541,9 @@ static int netem_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 	int count = 1;
 	int rc = NET_XMIT_SUCCESS;
 
+	/* Do not fool qdisc_drop_all() */
+	skb->prev = NULL;
+
 	/* Random duplication */
 	if (q->duplicate && q->duplicate >= get_crandom(&q->dup_cor))
 		++count;
@@ -535,8 +610,8 @@ static int netem_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 			goto finish_segs;
 		}
 
-		skb->data[prandom_u32() % skb_headlen(skb)] ^=
-			1<<(prandom_u32() % 8);
+		skb->data[mersenne_twister(&q->corrupt_cor.rng) % skb_headlen(skb)] ^=
+			1<<(mersenne_twister(&q->corrupt_cor.rng) % 8);
 	}
 
 	if (unlikely(sch->q.qlen >= sch->limit))
@@ -551,8 +626,17 @@ static int netem_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		u64 now;
 		s64 delay;
 
-		delay = tabledist(q->latency, q->jitter,
+		if (q->delay_trace.trdelay) 
+		{
+			if (q->delay_trace.p == q->delay_trace.trlen)
+				q->delay_trace.p = 1;
+			delay = q->delay_trace.trdelay[q->delay_trace.p] * 1000000; /* convert ms to ns  */
+			q->delay_trace.p++;
+			
+		} else {
+			delay = tabledist(q->latency, q->jitter,
 				  &q->delay_cor, q->delay_dist);
+		}
 
 		now = ktime_get_ns();
 
@@ -632,10 +716,19 @@ finish_segs:
 
 static void get_slot_next(struct netem_sched_data *q, u64 now)
 {
-	q->slot.slot_next = now + q->slot_config.min_delay +
-		(prandom_u32() *
-			(q->slot_config.max_delay -
-				q->slot_config.min_delay) >> 32);
+	s64 next_delay;
+
+	if (!q->slot_dist)
+		next_delay = q->slot_config.min_delay +
+				(prandom_u32() *
+				 (q->slot_config.max_delay -
+				  q->slot_config.min_delay) >> 32);
+	else
+		next_delay = tabledist(q->slot_config.dist_delay,
+				       (s32)(q->slot_config.dist_jitter),
+				       NULL, q->slot_dist);
+
+	q->slot.slot_next = now + next_delay;
 	q->slot.packets_left = q->slot_config.max_packets;
 	q->slot.bytes_left = q->slot_config.max_bytes;
 }
@@ -742,6 +835,44 @@ static void netem_reset(struct Qdisc *sch)
 	qdisc_watchdog_cancel(&q->watchdog);
 }
 
+
+/*
+ * Copy delay trace data from shm in userspace into the kernel.
+ */
+
+static int get_delay_trace(struct Qdisc *sch, const struct nlattr *attr)
+{
+	struct netem_sched_data *q = qdisc_priv(sch);
+	const struct tc_netem_delaytrace *tr = nla_data(attr);
+	if (nla_len(attr) < sizeof(struct tc_netem_delaytrace)) {
+		pr_info("netem: incorrect trace params\n");
+		return -EINVAL;
+	}
+	q->delay_trace.trlen = tr->trlen;
+	q->delay_trace.p = 1;	 /* first element is not part of trace, but shmdt_flag, so trace start is elem 1 */
+
+	/* q->delay_trace.trdelay is freed in the destroy-function */
+	if (q->delay_trace.trdelay != NULL)
+		kfree(q->delay_trace.trdelay);
+	q->delay_trace.trdelay = kzalloc(sizeof(u32) * q->delay_trace.trlen, GFP_KERNEL);
+	if (copy_from_user(q->delay_trace.trdelay, tr->trdelay, sizeof(u32) * q->delay_trace.trlen))
+	{
+		pr_info("-EFAULT!\n");
+		kfree(q->delay_trace.trdelay);
+		return -EFAULT;
+	}
+
+	*(q->delay_trace.trdelay) = 1; /* set shmdt_lock to one, so child process free shared memory */
+	if (copy_to_user((u32*) tr->trdelay, q->delay_trace.trdelay, 1))
+	{
+		pr_info("-EFAULT!\n");
+		kfree(q->delay_trace.trdelay);
+		return -EFAULT;
+	}
+	return 0;
+}
+
+
 static void dist_free(struct disttable *d)
 {
 	kvfree(d);
@@ -752,9 +883,9 @@ static void dist_free(struct disttable *d)
  * signed 16 bit values.
  */
 
-static int get_dist_table(struct Qdisc *sch, const struct nlattr *attr)
+static int get_dist_table(struct Qdisc *sch, struct disttable **tbl,
+			  const struct nlattr *attr)
 {
-	struct netem_sched_data *q = qdisc_priv(sch);
 	size_t n = nla_len(attr)/sizeof(__s16);
 	const __s16 *data = nla_data(attr);
 	spinlock_t *root_lock;
@@ -775,7 +906,7 @@ static int get_dist_table(struct Qdisc *sch, const struct nlattr *attr)
 	root_lock = qdisc_root_sleeping_lock(sch);
 
 	spin_lock_bh(root_lock);
-	swap(q->delay_dist, d);
+	swap(*tbl, d);
 	spin_unlock_bh(root_lock);
 
 	dist_free(d);
@@ -793,7 +924,8 @@ static void get_slot(struct netem_sched_data *q, const struct nlattr *attr)
 		q->slot_config.max_bytes = INT_MAX;
 	q->slot.packets_left = q->slot_config.max_packets;
 	q->slot.bytes_left = q->slot_config.max_bytes;
-	if (q->slot_config.min_delay | q->slot_config.max_delay)
+	if (q->slot_config.min_delay | q->slot_config.max_delay |
+	    q->slot_config.dist_jitter)
 		q->slot.slot_next = ktime_get_ns();
 	else
 		q->slot.slot_next = 0;
@@ -884,24 +1016,33 @@ static int get_loss_clg(struct netem_sched_data *q, const struct nlattr *attr)
 		}
 
 		case NETEM_LOSS_TR: {
-			const struct tc_netem_trace *tr = nla_data(la);
-			if (nla_len(la) < sizeof(struct tc_netem_trace)) {
+			const struct tc_netem_losstrace *tr = nla_data(la);
+			if (nla_len(la) < sizeof(struct tc_netem_losstrace)) {
 				pr_info("netem: incorrect trace params\n");
 				return -EINVAL;
 			}
 
 			/* set parameter in netem_sched_data (contains relevant information)  */
 			q->loss_model = CLG_TRACE;
-			q->clg.trlen = tr->trlen;
-			q->clg.p = 0;	
+			q->clg.trlen = tr->trlen; 
+			q->clg.p = 1;	 /* first element is not part of trace, but shmdt_flag, so trace start is elem 1 */
 			
 			/* q->clg.trloss is freed in the destroy-function */
 			if (q->clg.trloss != NULL)
 				kfree(q->clg.trloss);
-			q->clg.trloss = kzalloc(sizeof(u8) * q->clg.trlen, GFP_KERNEL); 
+			q->clg.trloss = kzalloc(sizeof(u8) * q->clg.trlen, GFP_KERNEL);
 			if (copy_from_user(q->clg.trloss,(u8*) tr->trloss, q->clg.trlen))
 			{
 				pr_info("-EFAULT!\n");
+				kfree(q->clg.trloss);
+				return -EFAULT;
+			}
+
+			*(q->clg.trloss) = 1; /* set shmdt_lock to one, so child process free shared memory */
+			if (copy_to_user((u8*) tr->trloss, q->clg.trloss, 1))
+			{
+				pr_info("-EFAULT!\n");
+				kfree(q->clg.trloss);
 				return -EFAULT;
 			}
 			break;
@@ -973,7 +1114,6 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt,
 	if (tb[TCA_NETEM_LOSS]) {
 		ret = get_loss_clg(q, tb[TCA_NETEM_LOSS]);
 		if (ret) {
-			//TODO: kfree q->clg.trloss hier?
 			q->loss_model = old_loss_model;
 			return ret;
 		}
@@ -982,7 +1122,19 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt,
 	}
 
 	if (tb[TCA_NETEM_DELAY_DIST]) {
-		ret = get_dist_table(sch, tb[TCA_NETEM_DELAY_DIST]);
+		ret = get_dist_table(sch, &q->delay_dist,
+				     tb[TCA_NETEM_DELAY_DIST]);
+		if (ret)
+			goto get_table_failure;
+	}
+
+	if (tb[TCA_NETEM_DELAY_TRACE]) {
+		/* q->latency has to be bigger 0, marks that delay 
+		 * is to be expected 
+		 * (see if-clause in netem_enqueue())
+		 */
+		q->latency = 1; 
+		ret = get_delay_trace(sch, tb[TCA_NETEM_DELAY_TRACE]);
 		if (ret) {
 			/* recover clg and loss_model, in case of
 			 * q->clg and q->loss_model were modified
@@ -992,6 +1144,17 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt,
 			q->loss_model = old_loss_model;
 			return ret;
 		}
+	} else {
+		/* no trace available */
+		q->delay_trace.trdelay = NULL; /* essential for delay in netem_enqueue() */
+		q->delay_trace.trlen = 0;
+	}
+
+	if (tb[TCA_NETEM_SLOT_DIST]) {
+		ret = get_dist_table(sch, &q->slot_dist,
+				     tb[TCA_NETEM_SLOT_DIST]);
+		if (ret)
+			goto get_table_failure;
 	}
 
 	sch->limit = qopt->limit;
@@ -1009,6 +1172,62 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt,
 	 */
 	if (q->gap)
 		q->reorder = ~0;
+
+	if (tb[TCA_NETEM_SEED])
+	{
+		const struct tc_netem_rnd_number_generator *nlaseed = nla_data(tb[TCA_NETEM_SEED]);
+
+		if (nlaseed->loss_seed) {
+			q->loss_rng.seed = nlaseed->loss_seed;
+		} else {
+			q->loss_rng.seed = prandom_u32();
+		}
+		q->loss_cor.rng.seed = q->loss_rng.seed; /* for compatibilty, the random packet loss uses seed of loss model */
+
+		/* in crandom it is decided if correlation is added or not, 
+		 * hence it is sufficent to use delay_cor 
+		 */
+		if (nlaseed->delay_seed) {
+			q->delay_cor.rng.seed = nlaseed->delay_seed;
+		} else {
+			q->delay_cor.rng.seed = prandom_u32();
+		}
+
+		if (nlaseed->corrupt_seed)
+			q->corrupt_cor.rng.seed = nlaseed->corrupt_seed;
+		else
+			q->corrupt_cor.rng.seed = prandom_u32();
+
+		if (nlaseed->reorder_seed)
+			q->reorder_cor.rng.seed = nlaseed->reorder_seed;
+		else
+			q->reorder_cor.rng.seed = prandom_u32();
+
+		if (nlaseed->duplication_seed)
+			q->dup_cor.rng.seed = nlaseed->duplication_seed;
+		else
+			q->dup_cor.rng.seed = prandom_u32();
+	} else {
+		q->loss_rng.seed = prandom_u32();
+		q->loss_cor.rng.seed = prandom_u32();
+		q->delay_cor.rng.seed = prandom_u32();
+		q->corrupt_cor.rng.seed = prandom_u32();
+		q->reorder_cor.rng.seed = prandom_u32();
+		q->dup_cor.rng.seed = prandom_u32();
+	}
+	printk("q->loss_rng.seed: %u\n", q->loss_rng.seed);
+	printk("q->loss_cor.rng.seed: %u\n", q->loss_cor.rng.seed);
+	printk("q->delay_cor.rng.seed: %u\n", q->delay_cor.rng.seed);
+	printk("q->corrupt_cor.rng.seed: %u\n", q->corrupt_cor.rng.seed);
+	printk("q->reorder_cor.rng.seed: %u\n", q->reorder_cor.rng.seed);
+	printk("q->dup_cor.rng.seed: %u\n", q->dup_cor.rng.seed);
+	/* init for packet loss emulation the random number generators Mersenne Twister 19937 */
+	mersenne_twister_rnd_vector_init(&q->loss_rng); /* used in packet loss models 4state and gemodel*/
+	mersenne_twister_rnd_vector_init(&q->loss_cor.rng); /* used in packet loss model random */
+	mersenne_twister_rnd_vector_init(&q->delay_cor.rng); /* used in delay */
+	mersenne_twister_rnd_vector_init(&q->corrupt_cor.rng); /* used in corruption */
+	mersenne_twister_rnd_vector_init(&q->reorder_cor.rng); /* used in reordering */
+	mersenne_twister_rnd_vector_init(&q->dup_cor.rng); /* used in duplication */
 
 	if (tb[TCA_NETEM_CORR])
 		get_correlation(q, tb[TCA_NETEM_CORR]);
@@ -1039,6 +1258,15 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt,
 		get_slot(q, tb[TCA_NETEM_SLOT]);
 
 	return ret;
+
+get_table_failure:
+	/* recover clg and loss_model, in case of
+	 * q->clg and q->loss_model were modified
+	 * in get_loss_clg()
+	 */
+	q->clg = old_clg;
+	q->loss_model = old_loss_model;
+	return ret;
 }
 
 static int netem_init(struct Qdisc *sch, struct nlattr *opt,
@@ -1053,6 +1281,8 @@ static int netem_init(struct Qdisc *sch, struct nlattr *opt,
 		return -EINVAL;
 
 	q->loss_model = CLG_RANDOM;
+	q->delay_trace.trdelay = NULL;
+	q->delay_trace.trlen = 0;
 	ret = netem_change(sch, opt, extack);
 	if (ret)
 		pr_info("netem: change failed\n");
@@ -1063,12 +1293,22 @@ static void netem_destroy(struct Qdisc *sch)
 {
 	struct netem_sched_data *q = qdisc_priv(sch);
 
+	kfree(q->delay_trace.trdelay);
+	q->delay_trace.trdelay = NULL;
+	q->delay_trace.trlen = 0;
+
+	kfree(q->clg.trloss);
+	q->clg.trloss = NULL;
+	q->clg.trlen = 0;
+
+	kfree(q->loss_rng.vector);
+	q->loss_rng.vector = NULL;
+
 	qdisc_watchdog_cancel(&q->watchdog);
 	if (q->qdisc)
 		qdisc_destroy(q->qdisc);
 	dist_free(q->delay_dist);
-
-	kfree(q->clg.trloss);
+	dist_free(q->slot_dist);
 }
 
 static int dump_loss_model(const struct netem_sched_data *q,
@@ -1112,7 +1352,7 @@ static int dump_loss_model(const struct netem_sched_data *q,
 		break;
 	}
 	case CLG_TRACE: { 		
-		struct tc_netem_trace tr = {
+		struct tc_netem_losstrace tr = {
 			.trlen = q->clg.trlen,
 			.trloss = q->clg.trloss,	
 		}; 
@@ -1122,7 +1362,6 @@ static int dump_loss_model(const struct netem_sched_data *q,
 			goto nla_put_failure;
 		break;
 	}
-
 	}
 
 	nla_nest_end(skb, nest);
@@ -1143,6 +1382,13 @@ static int netem_dump(struct Qdisc *sch, struct sk_buff *skb)
 	struct tc_netem_corrupt corrupt;
 	struct tc_netem_rate rate;
 	struct tc_netem_slot slot;
+	struct tc_netem_delaytrace dtr;
+	struct tc_netem_rnd_number_generator rng;
+
+	dtr.trlen = q->delay_trace.trlen;
+	dtr.trdelay = q->delay_trace.trdelay;
+	if (nla_put(skb, TCA_NETEM_DELAY_TRACE, sizeof(dtr), &dtr))
+		goto nla_put_failure;
 
 	qopt.latency = min_t(psched_tdiff_t, PSCHED_NS2TICKS(q->latency),
 			     UINT_MAX);
@@ -1154,6 +1400,11 @@ static int netem_dump(struct Qdisc *sch, struct sk_buff *skb)
 	qopt.duplicate = q->duplicate;
 	if (nla_put(skb, TCA_OPTIONS, sizeof(qopt), &qopt))
 		goto nla_put_failure;
+
+	rng.loss_seed = q->loss_rng.seed;
+	if (nla_put(skb, TCA_NETEM_SEED, sizeof(rng), &rng))
+		goto nla_put_failure;
+
 
 	if (nla_put(skb, TCA_NETEM_LATENCY64, sizeof(q->latency), &q->latency))
 		goto nla_put_failure;
@@ -1197,7 +1448,8 @@ static int netem_dump(struct Qdisc *sch, struct sk_buff *skb)
 	if (dump_loss_model(q, skb) != 0)
 		goto nla_put_failure;
 
-	if (q->slot_config.min_delay | q->slot_config.max_delay) {
+	if (q->slot_config.min_delay | q->slot_config.max_delay |
+	    q->slot_config.dist_jitter) {
 		slot = q->slot_config;
 		if (slot.max_packets == INT_MAX)
 			slot.max_packets = 0;

@@ -104,7 +104,7 @@ struct netem_sched_data {
 		 * vector_idx=N+1: vector must be computed first
 		 */
 		int vector_idx; 
-	} loss_rng;
+	} loss_rng, delay_rng;
 
 	struct crndstate {
 		struct rnd_number_generator rng;
@@ -196,7 +196,6 @@ static void mersenne_twister_rnd_vector_init (struct rnd_number_generator *rng)
 	int i;
 	if (rng->vector)
 	{
-		//printk("vector freed\n");
 		kfree(rng->vector);
 		rng->vector = NULL;
 		rng->vector_idx = N+1;
@@ -246,7 +245,6 @@ static u32 mersenne_twister(struct rnd_number_generator *rng)
 	rnd ^= (rnd << 15) & 0xEFC60000;
 	rnd ^= (rnd >> 18);
 
-	printk("%u\n", rnd);
 	return rnd;
 }
 
@@ -255,7 +253,6 @@ static u32 mersenne_twister(struct rnd_number_generator *rng)
  */
 static void init_crandom(struct crndstate *state, unsigned long rho)
 {
-	mersenne_twister_rnd_vector_init(&state->rng);
 	state->rho = rho;
 	state->last = mersenne_twister(&state->rng);
 }
@@ -277,6 +274,7 @@ static u32 get_crandom(struct crndstate *state)
 	answer = (value * ((1ull<<32) - rho) + state->last * rho) >> 32;
 	state->last = answer;
 	return answer;
+
 }
 
 /* loss_4state - 4-state model loss generator
@@ -400,11 +398,9 @@ static bool loss_event(struct netem_sched_data *q)
 		}
 		if(q->clg.trloss[q->clg.p]==0)
 		{
-			printk("TR: 0\n"); /* aquivalent to tracefile */
 			q->clg.p++;
 			return true;
 		} else {
-			printk("TR: 1\n"); /* aquivalent to tracefile */
 			q->clg.p++;
 			return false;
 		}
@@ -560,11 +556,9 @@ static int netem_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 			qdisc_qstats_drop(sch); /* mark packet */
 		else
 			--count;
-	} else {
-//printk("Loss Event: 0\n");
-}
+	} 
+
 	if (count == 0) {
-		//printk("Loss Event: 1\n");
 		qdisc_qstats_drop(sch);
 		__qdisc_drop(skb, to_free);
 		return NET_XMIT_SUCCESS | __NET_XMIT_BYPASS;
@@ -633,18 +627,20 @@ static int netem_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 	    q->counter < q->gap - 1 ||	/* inside last reordering gap */
 	    q->reorder < get_crandom(&q->reorder_cor)) {
 		psched_time_t now;
-		psched_tdiff_t delay;
+		psched_tdiff_t delay = 0;
 
 		if (q->delay_trace.trdelay) 
 		{
 			if (q->delay_trace.p == q->delay_trace.trlen)
 				q->delay_trace.p = 1;
-			q->latency = q->delay_trace.trdelay[q->delay_trace.p] * 15625; /* 15625 is const value to convert ms,  */
+			delay = q->delay_trace.trdelay[q->delay_trace.p] * 15625; /* 15625 is const value to convert ms,  */
 			q->delay_trace.p++;
-		}
+			
+		} else {
 
-		delay = tabledist(q->latency, q->jitter,
+			delay = tabledist(q->latency, q->jitter,
 				  &q->delay_cor, q->delay_dist);
+		}
 
 		now = psched_get_time();
 
@@ -886,7 +882,6 @@ static int get_dist_table(struct Qdisc *sch, const struct nlattr *attr)
 static void get_correlation(struct netem_sched_data *q, const struct nlattr *attr)
 {
 	const struct tc_netem_corr *c = nla_data(attr);
-
 	init_crandom(&q->delay_cor, c->delay_corr);
 	init_crandom(&q->loss_cor, c->loss_corr);
 	init_crandom(&q->dup_cor, c->dup_corr);
@@ -1100,10 +1095,9 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt)
 		}
 	} else {
 		/* no trace available */
-		q->delay_trace.trdelay = NULL;
+		q->delay_trace.trdelay = NULL; /* essential for delay in netem_enqueue() */
 		q->delay_trace.trlen = 0;
 	}
-
 
 	sch->limit = qopt->limit;
 	q->latency = qopt->latency;
@@ -1114,7 +1108,6 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt)
 	q->loss = qopt->loss;
 	q->duplicate = qopt->duplicate;
 
-
 	/* for compatibility with earlier versions.
 	 * if gap is set, need to assume 100% probability
 	 */
@@ -1124,6 +1117,7 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt)
 	if (tb[TCA_NETEM_SEED])
 	{
 		const struct tc_netem_rnd_number_generator *nlaseed = nla_data(tb[TCA_NETEM_SEED]);
+
 		if (nlaseed->loss_seed) {
 			q->loss_rng.seed = nlaseed->loss_seed;
 		} else {
@@ -1131,10 +1125,14 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt)
 		}
 		q->loss_cor.rng.seed = q->loss_rng.seed; /* for compatibilty, the random packet loss uses seed of loss model */
 
-		if (nlaseed->delay_corr_seed)
-			q->delay_cor.rng.seed = nlaseed->delay_corr_seed;
-		else
+		/* in crandom it is decided if correlation is added or not, 
+		 * hence it is sufficent to use delay_cor 
+		 */
+		if (nlaseed->delay_seed) {
+			q->delay_cor.rng.seed = nlaseed->delay_seed;
+		} else {
 			q->delay_cor.rng.seed = prandom_u32();
+		}
 
 		if (nlaseed->corrupt_corr_seed)
 			q->corrupt_cor.rng.seed = nlaseed->corrupt_corr_seed;
@@ -1166,6 +1164,12 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt)
 	printk("q->dup_cor.rng.seed: %u\n", q->dup_cor.rng.seed);
 	/* init for packet loss emulation the random number generators Mersenne Twister 19937 */
 	mersenne_twister_rnd_vector_init(&q->loss_rng);
+	mersenne_twister_rnd_vector_init(&q->loss_cor.rng);
+	mersenne_twister_rnd_vector_init(&q->delay_cor.rng);
+	mersenne_twister_rnd_vector_init(&q->loss_cor.rng);
+	mersenne_twister_rnd_vector_init(&q->corrupt_cor.rng);
+	mersenne_twister_rnd_vector_init(&q->reorder_cor.rng);
+	mersenne_twister_rnd_vector_init(&q->dup_cor.rng);
 
 	if (tb[TCA_NETEM_CORR])
 		get_correlation(q, tb[TCA_NETEM_CORR]);

@@ -18,7 +18,7 @@ void setSeed(int seed);
  * Generates a random number
  * @return
  */
-float generateRandomNumber();
+double generateRandomNumber();
 
 /**
  * Generates a Trace using the GilbertElliot Model.
@@ -29,7 +29,7 @@ float generateRandomNumber();
  * @param h
  * @return
  */
-vector<int> buildGilbertElliot(long numPackets, float p, float r, float k, float h);
+vector<int> buildGilbertElliot(long numPackets, double p, double r, double k, double h);
 
 /**
  * Generates a Trace using the Markov Model.
@@ -42,7 +42,7 @@ vector<int> buildGilbertElliot(long numPackets, float p, float r, float k, float
  * @param p41
  * @return
  */
-vector<int> buildMarkov(long numPackets, float p13, float p31, float p32, float p23, float p14, float p41=1.0);
+vector<int> buildMarkov(long numPackets, double p13, double p31, double p32, double p23, double p14, double p41=1.0);
 
 /**
  * Calculates the burstsizes, of which the ECDFs are later generated

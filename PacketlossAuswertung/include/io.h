@@ -14,4 +14,13 @@ using namespace std;
  */
 vector<bool> readBinaryTrace(string filename);
 
+/**
+ * Writes the burstsizes to a file, which then can be easily plotted
+ * @param output - outputpath
+ * @param bursts - vector containing the burstsizes
+ */
+void writeVector(string output, vector<int> &outvec);
+
+void writeVector(string output, vector<double> &outvec);
+
 #endif //PACKETLOSSAUSWERTUNG_IO_H

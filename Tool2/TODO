@@ -1,0 +1,8 @@
+TODO:
+  - dump überprüfen:
+	- muss ger rng ebenfalls gedumpt werden?
+	- werden die traces gedumpt?
+  - mersenne twister für slot
+  - Bug: corruption bleibt über change hinaus bestehen ---> Fehlersuche
+  - Überprüfen: Reordering vertauscht beim ping nicht die sequenznummern, sondern passt nur den delay an
+  - kompletter Test der Funktionalität
