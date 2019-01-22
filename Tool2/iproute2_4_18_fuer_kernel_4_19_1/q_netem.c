@@ -330,13 +330,13 @@ static int countIntValues(const char* filename)
     return ctr;
 }
 
-static unsigned int convertToUnsignedInt(char* string)
+static unsigned int convertToUnsignedLong(char* string)
 {
 	char* x;
 	for (x = string ; *x ; x++)
 	{
 		if (!isdigit(*x))
-			return 0L;
+			return 0UL;
 	}
 	return (strtoul(string,0L,10));
 }
@@ -378,8 +378,8 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				{
 					NEXT_ARG();
 					++present[TCA_NETEM_SEED];
-					qseed.delay_seed = convertToUnsignedInt(*argv);
-					printf("qseed.delay_seed: %u\n", qseed.delay_seed);
+					qseed.delay_seed = convertToUnsignedLong(*argv);
+					printf("qseed.delay_seed: %llu\n", qseed.delay_seed);
 					NEXT_ARG();
 				} 
 			}
@@ -466,8 +466,8 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				{
 					NEXT_ARG();
 					++present[TCA_NETEM_SEED];
-					qseed.loss_seed = convertToUnsignedInt(*argv);
-					printf("qseed.loss_seed: %u\n", qseed.loss_seed);
+					qseed.loss_seed = convertToUnsignedLong(*argv);
+					printf("qseed.loss_seed: %llu\n", qseed.loss_seed);
 					NEXT_ARG();
 				} else {
 					explain1("loss seed");
@@ -642,8 +642,8 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				{
 					NEXT_ARG();
 					++present[TCA_NETEM_SEED];
-					qseed.reorder_seed = convertToUnsignedInt(*argv);
-					printf("qseed.reorder_seed: %u\n", qseed.reorder_seed);
+					qseed.reorder_seed = convertToUnsignedLong(*argv);
+					printf("qseed.reorder_seed: %llu\n", qseed.reorder_seed);
 					NEXT_ARG();
 				} 
 			}
@@ -670,8 +670,8 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				{
 					NEXT_ARG();
 					++present[TCA_NETEM_SEED];
-					qseed.corrupt_seed = convertToUnsignedInt(*argv);
-					printf("qseed.corrupt_seed: %u\n", qseed.corrupt_seed);
+					qseed.corrupt_seed = convertToUnsignedLong(*argv);
+					printf("qseed.corrupt_seed: %llu\n", qseed.corrupt_seed);
 					NEXT_ARG();
 				} 
 			}
@@ -704,8 +704,8 @@ static int netem_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				{
 					NEXT_ARG();
 					++present[TCA_NETEM_SEED];
-					qseed.duplication_seed = convertToUnsignedInt(*argv);
-					printf("qseed.duplication_seed: %u\n", qseed.duplication_seed);
+					qseed.duplication_seed = convertToUnsignedLong(*argv);
+					printf("qseed.duplication_seed: %llu\n", qseed.duplication_seed);
 					NEXT_ARG();
 				} 
 			}

@@ -556,11 +556,11 @@ struct tc_netem_qopt {
 };
 
 struct tc_netem_rnd_number_generator {
-	__u32   loss_seed;	/* seed for random number generator in packet loss models */
-	__u32	delay_seed; 	/* seed for random number of delay */
-	__u32	corrupt_corr_seed; /* seed for random number of correlation */
-	__u32	reorder_corr_seed; /* seed for random number of correlation */
-	__u32	duplication_corr_seed; /* seed for random number of correlation */
+	__u64   loss_seed;	/* seed for random number generator in packet loss models */
+	__u64	delay_seed; 	/* seed for random number of delay */
+	__u64	corrupt_corr_seed; /* seed for random number of correlation */
+	__u64	reorder_corr_seed; /* seed for random number of correlation */
+	__u64	duplication_corr_seed; /* seed for random number of correlation */
 };
 
 struct tc_netem_corr {

@@ -31,8 +31,12 @@
 
 #define VERSION "1.3"
 
-#define N 624 /* used in random number generator Mersenne Twister 19937 */
-#define M 397 /* used in random number generator Mersenne Twister 19937 */
+/* makros used in random number generator Mersenne Twister 19937 */
+#define N 624 
+#define M 397 
+#define MATRIX_A 0x9908b0dfUL   /* constant vector a */
+#define UPPER_MASK 0x80000000UL /* most significant w-r bits */
+#define LOWER_MASK 0x7fffffffUL /* least significant r bits */
 
 /*	Network Emulation Queuing algorithm.
 	====================================
@@ -97,14 +101,14 @@ struct netem_sched_data {
 	s32 cell_overhead;
 
 	struct rnd_number_generator {
-		u32 seed; /* seed value might be set for packet loss */
-		u32* vector; /* vector contains the random number */
+		u64 seed; /* seed value might be set for packet loss */
+		u64* vector; /* vector contains the random number */
 		/* vector_idx points to current random number
 		 * vector_idx>N: new vector must be computed
 		 * vector_idx=N+1: vector must be computed first
 		 */
 		int vector_idx; 
-	} loss_rng, delay_rng;
+	} loss_rng;
 
 	struct crndstate {
 		struct rnd_number_generator rng;
@@ -188,64 +192,117 @@ static inline struct netem_skb_cb *netem_skb_cb(struct sk_buff *skb)
 	qdisc_cb_private_validate(skb, sizeof(struct netem_skb_cb));
 	return (struct netem_skb_cb *)qdisc_skb_cb(skb)->data;
 }
+/* 
+   A C-program for MT19937, with initialization improved 2002/1/26.
+   Coded by Takuji Nishimura and Makoto Matsumoto.
 
-static void mersenne_twister_rnd_vector_init (struct rnd_number_generator *rng)
+   Before using, initialize the state by using init_genrand(seed)  
+   or init_by_array(init_key, key_length).
+
+   Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
+   All rights reserved.                          
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+     1. Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+
+     2. Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+
+     3. The names of its contributors may not be used to endorse or promote 
+        products derived from this software without specific prior written 
+        permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+   Any feedback is very welcome.
+   http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
+   email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
+*/
+
+/* initializes mersenne twister random number generator->vector[N] with a seed */
+void init_genrand(struct rnd_number_generator *rng)
 {
-	const u32 mult = 1812433253ul;
-	//u32 seed = 5489ul; 
-	int i;
-	if (rng->vector)
+	if (rng->vector) 
 	{
-		kfree(rng->vector);
+		/* in case a netem_change was called */
+		kfree(rng->vector); 
 		rng->vector = NULL;
 		rng->vector_idx = N+1;
 	} 
-	rng->vector = kzalloc(sizeof(u32) * N, GFP_KERNEL);
+	rng->vector = kzalloc(sizeof(u64) * N, GFP_KERNEL);
 	rng->vector_idx = 0;
 
-	for (i = 0; i < N; i++)
+	rng->vector[0]= rng->seed & 0xffffffffUL;
+	for (rng->vector_idx=1; rng->vector_idx<N; rng->vector_idx++) 
 	{
-		rng->vector[i] = rng->seed;
-		rng->seed = mult * (rng->seed ^ (rng->seed >> 30)) + (i+1);
-	}
-}
-
-static void mersenne_twister_rnd_vector_update (u32* const p)
-{
-	static const u32 A[2] = {0, 0x9908B0DF};
-	int i = 0;
-
-	for (; i < N-M; i++)
-	{
-		p[i] = p[i+(M)] ^ (((p[i] & 0x80000000) | (p[i+1] & 0x7FFFFFFF)) >> 1) ^ A[p[i+1] & 1];
-	}
-
-	for (; i < N-1; i++)
-	{
-		p[i] = p[i+(M-N)] ^ (((p[i] & 0x80000000) | (p[i+1] & 0x7FFFFFFF)) >> 1) ^ A[p[i+1] & 1];
-	}
-
-	p[N-1] = p[M-1] ^ (((p[N-1] & 0x80000000) | (p[0] & 0x7FFFFFFF)) >> 1) ^ A[p[0] & 1];
+	rng->vector[rng->vector_idx] = (1812433253UL * (rng->vector[rng->vector_idx-1] ^ (rng->vector[rng->vector_idx-1] >> 30)) + rng->vector_idx); 
+	/* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
+	/* In the previous versions, MSBs of the seed affect   */
+	/* only MSBs of the array rng->vector[]. */
+	/* 2002/01/09 modified by Makoto Matsumoto */
+	rng->vector[rng->vector_idx] &= 0xffffffffUL;
+	/* for >32 bit machines */
+    }
 }
 
 
-static u32 mersenne_twister(struct rnd_number_generator *rng)
-{
-	u32 rnd;
 
-	if (rng->vector_idx >= N)
-	{
-		mersenne_twister_rnd_vector_update(rng->vector);
+/* generates a random number on [0,0xffffffff]-interval */
+unsigned long genrand_int32(struct rnd_number_generator *rng)
+{
+
+	unsigned long y;
+	static unsigned long mag01[2]={0x0UL, MATRIX_A};
+	/* mag01[x] = x * MATRIX_A  for x=0,1 */
+
+	if (rng->vector_idx >= N) 
+	{ 
+		int kk;
+
+		for (kk=0;kk<N-M;kk++) 
+		{
+			y = (rng->vector[kk]&UPPER_MASK)|(rng->vector[kk+1]&LOWER_MASK);
+			rng->vector[kk] = rng->vector[kk+M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+		}
+
+	 	for (;kk<N-1;kk++) 
+		{
+			y = (rng->vector[kk]&UPPER_MASK)|(rng->vector[kk+1]&LOWER_MASK);
+			rng->vector[kk] = rng->vector[kk+(M-N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
+		}
+
+		y = (rng->vector[N-1]&UPPER_MASK)|(rng->vector[0]&LOWER_MASK);
+		rng->vector[N-1] = rng->vector[M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+
 		rng->vector_idx = 0;
 	}
+  
+	y = rng->vector[rng->vector_idx++];
 
-	rnd  = rng->vector[(rng->vector_idx)++];
-	rnd ^= (rnd >> 11);             /* Tempering */
-	rnd ^= (rnd <<  7) & 0x9D2C5680;
-	rnd ^= (rnd << 15) & 0xEFC60000;
-	rnd ^= (rnd >> 18);
+	/* Tempering */
+	y ^= (y >> 11);
+	y ^= (y << 7) & 0x9d2c5680UL;
+	y ^= (y << 15) & 0xefc60000UL;
+	y ^= (y >> 18);
 
-	return rnd;
+	return y;
+
 }
 
 /* init_crandom - initialize correlated random number generator
@@ -254,7 +311,7 @@ static u32 mersenne_twister(struct rnd_number_generator *rng)
 static void init_crandom(struct crndstate *state, unsigned long rho)
 {
 	state->rho = rho;
-	state->last = mersenne_twister(&state->rng);
+	state->last = genrand_int32(&state->rng);
 }
 
 /* get_crandom - correlated random number generator
@@ -267,9 +324,9 @@ static u32 get_crandom(struct crndstate *state)
 	unsigned long answer;
 
 	if (state->rho == 0)	/* no correlation */
-		return mersenne_twister(&state->rng);
+		return genrand_int32(&state->rng);
 
-	value = mersenne_twister(&state->rng);
+	value = genrand_int32(&state->rng);
 	rho = (u64)state->rho + 1;
 	answer = (value * ((1ull<<32) - rho) + state->last * rho) >> 32;
 	state->last = answer;
@@ -284,7 +341,7 @@ static u32 get_crandom(struct crndstate *state)
 static bool loss_4state(struct netem_sched_data *q)
 {
 	struct clgstate *clg = &q->clg;
-	u32 rnd = mersenne_twister(&q->loss_rng);
+	u32 rnd = genrand_int32(&q->loss_rng);
 
 	/*
 	 * Makes a comparison between rnd and the transition
@@ -352,15 +409,15 @@ static bool loss_gilb_ell(struct netem_sched_data *q)
 
 	switch (clg->state) {
 	case GOOD_STATE:
-		if (mersenne_twister(&q->loss_rng) < clg->a1)
+		if (genrand_int32(&q->loss_rng) < clg->a1)
 			clg->state = BAD_STATE;
-		if (mersenne_twister(&q->loss_rng) < clg->a4)
+		if (genrand_int32(&q->loss_rng) < clg->a4)
 			return true;
 		break;
 	case BAD_STATE:
-		if (mersenne_twister(&q->loss_rng) < clg->a2)
+		if (genrand_int32(&q->loss_rng) < clg->a2)
 			clg->state = GOOD_STATE;
-		if (mersenne_twister(&q->loss_rng) > clg->a3)
+		if (genrand_int32(&q->loss_rng) > clg->a3)
 			return true;
 	}
 
@@ -613,8 +670,8 @@ static int netem_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 			goto finish_segs;
 		}
 
-		skb->data[mersenne_twister(&q->loss_rng) % skb_headlen(skb)] ^=
-			1<<(mersenne_twister(&q->loss_rng) % 8);
+		skb->data[genrand_int32(&q->loss_rng) % skb_headlen(skb)] ^=
+			1<<(genrand_int32(&q->loss_rng) % 8);
 	}
 
 	if (unlikely(sch->q.qlen >= sch->limit))
@@ -1156,20 +1213,23 @@ static int netem_change(struct Qdisc *sch, struct nlattr *opt)
 		q->reorder_cor.rng.seed = prandom_u32();
 		q->dup_cor.rng.seed = prandom_u32();
 	}
-	printk("q->loss_rng.seed: %u\n", q->loss_rng.seed);
-	printk("q->loss_cor.rng.seed: %u\n", q->loss_cor.rng.seed);
-	printk("q->delay_cor.rng.seed: %u\n", q->delay_cor.rng.seed);
-	printk("q->corrupt_cor.rng.seed: %u\n", q->corrupt_cor.rng.seed);
-	printk("q->reorder_cor.rng.seed: %u\n", q->reorder_cor.rng.seed);
-	printk("q->dup_cor.rng.seed: %u\n", q->dup_cor.rng.seed);
-	/* init for packet loss emulation the random number generators Mersenne Twister 19937 */
-	mersenne_twister_rnd_vector_init(&q->loss_rng);
-	mersenne_twister_rnd_vector_init(&q->loss_cor.rng);
-	mersenne_twister_rnd_vector_init(&q->delay_cor.rng);
-	mersenne_twister_rnd_vector_init(&q->loss_cor.rng);
-	mersenne_twister_rnd_vector_init(&q->corrupt_cor.rng);
-	mersenne_twister_rnd_vector_init(&q->reorder_cor.rng);
-	mersenne_twister_rnd_vector_init(&q->dup_cor.rng);
+	printk("q->loss_rng.seed: %llu\n", q->loss_rng.seed);
+	printk("q->loss_cor.rng.seed: %llu\n", q->loss_cor.rng.seed);
+	printk("q->delay_cor.rng.seed: %llu\n", q->delay_cor.rng.seed);
+	printk("q->corrupt_cor.rng.seed: %llu\n", q->corrupt_cor.rng.seed);
+	printk("q->reorder_cor.rng.seed: %llu\n", q->reorder_cor.rng.seed);
+	printk("q->dup_cor.rng.seed: %llu\n", q->dup_cor.rng.seed);
+	/* 
+	 * init mersenne twister random number generators Mersenne Twister 19937 
+	 * because of replication, each network property gets its own number generator
+	*/
+	init_genrand(&q->loss_rng); 
+	init_genrand(&q->loss_cor.rng);
+	init_genrand(&q->delay_cor.rng);
+	init_genrand(&q->loss_cor.rng);
+	init_genrand(&q->corrupt_cor.rng);
+	init_genrand(&q->reorder_cor.rng);
+	init_genrand(&q->dup_cor.rng);
 
 	if (tb[TCA_NETEM_CORR])
 		get_correlation(q, tb[TCA_NETEM_CORR]);
