@@ -165,7 +165,9 @@ struct result getResults(struct pcapValues values) {
         uint64_t sendTs = getMillisFromTimeval(send.second);
 
         if (recieved != values.received.end()) {
+            //Paket kommt an
             if(lossCounter > 0){
+                //Hole losses nach
                 int64_t tsDiff = recievedTs - lastTs;
                 double step = (double)tsDiff / lossCounter;
                 for(int i = 1; i < lossCounter - 1; i++){
@@ -176,6 +178,8 @@ struct result getResults(struct pcapValues values) {
                     lossPoint.packetRecieved = false;
                     lossPoint.seqNum = 0;
                     points.push_back(lossPoint);
+                    loss.push_back(false);
+                    delay = 0;
                 }
                 lossCounter = 0;
             }
@@ -191,11 +195,11 @@ struct result getResults(struct pcapValues values) {
             currentPoint.packetRecieved = true;
             currentPoint.seqNum = recieved->first;
             points.push_back(currentPoint);
+            delays.push_back(delay);
+        } else {
+            //loss
             lossCounter++;
-            delay = 0;
-            loss.push_back(false);
         }
-        delays.push_back(delay);
     }
     cout << "delays and loss finished" << endl;
 
