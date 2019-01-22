@@ -7,7 +7,7 @@
 #include <cfloat>
 
 using namespace std;
-#define MAXSEED 10
+#define MAXSEED 20000
 const double significanceLookupTable[11][2] = { // Standardnormaldistribution
         {0.8, 0.8416},
         {0.85, 1.0364},

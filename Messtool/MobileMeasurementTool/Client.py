@@ -53,8 +53,11 @@ def signalstrength(killevent, measurementId):
             except AttributeError:
                 print("AttributeError occured, hence a signalstrength is missing.")
                 continue
+            except Exception:
+                print("Some Exception occured.. continue signal measurement.")
+                continue
             for key, value in items:
-                # print(key,value)
+                #print(key,value)
                 if (key == u'FullName'):
                     output.write(";" + str(value))
                 if (key == u'workmode'):
@@ -67,9 +70,11 @@ def signalstrength(killevent, measurementId):
                     output.write(";" + str(value))
                 if (key == u'rsrp'):
                     output.write(";" + str(value))
+                if (key == u'cell_id'):
+                    output.write(";" + str(value))
                 output.flush()
         output.write("\n")
-        time.sleep(0.5)
+        time.sleep(0.1)
     output.close()
 
 def logGPS(filepath, killevent):
@@ -198,18 +203,18 @@ if __name__ == "__main__":
     threads = []
     recthread = Thread(target=receiveMSGS, args=(udpsock, sendstart, killevent))
     sendthread = Thread(target=sendStart, args=(udpsock, Message, destIP, destPort, sendstart, killevent))
-    ntpthread = Thread(target=logNTP_Status, args=(dirpath, killevent))
+    #ntpthread = Thread(target=logNTP_Status, args=(dirpath, killevent))
     gpsthread = Thread(target=logGPS, args=(dirpath,killevent))
     signalthread = Thread(target=signalstrength, args=(killevent, dirpath))
     threads.append(recthread)
     threads.append(sendthread)
-    threads.append(ntpthread)
+    #threads.append(ntpthread)
     threads.append(gpsthread)
     threads.append(signalthread)
     signalthread.start()
     recthread.start()
     sendthread.start()
-    ntpthread.start()
+    #ntpthread.start()
     gpsthread.start()
 
     while len(threads)>0:

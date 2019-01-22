@@ -18,12 +18,14 @@ Aufbau Server:
 - Zeitsynchro aktiviert? 	
 	- Status von ntp: sudo ntpq -np
 	- Restart ntp: sudo systemctl restart ntp 
+- Processe kill'n, die einen Port bzw Adresse blocken
+	- sudo kill `sudo lsof -t -i:50000`
 
 Durchfuehrung der Messung: 
 - Per ssh mit Cordelia verbinden: 
 	Befehl:	ssh dlaniewski@cordelia.informatik.uos.de
 	Auf die externe Festplatte zugreifen: 
-	Befehl: cd /media/dlaniewski/WiLE-ExternHD/Messung_06_12/Git/Prototyp/Messtool/MobileMeasurementTool
+	Befehl: cd ~/Schreibtisch/Messung_18_01_19/Prototyp/Messtool/MobileMeasurementTool
 	Server starten: Paremter ip, port und device
 	Befehl: sudo python3 Server.py -i 131.173.33.228 -p 50000 -n enp0s31f6
 
@@ -32,5 +34,5 @@ Durchfuehrung der Messung:
 	Param p: port
 	Param b: Bandbreite
 	Param -n: device per inconfig nachgucken	
-	Befehl: sudo python3 ./Client.py -i 131.173.33.228 -p 50000 -b 256 -n <IFCONFIG nachgucken>
+	Befehl: sudo python3 ./Client.py -i 131.173.33.228 -p 50000 -b 320 -n enx0c5b8f279a64
 

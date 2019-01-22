@@ -165,7 +165,9 @@ struct result getResults(struct pcapValues values) {
         uint64_t sendTs = getMillisFromTimeval(send.second);
 
         if (recieved != values.received.end()) {
+            //Paket kommt an
             if(lossCounter > 0){
+                //Hole losses nach
                 int64_t tsDiff = recievedTs - lastTs;
                 double step = (double)tsDiff / lossCounter;
                 for(int i = 1; i < lossCounter - 1; i++){
@@ -176,6 +178,8 @@ struct result getResults(struct pcapValues values) {
                     lossPoint.packetRecieved = false;
                     lossPoint.seqNum = 0;
                     points.push_back(lossPoint);
+                    loss.push_back(false);
+                    delay = 0;
                 }
                 lossCounter = 0;
             }
@@ -191,11 +195,11 @@ struct result getResults(struct pcapValues values) {
             currentPoint.packetRecieved = true;
             currentPoint.seqNum = recieved->first;
             points.push_back(currentPoint);
+            delays.push_back(delay);
+        } else {
+            //loss
             lossCounter++;
-            delay = 0;
-            loss.push_back(false);
         }
-        delays.push_back(delay);
     }
     cout << "delays and loss finished" << endl;
 
@@ -361,7 +365,7 @@ void writeDelayFile(const string &filename, vector<int64_t> delays) {
     ofstream uploadDelayFile;
     uploadDelayFile.open(filename);
     for (int64_t ts: delays) {
-        uploadDelayFile << ts << endl;
+        uploadDelayFile << ts << " ";
     }
     uploadDelayFile.flush();
     uploadDelayFile.close();
@@ -507,7 +511,7 @@ vector<struct signalStrength> getSigStrenghts(const string &filename) {
         double ts;
         currentSigStr.type = parts[1];
         string sigStrString = parts[4];
-        string sigStrCut = sigStrString.substr(0, sigStrString.find("dBm", 0) - 1);
+        string sigStrCut = sigStrString.substr(0, sigStrString.find("dBm", 0) );
         stringstream(sigStrCut) >> currentSigStr.sigStr;
         stringstream(parts[0]) >> ts;
         currentSigStr.ts = ts*1000;
@@ -518,38 +522,25 @@ vector<struct signalStrength> getSigStrenghts(const string &filename) {
 }
 
 signalStrength getNextSigStr(unsigned long ts, vector<signalStrength> sigStr){
-    const unsigned long MAX_DIFF = 2000000;
+    const unsigned long MAX_DIFF = 200000;
     signalStrength result{};
-    for(unsigned long i = 0; i < sigStr.size(); i++){
+    unsigned long best = 0;
+    for(unsigned long i = 1; i < sigStr.size(); i++){
         unsigned long currentTs = sigStr.at(i).ts;
+        unsigned long lastTs = sigStr.at(i-1).ts;
         if(currentTs > ts){
-            unsigned long diffBefore;
-            unsigned long diffNext = currentTs - ts;
-            bool bestDiffIsNext = true;
-            if(i > 0) {
-                diffBefore = sigStr.at(i - 1).ts;
-                if(diffBefore < diffNext){
-                    bestDiffIsNext = false;
-                }
-            }
-            if(bestDiffIsNext){
-                if(diffNext > MAX_DIFF){
-                    result.type = "NONE";
-                    result.ts = ts;
-                    result.sigStr = 0;
-                } else {
-                    result = sigStr[i];
-                }
-            } else {
-                if(diffBefore < MAX_DIFF){
-                    result = sigStr[i-1];
-                } else {
-                    result.type = "NONE";
-                    result.ts = ts;
-                    result.sigStr = 0;
-                }
+            if(abs(currentTs - ts) < abs(lastTs - ts)){
+                best = i;
             }
         }
+    }
+    unsigned long diff = sigStr.at(best).ts;
+    if(diff - ts< MAX_DIFF){
+        result = sigStr[best];
+    } else {
+        result.type = "NONE";
+        result.ts = ts;
+        result.sigStr = 0;
     }
     return result;
 }
