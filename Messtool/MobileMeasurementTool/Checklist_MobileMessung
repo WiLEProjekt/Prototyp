@@ -34,5 +34,5 @@ Durchfuehrung der Messung:
 	Param p: port
 	Param b: Bandbreite
 	Param -n: device per inconfig nachgucken	
-	Befehl: sudo python3 ./Client_non_Ntp.py -i 131.173.33.228 -p 50000 -b 320 -n enx0c5b8f279a64
+	Befehl: sudo python3 ./Client.py -i 131.173.33.228 -p 50000 -b 320 -n enx0c5b8f279a64
 
