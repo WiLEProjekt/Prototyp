@@ -292,6 +292,8 @@ TraceGenerator::TraceGenerator(int argc, char **argv) {
     }
 }
 
+
+
 PacketLossModelType TraceGenerator::getPacketLossModelFromString(string modelname){
     std::transform(modelname.begin(), modelname.end(), modelname.begin(), ::tolower);
     PacketLossModelType packetLossModel;

@@ -25,13 +25,6 @@ string PcapParser::parseIP(unsigned char *bytes) {
     return ip;
 }
 
-unsigned long PcapParser::getSeqNumIperf(const u_char *data) {
-    //Data start: 42
-    unsigned char seqNumBytes[] = {data[50], data[51], data[52], data[53]};
-    unsigned long seqNum = parseNumberFromBytes(seqNumBytes, 4);
-    return seqNum;
-}
-
 unsigned long PcapParser::getSeqNumMobileTool(const u_char *data) {
     //44 = payload start
     const int longDigits = 10;
@@ -216,119 +209,8 @@ PcapParser::readMobilePcapFile(const string &filename, const string &ipOfPcapDev
     return result;
 }
 
-
-struct pcapValues
-PcapParser::readPcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice) {
-    map<unsigned long, struct timeval> toOtherTS;
-    map<unsigned long, struct timeval> toSelfTS;
-    vector<unsigned long> timestampsSend;
-    vector<unsigned long> timestampsReceived;
-
-    struct pcapValues result{};
-
-    struct stat buffer{};
-    if (stat(filename.c_str(), &buffer) != 0) {
-        cout << "file " << filename << " not found" << endl;
-    } else {
-        char errbuff[PCAP_ERRBUF_SIZE];
-        pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
-        struct pcap_pkthdr *header;
-        const u_char *data;
-        unsigned long packageCount = 0;
-        while (pcap_next_ex(pcap, &header, &data) >= 0) {
-            if (header->len != header->caplen) {
-                //printf("Warning! Capture size different than packet size: %1d bytes\n", header->caplen);
-            }
-            packageCount++;
-
-            unsigned char sourceIPBytes[] = {data[26], data[27], data[28], data[29]};
-            unsigned char destIPBytes[] = {data[30], data[31], data[32], data[33]};
-            string packetSource = parseIP(sourceIPBytes);
-            string packetDest = parseIP(destIPBytes);
-
-            //check if packet is UDP (17)
-            unsigned char lengthBytes[] = {data[16], data[17]};
-            unsigned long length = parseNumberFromBytes(lengthBytes, 2);
-            if (length == 1028) {
-                unsigned long seqNum = getSeqNumIperf(data);
-                if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
-                    toOtherTS[seqNum] = header->ts;
-                    timestampsSend.push_back(seqNum);
-                } else if (ipOfPcapDevice == packetDest && ipOfOtherDevice == packetSource) {
-                    toSelfTS[seqNum] = header->ts;
-                    timestampsReceived.push_back(seqNum);
-                }
-            }
-        }
-        pcap_close(pcap);
-
-        result.send = toOtherTS;
-        result.received = toSelfTS;
-        result.seqNumsReceived = timestampsReceived;
-        result.seqNumsSend = timestampsSend;
-
-        return result;
-    }
-
-    return result;
-}
-
-void PcapParser::writeDelayFile(const string &filename, vector<int64_t> delays) {
-    ofstream uploadDelayFile;
-    uploadDelayFile.open(filename);
-    for (int64_t ts: delays) {
-        uploadDelayFile << ts << " ";
-    }
-    uploadDelayFile.flush();
-    uploadDelayFile.close();
-}
-
-void PcapParser::writeFullTraceFile(const string &filename, vector<resultPoint> result) {
-    ofstream uploadDelayFile;
-    uploadDelayFile.open(filename);
-
-    for (struct resultPoint rp : result) {
-        uploadDelayFile << rp.recievedTs << ";" << rp.delay << ";" << rp.packetRecieved << ";" << rp.seqNum << ";"
-                        << rp.sigStrength << ";" << rp.type << endl;
-    }
-    uploadDelayFile.flush();
-    uploadDelayFile.close();
-}
-
-void PcapParser::writeResultToFile(const result &download) {
-    string path = "Ergebnis/";
-    ofstream uploadLossFile;
-    string pathcommand = "mkdir -p " + path;
-    system(pathcommand.c_str());
-
-    ofstream downloadLossFile;
-    downloadLossFile.open(path + "downloadLoss.txt");
-    for (bool b : download.loss) {
-        downloadLossFile << b;
-    }
-    downloadLossFile.flush();
-    downloadLossFile.close();
-
-    string downloadDelayFilename = path + "downloadDelays.csv";
-    writeDelayFile(downloadDelayFilename, download.delays);
-
-    ofstream downloadDuplicationFile;
-    downloadDuplicationFile.open(path + "downloadDuplication.txt");
-    downloadDuplicationFile << download.duplication << endl;
-    downloadDuplicationFile.flush();
-    downloadDuplicationFile.close();
-
-    ofstream downloadReorderingFile;
-    downloadReorderingFile.open(path + "downloadReordering.txt");
-    downloadReorderingFile << download.reordering << endl;
-    downloadReorderingFile.flush();
-    downloadReorderingFile.close();
-
-    writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
-}
-
 struct result PcapParser::startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
-                         const string &localClientIp, const string &serverIp, bool parameterized){
+                         const string &localClientIp, const string &serverIp){
     struct pcapValues clientValues = readMobilePcapFile(clientTraceFile, localClientIp, serverIp);
     struct pcapValues serverValues = readMobilePcapFile(serverTraceFile, serverIp, globalClientIp);
 

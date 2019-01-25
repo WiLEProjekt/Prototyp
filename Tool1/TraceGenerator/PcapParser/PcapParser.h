@@ -28,17 +28,14 @@
 using namespace std;
 
 class PcapParser {
-
+private:
     unsigned int parseNumberFromBytes(const unsigned char *bytes, int length);
 
     string parseIP(unsigned char *bytes);
 
-    unsigned long getSeqNumIperf(const u_char *data);
-
     unsigned long getSeqNumMobileTool(const u_char *data);
 
     uint64_t getMillisFromTimeval(struct timeval tv);
-
 
     /**
     * Calculates the Delay, Loss, Reordering and Duplication
@@ -50,15 +47,7 @@ class PcapParser {
     struct pcapValues
     readMobilePcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice);
 
-    struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice);
-
-    void writeDelayFile(const string &filename, vector<int64_t> delays);
-
-    void writeFullTraceFile(const string &filename, vector<resultPoint> result);
-
-    void writeResultToFile(const result &download);
-
-
+public:
     struct result
     startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp) {
         this->startParsing(clientTraceFile, serverTraceFile, globalClientIp, "192.168.8.100", "131.173.33.228");
@@ -66,13 +55,7 @@ class PcapParser {
 
     struct result
     startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
-                 const string &localClientIp, const string &serverIp) {
-        this->startParsing(clientTraceFile, serverTraceFile, globalClientIp, localClientIp, serverIp, false);
-    }
-
-    struct result
-    startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
-                 const string &localClientIp, const string &serverIp, bool parameterized);
+                 const string &localClientIp, const string &serverIp);
 
     int main(int argc, char **argv);
 };

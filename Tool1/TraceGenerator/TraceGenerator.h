@@ -36,7 +36,6 @@ private:
 
     void startParse(int argc, char **argv);
 
-    void startGen(int argc, char **argv);
 
     /**
      * Prints an Error on the console, if the arguments aren't correct
@@ -94,6 +93,8 @@ public:
      * @param argv arguments
      */
     TraceGenerator(int argc, char** argv);
+
+    void startGen(int argc, char **argv);
 };
 
 
