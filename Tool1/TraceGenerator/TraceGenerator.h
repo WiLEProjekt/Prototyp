@@ -4,12 +4,40 @@
 
 #include <iostream>
 #include <vector>
-#include "PacketlossParameterParser/PacketLossToParameterParser.h"
+#include <stdlib.h>
+#include "Packetloss/PacketlossParameterParser/PacketLossToParameterParser.h"
+#include "Packetloss/PaketlossModel/MarkovModel.h"
+#include "Packetloss/PaketlossModel/GilbertElliotModel.h"
+#include "Packetloss/PacketlossParameterParser/PacketLossToParameterParser.h"
 #include "Pingparser.h"
+#include "TraceSaver.h"
+#include "Pingparser.h"
+#include <random>
+#include <cstring>
+#include <algorithm>
+
 
 using namespace std;
 class TraceGenerator {
 private:
+
+    /**
+     * Extracts Modelparameters
+     *
+     * @param fileType the type of the file "tcp" or "icmp" for .pcap or "ping" for a ping-logfile
+     * @param filename the Filename of the trace
+     * @param packetlossModelName the name of the model
+     * @param gMin gMin
+     * @param packetCount number of packets. Only required if fileType is "ping"
+     */
+    void startExtract(int argc, char **argv);
+
+    void startImport(int argc, char **argv);
+
+    void startParse(int argc, char **argv);
+
+    void startGen(int argc, char **argv);
+
     /**
      * Prints an Error on the console, if the arguments aren't correct
      */
