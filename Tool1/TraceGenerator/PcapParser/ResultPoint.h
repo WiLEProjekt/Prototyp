@@ -1,0 +1,8 @@
+//
+// Created by drieke on 25.01.19.
+//
+
+#ifndef TRACEGENERATOR_RESULTPOINT_H
+#define TRACEGENERATOR_RESULTPOINT_H
+
+#endif //TRACEGENERATOR_RESULTPOINT_H
