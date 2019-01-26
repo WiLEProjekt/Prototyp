@@ -64,6 +64,5 @@ if __name__ == "__main__":
     else:
         print("No valid model selected. Select gilbert | gilbertelliot | markov")
         sys.exit(1)
-    print(model)
     writeTextfile(model)
     sys.exit()
