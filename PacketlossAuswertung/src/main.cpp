@@ -23,9 +23,21 @@ void usage(){
     cout << "usage: ./packetloss <path to sagemath python script> <path to binary file> <path to output folder> <significanceniveau [0-100]>" << endl;
 }
 
-//void writeName(string output, string modelname){
-
-//}
+void writeParams(string output, double pBernoulli, double rBernoulli, double pSimpleGilbert, double rSimpleGilbert, double pGilbert, double rGilbert, double kGilbert, double hGilbert, double pGilbertElliot, double rGilbertElliot, double kGilbertElliot, double hGilbertElliot, double p13, double p31, double p32, double p23, double p14, double p41){
+    fstream fout;
+    fout.open(output, ios::out);
+    fout << "Bernoulli: p; r" << endl;
+    fout << pBernoulli << ";" << rBernoulli << endl;
+    fout << "Simple-Gilbert: p; r" << endl;
+    fout << pSimpleGilbert << ";" << rSimpleGilbert << endl;
+    fout << "Gilbert: p; r; k; h" << endl;
+    fout << pGilbert << ";" << rGilbert << ";" << kGilbert << ";" << hGilbert << endl;
+    fout << "Gilbert-Elliot: p; r; k; h" << endl;
+    fout << pGilbertElliot << ";" << rGilbertElliot << ";" << kGilbertElliot << ";" << hGilbertElliot << endl;
+    fout << "Markov: p13; p31; p32; p23; p14; p41" << endl;
+    fout << p13 << ";" << p31 << ";" << p32 << ";" << p23 << ";" << p14 << ";" << p41 << endl;
+    fout.close();
+}
 
 void writeHeader(string output){
     fstream fout;
@@ -47,7 +59,6 @@ int main(int argc, char* argv[]){
         usage();
         return 0;
     } else {
-
         clock_t start = clock();
         string sagescript = argv[1];
         string pathToGivenTrace = argv[2];
@@ -124,6 +135,9 @@ int main(int argc, char* argv[]){
         p23 = transitionmatrixMarkov[1][2];
         p14 = transitionmatrixMarkov[0][3];
         p41 = transitionmatrixMarkov[3][0];
+
+        cout << "Writing Parameter to file" << endl;
+        writeParams(outputPath+"/ModelParams.txt", pBernoulli, rBernoulli, pSimpleGilbert, rSimpleGilbert, pGilbert, rGilbert, kGilbert, hGilbert, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot, p13, p31, p32, p23, p14, p41);
 
         cout << "Fitting Bernoulli" << endl;
         long tracesize = originalTrace.size();
