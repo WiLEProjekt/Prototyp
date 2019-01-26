@@ -60,9 +60,10 @@ if __name__ == "__main__":
         model.baum_welch(tracedata)
     elif modelname == "markov":
         model = hmm.DiscreteHiddenMarkovModel([[0.7,0.0,0.25,0.05],[0.0,0.05,0.95,0.0],[0.01,0.01,0.98,0.0],[1.0,0.0,0.0,0.0]], [[0.0,1.0],[0.0,1.0],[1.0,0.0],[1.0,0.0]], [0.25,0.25,0.25,0.25], emissions)
-        model.baum_welch(tracedata)
+        model.baum_welch(tracedata, fix_emissions=True)
     else:
         print("No valid model selected. Select gilbert | gilbertelliot | markov")
         sys.exit(1)
+    print(model)
     writeTextfile(model)
     sys.exit()
