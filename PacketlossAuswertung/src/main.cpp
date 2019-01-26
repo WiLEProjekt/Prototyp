@@ -5,6 +5,7 @@
  * Abstandsmaß: Methode der kleinsten Quadrate und Kolmogorov Abstand
  * @param Pfad zum Sage Script
  * @param Pfad zum Binärtrace
+ * @param Signifikanzniveau. Unterstützte Werte siehe statistics.h
  */
 #include <iostream>
 #include <string>
@@ -23,36 +24,6 @@ void usage(){
     cout << "usage: ./packetloss <path to sagemath python script> <path to binary file> <path to output folder> <significanceniveau [0-100]>" << endl;
 }
 
-void writeParams(string output, double pBernoulli, double rBernoulli, double pSimpleGilbert, double rSimpleGilbert, double pGilbert, double rGilbert, double kGilbert, double hGilbert, double pGilbertElliot, double rGilbertElliot, double kGilbertElliot, double hGilbertElliot, double p13, double p31, double p32, double p23, double p14, double p41){
-    fstream fout;
-    fout.open(output, ios::out);
-    fout << "Bernoulli: p; r" << endl;
-    fout << pBernoulli << ";" << rBernoulli << endl;
-    fout << "Simple-Gilbert: p; r" << endl;
-    fout << pSimpleGilbert << ";" << rSimpleGilbert << endl;
-    fout << "Gilbert: p; r; k; h" << endl;
-    fout << pGilbert << ";" << rGilbert << ";" << kGilbert << ";" << hGilbert << endl;
-    fout << "Gilbert-Elliot: p; r; k; h" << endl;
-    fout << pGilbertElliot << ";" << rGilbertElliot << ";" << kGilbertElliot << ";" << hGilbertElliot << endl;
-    fout << "Markov: p13; p31; p32; p23; p14; p41" << endl;
-    fout << p13 << ";" << p31 << ";" << p32 << ";" << p23 << ";" << p14 << ";" << p41 << endl;
-    fout.close();
-}
-
-void writeHeader(string output){
-    fstream fout;
-    fout.open(output, ios::out);
-    fout << "Modelname" << ";" << "Metric" << ";" <<  "Best Seed" << ";" << "Best Distance" << ";" << "Confidence Interval lower bound" << ";" << "Confidence Interval upper bound" << endl;
-    fout.close();
-}
-
-void consolePrint(string output, string model, string metric, int bestSeed, double bestDistance, vector<double> &confInterval){
-    cout << "\t" << metric << ":\tBest Seed: " << bestSeed << "\tWith Distance: " << bestDistance << "\tConfidence interval: " << confInterval[0] << "; " << confInterval[1] << endl;
-    fstream fout;
-    fout.open(output, ios::out | ios::app);
-    fout << model << ";" << metric << ";" <<  bestSeed << ";" << bestDistance << ";" << confInterval[0] << ";" << confInterval[1] << endl;
-    fout.close();
-}
 
 int main(int argc, char* argv[]){
     if (argc < 5) {

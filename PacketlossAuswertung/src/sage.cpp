@@ -75,7 +75,6 @@ void readMatrixFile(vector <vector<double>> &transitionmatrix, vector <vector<do
     }
     emissionmatrix.push_back(tmp);
     tmp.clear();
-    counter = 0;
     if(remove(filename.c_str())!=0){ //delete temporary file
         perror("Error deleting the temporary file");
     }
