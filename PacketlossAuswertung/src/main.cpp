@@ -161,54 +161,69 @@ int main(int argc, char* argv[]){
 
 
         cout << "Fitting Gilbert" << endl;
-        vector<int> GilbertBurstsKolmogorov, GilbertBurstsLeastSquared;
-        vector<double> GilbertKolmogorovDistances, GilbertLeastSquaresDistances;
-        int GilbertSeedKolmogorov, GilbertSeedLeastSquared;
-        double GilbertMinKolmogorovDistance, GilbertMinLeastSquaredDifference;
-        fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert,GilbertBurstsKolmogorov, GilbertSeedKolmogorov, GilbertMinKolmogorovDistance, GilbertBurstsLeastSquared, GilbertSeedLeastSquared, GilbertMinLeastSquaredDifference, GilbertKolmogorovDistances, GilbertLeastSquaresDistances);
-        vector<double> GilbertConfidenceKolmogorov = calcConfidenceIntervall(GilbertKolmogorovDistances, significanceniveau);
-        vector<double> GilbertConfidenceLeastSquared = calcConfidenceIntervall(GilbertLeastSquaresDistances, significanceniveau);
-        writeVector(outputPath+"/GilbertECDFKolmogorov.txt", GilbertBurstsKolmogorov);
-        writeVector(outputPath+"/GilbertECDFLeastSquared.txt", GilbertBurstsLeastSquared);
-        writeVector(outputPath+"/GilbertKolmogorovDistances.txt", GilbertKolmogorovDistances);
-        writeVector(outputPath+"/GilbertLeastSquaredDistances.txt", GilbertLeastSquaresDistances);
-        cout << "Gilbert:" << endl;
-        consolePrint(resultFilename, "Gilbert", metrics[0], GilbertSeedKolmogorov, GilbertMinKolmogorovDistance, GilbertConfidenceKolmogorov);
-        consolePrint(resultFilename, "Gilbert", metrics[1], GilbertSeedLeastSquared, GilbertMinLeastSquaredDifference, GilbertConfidenceLeastSquared);
+        if(!isnan(pGilbert) && !isnan(rGilbert) && !isnan(kGilbert) && !isnan(hGilbert)){
+            vector<int> GilbertBurstsKolmogorov, GilbertBurstsLeastSquared;
+            vector<double> GilbertKolmogorovDistances, GilbertLeastSquaresDistances;
+            int GilbertSeedKolmogorov, GilbertSeedLeastSquared;
+            double GilbertMinKolmogorovDistance, GilbertMinLeastSquaredDifference;
+            fitGilbert(tracesize, origECDF, pGilbert, rGilbert, kGilbert, hGilbert, GilbertBurstsKolmogorov, GilbertSeedKolmogorov, GilbertMinKolmogorovDistance, GilbertBurstsLeastSquared, GilbertSeedLeastSquared, GilbertMinLeastSquaredDifference, GilbertKolmogorovDistances, GilbertLeastSquaresDistances);
+            vector<double> GilbertConfidenceKolmogorov = calcConfidenceIntervall(GilbertKolmogorovDistances, significanceniveau);
+            vector<double> GilbertConfidenceLeastSquared = calcConfidenceIntervall(GilbertLeastSquaresDistances, significanceniveau);
+            writeVector(outputPath+"/GilbertECDFKolmogorov.txt", GilbertBurstsKolmogorov);
+            writeVector(outputPath+"/GilbertECDFLeastSquared.txt", GilbertBurstsLeastSquared);
+            writeVector(outputPath+"/GilbertKolmogorovDistances.txt", GilbertKolmogorovDistances);
+            writeVector(outputPath+"/GilbertLeastSquaredDistances.txt", GilbertLeastSquaresDistances);
+            cout << "Gilbert:" << endl;
+            consolePrint(resultFilename, "Gilbert", metrics[0], GilbertSeedKolmogorov, GilbertMinKolmogorovDistance, GilbertConfidenceKolmogorov);
+            consolePrint(resultFilename, "Gilbert", metrics[1], GilbertSeedLeastSquared, GilbertMinLeastSquaredDifference, GilbertConfidenceLeastSquared);
+        }else{
+            cout << "Failed fitting Gilbert Model. Baum-Welch estimated NaN-Values for one or more model Parameter" << endl;
+        }
+
 
 
         cout << "Fitting Gilbert-Elliot" << endl;
-        vector<int> GilbertElliotBurstsKolmogorov, GilbertElliotBurstsLeastSquared;
-        vector<double> GilbertElliotKolmogorovDistances, GilbertElliotLeastSquaresDistances;
-        int GilbertElliotSeedKolmogorov, GilbertElliotSeedLeastSquared;
-        double GilbertElliotMinKolmogorovDistance, GilbertElliotMinLeastSquaredDifference;
-        fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot, GilbertElliotBurstsKolmogorov, GilbertElliotSeedKolmogorov, GilbertElliotMinKolmogorovDistance, GilbertElliotBurstsLeastSquared, GilbertElliotSeedLeastSquared, GilbertElliotMinLeastSquaredDifference, GilbertElliotKolmogorovDistances, GilbertElliotLeastSquaresDistances);
-        vector<double> GilbertElliotConfidenceKolmogorov = calcConfidenceIntervall(GilbertElliotKolmogorovDistances, significanceniveau);
-        vector<double> GilbertElliotConfidenceLeastSquared = calcConfidenceIntervall(GilbertElliotLeastSquaresDistances, significanceniveau);
-        writeVector(outputPath+"/GilbertElliotECDFKolmogorov.txt", GilbertElliotBurstsKolmogorov);
-        writeVector(outputPath+"/GilbertElliotECDFLeastSquared.txt", GilbertElliotBurstsLeastSquared);
-        writeVector(outputPath+"/GilbertElliotKolmogorovDistances.txt", GilbertElliotKolmogorovDistances);
-        writeVector(outputPath+"/GilbertElliotLeastSquaredDistances.txt", GilbertElliotLeastSquaresDistances);
-        cout << "Gilbert-Elliot:" << endl;
-        consolePrint(resultFilename, "GilbertElliot", metrics[0], GilbertElliotSeedKolmogorov, GilbertElliotMinKolmogorovDistance, GilbertElliotConfidenceKolmogorov);
-        consolePrint(resultFilename, "GilbertElliot", metrics[1], GilbertElliotSeedLeastSquared, GilbertElliotMinLeastSquaredDifference, GilbertElliotConfidenceLeastSquared);
+        if(!isnan(pGilbertElliot) && !isnan(rGilbertElliot) && !isnan(kGilbertElliot) && !isnan(hGilbertElliot)){
+            vector<int> GilbertElliotBurstsKolmogorov, GilbertElliotBurstsLeastSquared;
+            vector<double> GilbertElliotKolmogorovDistances, GilbertElliotLeastSquaresDistances;
+            int GilbertElliotSeedKolmogorov, GilbertElliotSeedLeastSquared;
+            double GilbertElliotMinKolmogorovDistance, GilbertElliotMinLeastSquaredDifference;
+            fitGilbert(tracesize, origECDF, pGilbertElliot, rGilbertElliot, kGilbertElliot, hGilbertElliot, GilbertElliotBurstsKolmogorov, GilbertElliotSeedKolmogorov, GilbertElliotMinKolmogorovDistance, GilbertElliotBurstsLeastSquared, GilbertElliotSeedLeastSquared, GilbertElliotMinLeastSquaredDifference, GilbertElliotKolmogorovDistances, GilbertElliotLeastSquaresDistances);
+            vector<double> GilbertElliotConfidenceKolmogorov = calcConfidenceIntervall(GilbertElliotKolmogorovDistances, significanceniveau);
+            vector<double> GilbertElliotConfidenceLeastSquared = calcConfidenceIntervall(GilbertElliotLeastSquaresDistances, significanceniveau);
+            writeVector(outputPath+"/GilbertElliotECDFKolmogorov.txt", GilbertElliotBurstsKolmogorov);
+            writeVector(outputPath+"/GilbertElliotECDFLeastSquared.txt", GilbertElliotBurstsLeastSquared);
+            writeVector(outputPath+"/GilbertElliotKolmogorovDistances.txt", GilbertElliotKolmogorovDistances);
+            writeVector(outputPath+"/GilbertElliotLeastSquaredDistances.txt", GilbertElliotLeastSquaresDistances);
+            cout << "Gilbert-Elliot:" << endl;
+            consolePrint(resultFilename, "GilbertElliot", metrics[0], GilbertElliotSeedKolmogorov, GilbertElliotMinKolmogorovDistance, GilbertElliotConfidenceKolmogorov);
+            consolePrint(resultFilename, "GilbertElliot", metrics[1], GilbertElliotSeedLeastSquared, GilbertElliotMinLeastSquaredDifference, GilbertElliotConfidenceLeastSquared);
+        }else{
+            cout << "Failed fitting Gilbert-Elliot Model. Baum-Welch estimated NaN-Values for one or more model Parameter" << endl;
+        }
+
 
 
         cout << "Fitting Markov" << endl;
-        vector<int> markovBurstsKolmogorov, markovBurstsLeastSquared;
-        vector<double> markovKolmogorovDistances, markovLeastSquaresDistances;
-        int markovSeedKolmogorov, markovSeedLeastSquared;
-        double markovMinKolmogorovDistance, markovMinLeastSquaredDifference;
-        fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14, markovBurstsKolmogorov, markovSeedKolmogorov, markovMinKolmogorovDistance, markovBurstsLeastSquared, markovSeedLeastSquared, markovMinLeastSquaredDifference, markovKolmogorovDistances, markovLeastSquaresDistances);
-        vector<double> markovConfidenceKolmogorov = calcConfidenceIntervall(markovKolmogorovDistances, significanceniveau);
-        vector<double> markovConfidenceLeastSquared = calcConfidenceIntervall(markovLeastSquaresDistances, significanceniveau);
-        writeVector(outputPath+"/MarkovECDFKolmogorov.txt", markovBurstsKolmogorov);
-        writeVector(outputPath+"/MarkovECDFLeastSquared.txt", markovBurstsLeastSquared);
-        writeVector(outputPath+"/MarkovKolmogorovDistances.txt", markovKolmogorovDistances);
-        writeVector(outputPath+"/MarkovLeastSquaredDistances.txt", markovLeastSquaresDistances);
-        cout << "Markov:" << endl;
-        consolePrint(resultFilename, "Markov", metrics[0], markovSeedKolmogorov, markovMinKolmogorovDistance, markovConfidenceKolmogorov);
-        consolePrint(resultFilename, "Markov", metrics[1], markovSeedLeastSquared, markovMinLeastSquaredDifference, markovConfidenceLeastSquared);
+        if(!isnan(p13) && !isnan(p31) && !isnan(p32) && !isnan(p23) && !isnan(p14)){
+            vector<int> markovBurstsKolmogorov, markovBurstsLeastSquared;
+            vector<double> markovKolmogorovDistances, markovLeastSquaresDistances;
+            int markovSeedKolmogorov, markovSeedLeastSquared;
+            double markovMinKolmogorovDistance, markovMinLeastSquaredDifference;
+            fitMarkov(tracesize, origECDF, p13, p31, p32, p23, p14, markovBurstsKolmogorov, markovSeedKolmogorov, markovMinKolmogorovDistance, markovBurstsLeastSquared, markovSeedLeastSquared, markovMinLeastSquaredDifference, markovKolmogorovDistances, markovLeastSquaresDistances);
+            vector<double> markovConfidenceKolmogorov = calcConfidenceIntervall(markovKolmogorovDistances, significanceniveau);
+            vector<double> markovConfidenceLeastSquared = calcConfidenceIntervall(markovLeastSquaresDistances, significanceniveau);
+            writeVector(outputPath+"/MarkovECDFKolmogorov.txt", markovBurstsKolmogorov);
+            writeVector(outputPath+"/MarkovECDFLeastSquared.txt", markovBurstsLeastSquared);
+            writeVector(outputPath+"/MarkovKolmogorovDistances.txt", markovKolmogorovDistances);
+            writeVector(outputPath+"/MarkovLeastSquaredDistances.txt", markovLeastSquaresDistances);
+            cout << "Markov:" << endl;
+            consolePrint(resultFilename, "Markov", metrics[0], markovSeedKolmogorov, markovMinKolmogorovDistance, markovConfidenceKolmogorov);
+            consolePrint(resultFilename, "Markov", metrics[1], markovSeedLeastSquared, markovMinLeastSquaredDifference, markovConfidenceLeastSquared);
+        }else{
+            cout << "Failed fitting Markov Model. Baum-Welch estimated NaN-Values for one or more model Parameter" << endl;
+        }
+
 
 
         cout << "Calculations are for " << 100-significanceniveau << "% confidence interval" << endl;
