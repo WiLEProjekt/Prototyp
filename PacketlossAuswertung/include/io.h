@@ -64,4 +64,19 @@ void writeHeader(string output);
  */
 void consolePrint(string output, string model, string metric, int bestSeed, double bestDistance, vector<double> &confInterval);
 
+/**
+ * writes the STates header
+ * @param output
+ */
+void writeStatesHeader(string output);
+/**
+ * Writes the states to a file
+ * @param output
+ * @param one states
+ * @param two
+ * @param three
+ * @param four
+ */
+void writeStates(string output, unsigned long long one, unsigned long long two, unsigned long long three=0, unsigned long long four=0);
+
 #endif //PACKETLOSSAUSWERTUNG_IO_H

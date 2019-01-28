@@ -29,7 +29,7 @@ double generateRandomNumber();
  * @param h
  * @return
  */
-vector<int> buildGilbertElliot(long numPackets, double p, double r, double k, double h);
+vector<int> buildGilbertElliot(long numPackets, double p, double r, double k, double h, unsigned long long &goods, unsigned long long &bads);
 
 /**
  * Generates a Trace using the Markov Model.
@@ -42,7 +42,7 @@ vector<int> buildGilbertElliot(long numPackets, double p, double r, double k, do
  * @param p41
  * @return
  */
-vector<int> buildMarkov(long numPackets, double p13, double p31, double p32, double p23, double p14, double p41=1.0);
+vector<int> buildMarkov(long numPackets, double p13, double p31, double p32, double p23, double p14, unsigned long long &stateOne, unsigned long long &stateTwo, unsigned long long &stateThree, unsigned long long &stateFour);
 
 /**
  * Calculates the burstsizes, of which the ECDFs are later generated

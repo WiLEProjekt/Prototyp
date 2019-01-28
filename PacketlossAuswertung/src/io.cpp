@@ -59,3 +59,22 @@ void consolePrint(string output, string model, string metric, int bestSeed, doub
     fout << model << ";" << metric << ";" <<  bestSeed << ";" << bestDistance << ";" << confInterval[0] << ";" << confInterval[1] << endl;
     fout.close();
 }
+
+void writeStatesHeader(string output){
+    fstream fout;
+    fout.open(output, ios::out);
+    fout << "for Gilbert-based models: good-states; bad-states; 0; 0" << endl;
+    fout << "for Markov: state one; state two; state three; state four" << endl;
+    fout << "1. line: Bernoulli" << endl;
+    fout << "2. line: Simple-Gilbert" << endl;
+    fout << "3. line: Gilbert" << endl;
+    fout << "4. line: Gilbert-Elliot" << endl;
+    fout << "5. line: Markov" << endl;
+    fout.close();
+}
+
+void writeStates(string output, unsigned long long one, unsigned long long two, unsigned long long three, unsigned long long four){
+    fstream fout;
+    fout.open(output, ios::out | ios::app);
+    fout << one << ";" << two << ";" << three << ";" << four <<  endl;
+}
