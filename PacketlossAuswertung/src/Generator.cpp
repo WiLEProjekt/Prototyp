@@ -67,10 +67,10 @@ vector<int> buildGilbertElliot(long numPackets, double p, double r, double k, do
                 bads++;
             }
         }
-
         //calculate burstsizes
         calculateBursts(trace, i, temp, gensizes);
     }
+    gensizes.push_back(temp);
     return (gensizes);
 }
 
