@@ -169,7 +169,6 @@ void fitGilbert(long length, vector<vector<float> > origECDF, double p, double r
     double tempKolmogorovDistance;
     double tempLeastSquared;
     for (int i = 0; i < MAXSEED; i++) {
-        cout << i << endl;
         vector<vector<float> > tempOrigECDF = origECDF;
         setSeed(i);
         vector<int> burstsizes = buildGilbertElliot(length, p, r, k, h, goods, bads);
