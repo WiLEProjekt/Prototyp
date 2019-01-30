@@ -137,5 +137,6 @@ buildMarkov(long numPackets, double p13, double p31, double p32, double p23, dou
         //calculate burstsizes
         calculateBursts(trace, i, temp, gensizes);
     }
+    gensizes.push_back(temp);
     return (gensizes);
 }
