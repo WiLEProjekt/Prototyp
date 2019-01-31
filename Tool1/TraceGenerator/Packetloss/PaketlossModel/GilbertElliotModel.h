@@ -70,7 +70,7 @@ public:
      * @param seed the seed of the random generator
      * @param parameter the 4 parameter [p, r, k, h]
      */
-    GilbertElliotModel(long numPackets, unsigned int seed, double parameter[])
+    GilbertElliotModel(long numPackets, unsigned int seed, const double parameter[])
             : BasePacketlossModel(seed, numPackets) {
         this->p = parameter[0];
         this->r = parameter[1];

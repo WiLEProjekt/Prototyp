@@ -20,6 +20,8 @@
 #include <set>
 #include <sstream>
 #include <iterator>
+#include <cstdint>
+#include <stdint-gcc.h>
 #include "Result.h"
 #include "SignalStrength.h"
 #include "PcapValues.h"
@@ -50,7 +52,7 @@ private:
 public:
     struct result
     startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp) {
-        this->startParsing(clientTraceFile, serverTraceFile, globalClientIp, "192.168.8.100", "131.173.33.228");
+        return this->startParsing(clientTraceFile, serverTraceFile, globalClientIp, "192.168.8.100", "131.173.33.228");
     }
 
     struct result

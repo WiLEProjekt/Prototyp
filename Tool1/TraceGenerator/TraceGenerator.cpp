@@ -29,20 +29,20 @@ TraceGenerator::extractModelParameter(PacketLossModelType packetLossModel, vecto
     return extractParameter;
 }
 
-vector<bool> TraceGenerator::generateTrace(PacketLossModelType modelName, unsigned long numPackets, unsigned int seed,
+vector<bool> TraceGenerator::generateTrace(PacketLossModelType modelType, unsigned long numPackets, unsigned int seed,
                                            double *params) {
     BasePacketlossModel *model = nullptr;
     if (seed == 0) {
         seed = time(0);
     }
 
-    if (modelName == MARKOV) {
+    if (modelType == MARKOV) {
         model = new MarkovModel(numPackets, seed, params);
-    } else if (modelName == GILBERT_ELLIOT || modelName == GILBERT || modelName == SIMPLE_GILBERT ||
-               modelName == BERNOULLI) {
+    } else if (modelType == GILBERT_ELLIOT || modelType == GILBERT || modelType == SIMPLE_GILBERT ||
+               modelType == BERNOULLI) {
         model = new GilbertElliotModel(numPackets, seed, params);
     } else {
-        cout << "No valid model: " << modelName << endl;
+        cout << "No valid model: " << modelType << endl;
         this->printModels();
         vector<bool> result;
         return result;

@@ -17,6 +17,7 @@ PacketLossModelType parseModelName(const string &modelName) {
     if (modelName == "gilbertelliot") {
         return GILBERT_ELLIOT;
     }
+    cout << "No valid modelname: " << modelName << endl;
 }
 
 void writeDelayFile(const string &filename, vector<int64_t> delays) {
@@ -29,47 +30,33 @@ void writeDelayFile(const string &filename, vector<int64_t> delays) {
     uploadDelayFile.close();
 }
 
-void writeFullTraceFile(const string &filename, vector<resultPoint> result) {
-    ofstream uploadDelayFile;
-    uploadDelayFile.open(filename);
-
-    for (struct resultPoint rp : result) {
-        uploadDelayFile << rp.recievedTs << ";" << rp.delay << ";" << rp.packetRecieved << ";" << rp.seqNum << ";"
-                        << rp.sigStrength << ";" << rp.type << endl;
-    }
-    uploadDelayFile.flush();
-    uploadDelayFile.close();
-}
-
 void writeResultToFile(const result &download, const string &path) {
     ofstream uploadLossFile;
     string pathcommand = "mkdir -p " + path;
     system(pathcommand.c_str());
 
     ofstream downloadLossFile;
-    downloadLossFile.open(path + "downloadLoss.txt");
+    downloadLossFile.open(path + "/downloadLoss.txt");
     for (bool b : download.loss) {
         downloadLossFile << b;
     }
     downloadLossFile.flush();
     downloadLossFile.close();
 
-    string downloadDelayFilename = path + "downloadDelays.csv";
+    string downloadDelayFilename = path + "/downloadDelays.csv";
     writeDelayFile(downloadDelayFilename, download.delays);
 
     ofstream downloadDuplicationFile;
-    downloadDuplicationFile.open(path + "downloadDuplication.txt");
+    downloadDuplicationFile.open(path + "/downloadDuplication.txt");
     downloadDuplicationFile << download.duplication << endl;
     downloadDuplicationFile.flush();
     downloadDuplicationFile.close();
 
     ofstream downloadReorderingFile;
-    downloadReorderingFile.open(path + "downloadReordering.txt");
+    downloadReorderingFile.open(path + "/downloadReordering.txt");
     downloadReorderingFile << download.reordering << endl;
     downloadReorderingFile.flush();
     downloadReorderingFile.close();
-
-    writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
 }
 
 vector<bool> generate(PacketLossModelType model, unsigned long numPackets, double params[]) {
@@ -77,45 +64,50 @@ vector<bool> generate(PacketLossModelType model, unsigned long numPackets, doubl
     return traceGenerator.generateTrace(model, numPackets, 0, params);
 }
 
-double *parseParams(PacketLossModelType model, const string *params) {
-    int paramCount;
+double *parseParams(PacketLossModelType model, const string *params, double *result) {
+    int paramCount = 0;
     if (model == MARKOV) {
         paramCount = 5;
-        double result[paramCount];
+        double newresult[paramCount];
         for (int i = 0; i < paramCount; i++) {
-            result[i] = atof(params[i].c_str());
+            newresult[i] = atof(params[i].c_str());
         }
+        result = newresult;
         return result;
     } else if (model == GILBERT_ELLIOT) {
         paramCount = 4;
-        double result[paramCount];
+        double newresult[paramCount];
         for (int i = 0; i < paramCount; i++) {
-            result[i] = atof(params[i].c_str());
+            newresult[i] = atof(params[i].c_str());
         }
+        result = newresult;
         return result;
     } else if (model == GILBERT) {
         paramCount = 4;
-        double result[paramCount];
-        result[0] = atof(params[0].c_str());
-        result[1] = atof(params[1].c_str());
-        result[2] = 0;
-        result[3] = atof(params[2].c_str());
+        double newresult[paramCount];
+        newresult[0] = atof(params[0].c_str());
+        newresult[1] = atof(params[1].c_str());
+        newresult[2] = 1;
+        newresult[3] = atof(params[2].c_str());
+        result = newresult;
         return result;
     } else if (model == SIMPLE_GILBERT) {
         paramCount = 4;
-        double result[paramCount];
-        result[0] = atof(params[0].c_str());
-        result[1] = atof(params[1].c_str());
-        result[2] = 0;
-        result[3] = 0;
+        double newresult[paramCount];
+        newresult[0] = atof(params[0].c_str());
+        newresult[1] = atof(params[1].c_str());
+        newresult[2] = 1;
+        newresult[3] = 0;
+        result = newresult;
         return result;
     } else if (model == BERNOULLI) {
         paramCount = 4;
-        double result[paramCount];
-        result[0] = atof(params[0].c_str());
-        result[1] = 0;
-        result[2] = 0;
-        result[3] = 0;
+        double newresult[paramCount];
+        newresult[0] = atof(params[0].c_str());
+        newresult[1] = 1 - newresult[0];
+        newresult[2] = 1;
+        newresult[3] = 0;
+        result = newresult;
         return result;
     } else {
         return nullptr;
@@ -123,6 +115,9 @@ double *parseParams(PacketLossModelType model, const string *params) {
 }
 
 void writeLossToFile(vector<bool> loss, const string &path) {
+    string pathcommand = "mkdir -p " + path;
+    system(pathcommand.c_str());
+
     ofstream downloadLossFile;
     downloadLossFile.open(path + "/loss.txt");
     for (bool b : loss) {
@@ -157,8 +152,13 @@ int main(int argc, char **argv) {
         for (int i = 0; i < paramCount; i++) {
             modelParams[i] = argv[i + 5];
         }
-        vector<bool> result = generate(parseModelName(modelName), numPackets,
-                                       parseParams(parseModelName(modelName), modelParams));
+        double *parsedParams;
+        parsedParams = parseParams(parseModelName(modelName), modelParams, parsedParams);
+        double wtfParams[5];
+        for (int i = 0; i < 5; i++) {
+            wtfParams[i] = parsedParams[i];
+        }
+        vector<bool> result = generate(parseModelName(modelName), numPackets, wtfParams);
         writeLossToFile(result, outPath);
     } else if (params[1] == "ext" || params[1] == "exg") {
         /*

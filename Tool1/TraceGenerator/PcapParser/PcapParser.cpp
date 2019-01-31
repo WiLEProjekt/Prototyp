@@ -209,23 +209,18 @@ PcapParser::readMobilePcapFile(const string &filename, const string &ipOfPcapDev
     return result;
 }
 
-struct result PcapParser::startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
-                         const string &localClientIp, const string &serverIp){
+struct result
+PcapParser::startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
+                         const string &localClientIp, const string &serverIp) {
     struct pcapValues clientValues = readMobilePcapFile(clientTraceFile, localClientIp, serverIp);
     struct pcapValues serverValues = readMobilePcapFile(serverTraceFile, serverIp, globalClientIp);
 
     struct pcapValues downloadValues{};
-    struct pcapValues uploadValues{};
 
     downloadValues.seqNumsSend = serverValues.seqNumsSend;
     downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
     downloadValues.send = serverValues.send;
     downloadValues.received = clientValues.received;
 
-    uploadValues.seqNumsSend = clientValues.seqNumsSend;
-    uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
-    uploadValues.send = clientValues.send;
-    uploadValues.received = serverValues.received;
-
-    struct result downloadResult = getResults(downloadValues);
+    return getResults(downloadValues);
 }

@@ -76,7 +76,7 @@ private:
 public:
 
     vector<bool>
-    generateTrace(PacketLossModelType modelName, unsigned long numPackets, unsigned int seed, double *params);
+    generateTrace(PacketLossModelType modelType, unsigned long numPackets, unsigned int seed, double *params);
 
     /**
      * Extracts the ModelParameter of a file with 01-trace
