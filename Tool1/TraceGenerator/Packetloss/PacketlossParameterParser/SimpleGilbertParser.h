@@ -13,7 +13,7 @@ public:
      * @param trace the 01-trace
      * @return the paramter
      */
-    float *parseParameter(vector<bool> trace);
+    double *parseParameter(vector<bool> trace);
 };
 
 

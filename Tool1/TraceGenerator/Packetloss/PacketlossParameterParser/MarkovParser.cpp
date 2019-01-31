@@ -1,175 +1,44 @@
 #include "MarkovParser.h"
 #include "../PaketlossModel/MarkovModel.h"
 
-float *MarkovParser::parseParameter(vector<bool> trace, unsigned int gMin) {
+double *MarkovParser::parseParameter(vector<bool> trace, unsigned int gMin) {
     return this->bruteForceParameter(trace);
 }
 
-float *MarkovParser::estimateParameter(vector<bool> trace, unsigned int gMin) {
-    if (gMin == 0) {
-        gMin = 4;
-    }
-    const unsigned int B_MIN = 1;
-    unsigned long lossCounter = 0;
-    unsigned long receiveCounter = 0;
-    bool gapPeriod = true;
-
-    //first index of the burst, length of the burst
-    map<unsigned long, unsigned long> bursts;
-    //first index of the gap, length of the gap
-    map<unsigned long, unsigned long> gaps;
-
-    //Collect all gap and burst periods
-    unsigned long periodLength = 0;
-    for (unsigned long i = 0; i < trace.size(); i++) {
-        if (!trace[i]) {
-            lossCounter++;
-        } else {
-            receiveCounter++;
-        }
-        periodLength = receiveCounter + lossCounter;
-        if (gapPeriod) {
-            //Check if gapPeriod
-            if (i > B_MIN) {
-                gapPeriod = false;
-                for (int j = 0; j < B_MIN; j++) {
-                    if (trace[i - j]) {
-                        gapPeriod = true;
-                    }
-                }
-            }
-            if (!gapPeriod) {
-                gaps.insert(pair<unsigned long, unsigned long>(i - periodLength + 1, periodLength));
-                receiveCounter = 0;
-                lossCounter = 0;
-            }
-        } else {
-            //Check if gapPeriod
-            if (i > gMin) {
-                gapPeriod = true;
-                for (int j = 0; j < gMin; j++) {
-                    if (!trace[i - j]) {
-                        gapPeriod = false;
-                    }
-                }
-            }
-            if (gapPeriod) {
-                bursts.insert(pair<unsigned long, unsigned long>(i - periodLength + 1, periodLength));
-                receiveCounter = 0;
-                lossCounter = 0;
-            }
-        }
-    }
-    //collect last period
-    if (gapPeriod) {
-        gaps.insert(pair<unsigned long, unsigned long>(trace.size() - periodLength, periodLength));
-    } else {
-        bursts.insert(pair<unsigned long, unsigned long>(trace.size() - periodLength, periodLength));
-    }
-
-    unsigned long state1Counter = 0;
-    unsigned long state2Counter = 0;
-    unsigned long state3Counter = 0;
-    unsigned long state4Counter = 0;
-
-    unsigned long from3To2Counter = 0;
-    unsigned long from2To3Counter = 0;
-    unsigned long from1To4Counter = 0;
-    unsigned long from4To1Counter = 0;
-    unsigned long from1To3Counter = 0;
-    unsigned long from3To1Counter = 0;
-
-    //State-changes in burst period
-    for (auto &burst : bursts) {
-        for (unsigned long i = 0; i < burst.second; i++) {
-            if (trace[burst.first + i]) {
-                state2Counter++;
-                if (i > 0) {
-                    //Case 1: packet received after loss: 3->2
-                    if (!trace[burst.first + i - 1]) {
-                        from3To2Counter++;
-                    }
-                }
-            } else {
-                state3Counter++;
-                if (i != 0) {
-                    //Case 2: packet loss after receive: 2->3
-                    if (trace[burst.first + i - 1]) {
-                        from2To3Counter++;
-                    }
-                }
-            }
-        }
-    }
-
-    //State-changes in gap period
-    for (auto &gap : gaps) {
-        for (unsigned long i = 1; i < gap.second; i++) {
-            if (trace[gap.first + i]) {
-                state1Counter++;
-                //Case 1: packet received after loss: 4->1
-                if (!trace[gap.first + i - 1]) {
-                    from4To1Counter++;
-                }
-            } else {
-                state4Counter++;
-                //Case 2: packet loss after receive: 1->4
-                if (trace[gap.first + i - 1]) {
-                    from1To4Counter++;
-                }
-            }
-        }
-    }
-
-    //State-changes between periods
-    from1To3Counter = bursts.size();
-    from3To1Counter = gaps.size() - 1;
-
-
-    float p32 = 1.f / (float) state3Counter * from3To2Counter;
-    float p23 = 1.f / (float) state2Counter * from2To3Counter;
-    float p14 = 1.f / (float) state1Counter * from1To4Counter;
-    float p13 = 1.f / (float) state1Counter * from1To3Counter;
-    float p31 = 1.f / (float) state3Counter * from3To1Counter;
-    float p41 = 1;
-
-    return new float[6]{p13, p31, p32, p23, p14, p41};
-}
-
-float *MarkovParser::bruteForceParameter(vector<bool> trace) {
-    const float STEP_SIZE = 0.01f;
-    float origLoss, avgOrigburstsize, avgOriggoodsize;
+double *MarkovParser::bruteForceParameter(vector<bool> trace) {
+    const double STEP_SIZE = 0.01f;
+    double origLoss, avgOrigburstsize, avgOriggoodsize;
     vector<int> origSizes;
     calcLoss(trace, origLoss, avgOrigburstsize, avgOriggoodsize, origSizes); //Calculate lossrate and burstsize of the original Trace
     sort(origSizes.begin(), origSizes.end());
-    vector<vector<float> > origDistFunction;
+    vector<vector<double> > origDistFunction;
     calcDistFunction(origSizes, origDistFunction);
-    vector<vector<float> > possibleParams;
-    float p13_estimated = -1.0f;
-    float p31_estimated = -1.0f;
-    float p32_estimated = -1.0f;
-    float p23_estimated = -1.0f;
-    float p14_estimated = -1.0f;
-    float p41 = 1.0f;
+    vector<vector<double> > possibleParams;
+    double p13_estimated = -1.0f;
+    double p31_estimated = -1.0f;
+    double p32_estimated = -1.0f;
+    double p23_estimated = -1.0f;
+    double p14_estimated = -1.0f;
+    double p41 = 1.0f;
     for(int p14_i = 1; p14_i < 10; p14_i++){
         for(int p13_i = 1; p13_i < 100-p14_i; p13_i++){
             for(int p32_i = 1; p32_i < 30; p32_i++){
                 for(int p31_i = 1; p31_i <= 100 - p32_i; p31_i++){
                     for(int p23_i = 80; p23_i < 100; p23_i++){
-                        float p14 = (float)p14_i/100;
-                        float p13 = (float)p13_i/100;
-                        float p32 = (float)p32_i/100;
-                        float p31 = (float)p31_i/100;
-                        float p23 = (float)p23_i/100;
-                        float S4 = 1.0f/(1.0f+(p41/p14)+((p41*p13)/(p14*p31))+((p41*p13*p32)/(p14*p31*p23))); //Steady-State-Probability S4
-                        float S1 = 1.0f/(1.0f+(p14/p41)+(p13/p31)+((p13*p32)/(p31*p23))); //Steady-State-Probability S1
-                        float S3 = 1.0f/(1.0f+(p32/p23)+(p31/p13)+((p14*p31)/(p41*p13))); //Steady-State-Probability S3
-                        float S2 = 1.0f/(1.0f+(p23/p32)+((p31*p23)/(p13*p32))+((p14*p31*p23)/(p41*p13*p32))); //Steady-State-Probability S2
-                        float theoreticalLoss = (S4+S3)*100;
-                        float theoreticalavgBurstLength = (S4+S3)/(S1*(p14+p13)+(S2*p23));
-                        float avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
+                        double p14 = (double)p14_i/100;
+                        double p13 = (double)p13_i/100;
+                        double p32 = (double)p32_i/100;
+                        double p31 = (double)p31_i/100;
+                        double p23 = (double)p23_i/100;
+                        double S4 = 1.0f/(1.0f+(p41/p14)+((p41*p13)/(p14*p31))+((p41*p13*p32)/(p14*p31*p23))); //Steady-State-Probability S4
+                        double S1 = 1.0f/(1.0f+(p14/p41)+(p13/p31)+((p13*p32)/(p31*p23))); //Steady-State-Probability S1
+                        double S3 = 1.0f/(1.0f+(p32/p23)+(p31/p13)+((p14*p31)/(p41*p13))); //Steady-State-Probability S3
+                        double S2 = 1.0f/(1.0f+(p23/p32)+((p31*p23)/(p13*p32))+((p14*p31*p23)/(p41*p13*p32))); //Steady-State-Probability S2
+                        double theoreticalLoss = (S4+S3)*100;
+                        double theoreticalavgBurstLength = (S4+S3)/(S1*(p14+p13)+(S2*p23));
+                        double avgBurstDiff = fabs(theoreticalavgBurstLength-avgOrigburstsize);
                         if(fabs(theoreticalLoss-origLoss) < 0.1 && avgBurstDiff < 720){
-                            vector<float> params;
+                            vector<double> params;
                             params.push_back(theoreticalLoss);
                             params.push_back(theoreticalavgBurstLength);
                             params.push_back(avgBurstDiff);
@@ -187,21 +56,21 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
     }
     cout << possibleParams.size() << endl;
     //Filter 50 best fitting parameter from possibleParams
-    vector<vector<float> > top50;
+    vector<vector<double> > top50;
     findTopX(top50, possibleParams, 50, "Markov");
 
     //Generate for those 50 parameters a trace which is as long as the initial input trace
     bool found = false;
-    vector<float> dvalues;
+    vector<double> dvalues;
     for(int i = 0; i<top50.size(); i++){
         vector<int> generatedSizes = MarkovModel(trace.size(), top50[i][0], top50[i][1], top50[i][2], top50[i][3], top50[i][4]).buildTrace2();
         //calculate distributionfunction
         sort(generatedSizes.begin(), generatedSizes.end());
-        vector<vector<float> > generatedDistFunction;
+        vector<vector<double> > generatedDistFunction;
         calcDistFunction(generatedSizes, generatedDistFunction);
 
         //calculate ks test
-        float dvalue = 0.0;
+        double dvalue = 0.0;
         bool ksdecision = kstest(origDistFunction, generatedDistFunction, origSizes.size(), generatedSizes.size(), dvalue);
         if(ksdecision){
             found = true;
@@ -218,7 +87,7 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
     if(!found){
         cout << "No parameters exist that pass the ks-test" << endl;
         int minindex = 0;
-        float minvalue = dvalues[0];
+        double minvalue = dvalues[0];
         for(int i = 0; i < dvalues.size()-1; i++){
             if(dvalues[minindex]>dvalues[i+1]){
                 minindex = i+1;
@@ -233,5 +102,5 @@ float *MarkovParser::bruteForceParameter(vector<bool> trace) {
         cout << "dwert: " << minvalue << endl;
     }
 
-    return new float[6] {p13_estimated, p31_estimated, p32_estimated, p23_estimated, p14_estimated, p41};
+    return new double[6] {p13_estimated, p31_estimated, p32_estimated, p23_estimated, p14_estimated, p41};
 }

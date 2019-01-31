@@ -3,19 +3,12 @@
 
 #include <vector>
 #include <string>
+#include "../PacketLossModelType.h"
 
 using namespace std;
 
-enum PacketLossModelType {
-    BERNOULLI,
-    SIMPLE_GILBERT,
-    GILBERT,
-    GILBERT_ELLIOT,
-    MARKOV
-};
-
 struct ExtractParameter {
-    float *parameter;
+    double *parameter;
     unsigned long packetCount;
 };
 

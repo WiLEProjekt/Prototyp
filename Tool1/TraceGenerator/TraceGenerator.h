@@ -18,6 +18,7 @@
 
 
 using namespace std;
+
 class TraceGenerator {
 private:
 
@@ -41,6 +42,7 @@ private:
      * Prints an Error on the console, if the arguments aren't correct
      */
     void printError();
+
     /**
      * Prints the available models on the console
      */
@@ -65,6 +67,18 @@ private:
     PacketLossModelType getPacketLossModelFromString(string modelname);
 
     /**
+    * Returns the Protocol with the name @param proto
+    * @param proto the name of the protocol
+    * @return the Protocol
+    */
+    Protocol parseProtocol(string proto);
+
+public:
+
+    vector<bool>
+    generateTrace(PacketLossModelType modelName, unsigned long numPackets, unsigned int seed, double *params);
+
+    /**
      * Extracts the ModelParameter of a file with 01-trace
      * @param filename the file
      * @param packetlossModelName the Model for the paramter
@@ -72,29 +86,7 @@ private:
      * @return the parameter for the model
      */
     ExtractParameter
-    extractModelParameter(const string &filename, string &fileType, string &packetlossModelName, unsigned int gMin);
-
-    ExtractParameter
     extractModelParameter(PacketLossModelType packetLossModel, vector<bool> parsedFile, unsigned int gMin);
-
-    ExtractParameter
-    extractModelParameterFromPing(const string &filename, unsigned int packetCount, string &packetlossModelName);
-    /**
-    * Returns the Protocol with the name @param proto
-    * @param proto the name of the protocol
-    * @return the Protocol
-    */
-    Protocol parseProtocol(string proto);
-public:
-
-    /**
-     * Constructor
-     * @param argc argument count
-     * @param argv arguments
-     */
-    TraceGenerator(int argc, char** argv);
-
-    void startGen(int argc, char **argv);
 };
 
 

@@ -1,6 +1,23 @@
 #include "TraceGenerator.h"
 #include "PcapParser/PcapParser.h"
 
+PacketLossModelType parseModelName(const string &modelName) {
+    if (modelName == "markov") {
+        return MARKOV;
+    }
+    if (modelName == "bernoulli") {
+        return BERNOULLI;
+    }
+    if (modelName == "simplegilbert") {
+        return SIMPLE_GILBERT;
+    }
+    if (modelName == "gilbert") {
+        return GILBERT;
+    }
+    if (modelName == "gilbertelliot") {
+        return GILBERT_ELLIOT;
+    }
+}
 
 void writeDelayFile(const string &filename, vector<int64_t> delays) {
     ofstream uploadDelayFile;
@@ -24,8 +41,7 @@ void writeFullTraceFile(const string &filename, vector<resultPoint> result) {
     uploadDelayFile.close();
 }
 
-void writeResultToFile(const result &download) {
-    string path = "Ergebnis/";
+void writeResultToFile(const result &download, const string &path) {
     ofstream uploadLossFile;
     string pathcommand = "mkdir -p " + path;
     system(pathcommand.c_str());
@@ -56,35 +72,113 @@ void writeResultToFile(const result &download) {
     writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
 }
 
+vector<bool> generate(PacketLossModelType model, unsigned long numPackets, double params[]) {
+    TraceGenerator traceGenerator;
+    return traceGenerator.generateTrace(model, numPackets, 0, params);
+}
+
+double *parseParams(PacketLossModelType model, const string *params) {
+    int paramCount;
+    if (model == MARKOV) {
+        paramCount = 5;
+        double result[paramCount];
+        for (int i = 0; i < paramCount; i++) {
+            result[i] = atof(params[i].c_str());
+        }
+        return result;
+    } else if (model == GILBERT_ELLIOT) {
+        paramCount = 4;
+        double result[paramCount];
+        for (int i = 0; i < paramCount; i++) {
+            result[i] = atof(params[i].c_str());
+        }
+        return result;
+    } else if (model == GILBERT) {
+        paramCount = 4;
+        double result[paramCount];
+        result[0] = atof(params[0].c_str());
+        result[1] = atof(params[1].c_str());
+        result[2] = 0;
+        result[3] = atof(params[2].c_str());
+        return result;
+    } else if (model == SIMPLE_GILBERT) {
+        paramCount = 4;
+        double result[paramCount];
+        result[0] = atof(params[0].c_str());
+        result[1] = atof(params[1].c_str());
+        result[2] = 0;
+        result[3] = 0;
+        return result;
+    } else if (model == BERNOULLI) {
+        paramCount = 4;
+        double result[paramCount];
+        result[0] = atof(params[0].c_str());
+        result[1] = 0;
+        result[2] = 0;
+        result[3] = 0;
+        return result;
+    } else {
+        return nullptr;
+    }
+}
+
+void writeLossToFile(vector<bool> loss, const string &path) {
+    ofstream downloadLossFile;
+    downloadLossFile.open(path + "/loss.txt");
+    for (bool b : loss) {
+        downloadLossFile << b;
+    }
+    downloadLossFile.flush();
+    downloadLossFile.close();
+}
 
 /**
  * Mögliche aufrufe:
- * clientTrace serverTrace globalClientIp
- * clientTrace serverTrace globalClientIp paramflag
- * gen [model] [params]
+ * ext outPath clientTrace serverTrace globalClientIp \\(extract)
+ * exg outPath clientTrace serverTrace globalClientIp model \\(extract and generate)
+ * gen outPath [numPacktes] [model] [params] \\(generate)
  */
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     string params[argc];
     for (int i = 0; i < argc; i++) {
         params[i] = argv[i];
     }
 
-    if(params[1] == "gen"){
-        //TODO Loss generieren und abspeichern
-    } else {
-        string clientTrace = params[1];
-        string serverTrace = params[2];
-        string globalClientIp = params[3];
-        bool paramized = false;
-        if(argc >= 5){
-            paramized = true;
+    string outPath = argv[2];
+
+    if (params[1] == "gen") {
+        /*
+         * Modell aus Parametern generieren
+         */
+        auto numPackets = static_cast<unsigned long>(atoll(argv[3]));
+        string modelName = params[4];
+        int paramCount = argc - 5;
+        string modelParams[paramCount];
+        for (int i = 0; i < paramCount; i++) {
+            modelParams[i] = argv[i + 5];
         }
+        vector<bool> result = generate(parseModelName(modelName), numPackets,
+                                       parseParams(parseModelName(modelName), modelParams));
+        writeLossToFile(result, outPath);
+    } else if (params[1] == "ext" || params[1] == "exg") {
+        /*
+         * Real Trace extrahieren
+         */
+        string clientTrace = params[3];
+        string serverTrace = params[4];
+        string globalClientIp = params[5];
+
         PcapParser parser;
         struct result pcapResult = parser.startParsing(clientTrace, serverTrace, globalClientIp);
-        if(paramized){
-            //TODO params generieren und loss generieren
+
+        if (params[1] == "exg") {
+            TraceGenerator generator;
+            PacketLossModelType model = parseModelName(params[6]);
+            ExtractParameter parameter = generator.extractModelParameter(model, pcapResult.loss, 0);
+            vector<bool> result = generate(model, parameter.packetCount, parameter.parameter);
+            pcapResult.loss = result;
         }
-        writeResultToFile(pcapResult);
+        writeResultToFile(pcapResult, outPath);
     }
 
     return 0;

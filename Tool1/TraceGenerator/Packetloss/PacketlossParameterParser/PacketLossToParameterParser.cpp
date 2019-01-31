@@ -19,7 +19,7 @@ PacketLossToParameterParser::PacketLossToParameterParser(PacketLossModelType pac
 }
 
 ExtractParameter PacketLossToParameterParser::parseParameter(unsigned int gMin) {
-    float *parameter;
+    double *parameter;
     switch (packetLossModel) {
         case BERNOULLI:
             parameter = BernoulliParser().parseParameter(trace);

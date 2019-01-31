@@ -1,6 +1,6 @@
 #include "SimpleGilbertParser.h"
 
-float *SimpleGilbertParser::parseParameter(vector<bool> trace) {
+double *SimpleGilbertParser::parseParameter(vector<bool> trace) {
     unsigned long lossCounter = 0;
     unsigned long recieveCounter = 0;
     unsigned long lossAfterRecieveCounter = 0;
@@ -24,8 +24,8 @@ float *SimpleGilbertParser::parseParameter(vector<bool> trace) {
         }
     }
 
-    float p = 1.f / (float) recieveCounter * (float) lossAfterRecieveCounter;
-    float r = 1.f / (float) lossCounter * (float) recieveAfterLossCounter;
+    double p = 1.f / (double) recieveCounter * (double) lossAfterRecieveCounter;
+    double r = 1.f / (double) lossCounter * (double) recieveAfterLossCounter;
 
-    return new float[4]{p, r, 1, 0};
+    return new double[4]{p, r, 1, 0};
 }

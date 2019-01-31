@@ -13,10 +13,10 @@ using namespace std;
 
 class GilbertElliotModel : public BasePacketlossModel {
 private:
-    float p = -1;
-    float r = -1;
-    float k = -1;
-    float h = -1;
+    double p = -1;
+    double r = -1;
+    double k = -1;
+    double h = -1;
 
     /**
      * Checks if the parameter are in a valid range
@@ -36,7 +36,7 @@ public:
      * @param k chance of receive in gap-state
      * @param h chance of receive in burst-state
      */
-    GilbertElliotModel(long numPackets, float p, float r, float k, float h) : BasePacketlossModel(numPackets) {
+    GilbertElliotModel(long numPackets, double p, double r, double k, double h) : BasePacketlossModel(numPackets) {
         this->p = p;
         this->r = r;
         this->k = k;
@@ -52,7 +52,7 @@ public:
      * @param numPackets the number of packets
      * @param parameter the 4 parameter [p, r, k, h]
      */
-    GilbertElliotModel(long numPackets, float parameter[])
+    GilbertElliotModel(long numPackets, double parameter[])
             : BasePacketlossModel(numPackets) {
         this->p = parameter[0];
         this->r = parameter[1];
@@ -70,7 +70,7 @@ public:
      * @param seed the seed of the random generator
      * @param parameter the 4 parameter [p, r, k, h]
      */
-    GilbertElliotModel(long numPackets, unsigned int seed, float parameter[])
+    GilbertElliotModel(long numPackets, unsigned int seed, double parameter[])
             : BasePacketlossModel(seed, numPackets) {
         this->p = parameter[0];
         this->r = parameter[1];

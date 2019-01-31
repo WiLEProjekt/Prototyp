@@ -15,7 +15,7 @@ public:
      * @return the parameter
      */
 
-    float *parseParameter(vector<bool> trace);
+    double *parseParameter(vector<bool> trace);
 };
 
 

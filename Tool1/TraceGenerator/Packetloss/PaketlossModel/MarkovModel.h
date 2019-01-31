@@ -11,7 +11,7 @@ protected:
     vector<bool> buildTrace() override;
 
 private:
-    float p13, p14, p23, p31, p32, p41 = 1;
+    double p13, p14, p23, p31, p32, p41 = 1;
 
 public:
     /**
@@ -20,7 +20,7 @@ public:
      * @param numPackets number of packets
      * @param the parameters [p13, p31, p32, p23, p14]
      */
-    MarkovModel(long numPackets, const float parameter[]) : BasePacketlossModel(numPackets) {
+    MarkovModel(long numPackets, const double parameter[]) : BasePacketlossModel(numPackets) {
         p13 = parameter[0];
         p31 = parameter[1];
         p32 = parameter[2];
@@ -29,7 +29,7 @@ public:
         p41 = 1;
     }
 
-    MarkovModel(long numPackets, unsigned int seed, const float parameter[]) : BasePacketlossModel(seed, numPackets) {
+    MarkovModel(long numPackets, unsigned int seed, const double parameter[]) : BasePacketlossModel(seed, numPackets) {
         p13 = parameter[0];
         p31 = parameter[1];
         p32 = parameter[2];
@@ -49,8 +49,9 @@ public:
      * @param p32 chance of switching from state-3 to state-2
      * @param p41 chance of switching from state-4 to state-1
      */
-    MarkovModel(long numPackets, float p13, float p31, float p32, float p23, float p14)
+    MarkovModel(long numPackets, double p13, double p31, double p32, double p23, double p14)
             : BasePacketlossModel(numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
+
     /**
      *
      * Constructor
@@ -63,7 +64,7 @@ public:
      * @param p32 chance of switching from state-3 to state-2
      * @param p41 chance of switching from state-4 to state-1
      */
-    MarkovModel(unsigned int seed, long numPackets, float p13, float p31, float p32, float p23, float p14)
+    MarkovModel(unsigned int seed, long numPackets, double p13, double p31, double p32, double p23, double p14)
             : BasePacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
 
 

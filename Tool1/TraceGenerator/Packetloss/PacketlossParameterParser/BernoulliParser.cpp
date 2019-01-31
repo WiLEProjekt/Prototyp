@@ -1,6 +1,6 @@
 #include "BernoulliParser.h"
 
-float *BernoulliParser::parseParameter(vector<bool> trace) {
+double *BernoulliParser::parseParameter(vector<bool> trace) {
     unsigned long lossCounter = 0;
     for (auto &&i : trace) {
         if (!i) {
@@ -8,7 +8,7 @@ float *BernoulliParser::parseParameter(vector<bool> trace) {
         }
     }
 
-    float p = 1.f / (float) trace.size() * (float) lossCounter;
+    double p = 1.f / (double) trace.size() * (double) lossCounter;
 
-    return new float[4]{p, 1 - p, 1, 0};
+    return new double[4]{p, 1 - p, 1, 0};
 }
