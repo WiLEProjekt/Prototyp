@@ -18,8 +18,6 @@ struct result {
     double reordering;
     double duplication;
     vector<int64_t> delays;
-
-    vector<struct resultPoint> fullResult;
 };
 
 #endif //TRACEGENERATOR_RESULT_H
