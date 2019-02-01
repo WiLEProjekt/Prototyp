@@ -1,6 +1,8 @@
 #include "TraceGenerator.h"
 #include "PcapParser/PcapParser.h"
 #include "Packetloss/PacketLossModelType.h"
+#include "Packetloss/PacketlossParameterParser/BernoulliParser.h"
+#include "Packetloss/PacketlossParameterParser/SimpleGilbertParser.h"
 
 PacketLossModelType parseModelName(const string &modelName) {
     if (modelName == "markov") {
@@ -304,8 +306,19 @@ int main(int argc, char **argv) {
 
         if (params[1] == "exg") {
             auto *parameter = new double[5];
-            parameter = startSageMath("../SageBaumWelch.py", outPath + "/downloadLoss.txt", params[6], parameter);
             PacketLossModelType model = parseModelName(params[6]);
+            if (model == BERNOULLI) {
+                BernoulliParser bernoulliParser;
+                parameter = bernoulliParser.parseParameter(pcapResult.loss);
+                cout << "p: " << parameter[0] << endl;
+            } else if (model == SIMPLE_GILBERT) {
+                SimpleGilbertParser simpleGilbertParser;
+                parameter = simpleGilbertParser.parseParameter(pcapResult.loss);
+                cout << "p: " << parameter[0] << endl;
+                cout << "r: " << parameter[1] << endl;
+            } else {
+                parameter = startSageMath("../SageBaumWelch.py", outPath + "/downloadLoss.txt", params[6], parameter);
+            }
             vector<bool> result = generate(model, stoll(params[7]), parameter);
             pcapResult.loss = result;
         }
