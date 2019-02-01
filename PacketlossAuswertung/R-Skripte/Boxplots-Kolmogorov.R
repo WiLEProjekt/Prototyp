@@ -1,37 +1,25 @@
-tconfintlow <- function( gamma, x) {return(mean(x)+qt((1 - gamma ) / 2 ,length (x) - 1)* sd(x)/sqrt(length (x) ) )  }
-tconfintup <- function( gamma, x) {return(mean(x)+qt(1-(1-gamma)/2 ,length(x)-1)*sd(x)/sqrt(length (x) ))}
+distancesB <- read.table("Dokumente/FinaleLossAuswertung/29012019/OS_to_MS2/Auswertung_Rohdaten/BernoulliKolmogorovDistances.txt")
+distancesSG <- read.table("Dokumente/FinaleLossAuswertung/29012019/OS_to_MS2/Auswertung_Rohdaten/SimpleGilbertKolmogorovDistances.txt")
+distancesG <- read.table("Dokumente/FinaleLossAuswertung/29012019/OS_to_MS2/Auswertung_Rohdaten/GilbertKolmogorovDistances.txt")
+distancesGE <- read.table("Dokumente/FinaleLossAuswertung/29012019/OS_to_MS2/Auswertung_Rohdaten/GilbertElliotKolmogorovDistances.txt")
+distancesM <- read.table("Dokumente/FinaleLossAuswertung/29012019/OS_to_MS2/Auswertung_Rohdaten/MarkovKolmogorovDistances.txt")
 
-distancesB <- read.table("Dokumente/Messung_13_12_18/Hinfahrt/AutomatischeAuswertung/BernoulliKolmogorovDistances.txt")
-distancesSG <- read.table("Dokumente/Messung_13_12_18/Hinfahrt/AutomatischeAuswertung/SimpleGilbertKolmogorovDistances.txt")
-distancesG <- read.table("Dokumente/Messung_13_12_18/Hinfahrt/AutomatischeAuswertung/GilbertKolmogorovDistances.txt")
-distancesGE <- read.table("Dokumente/Messung_13_12_18/Hinfahrt/AutomatischeAuswertung/GilbertElliotKolmogorovDistances.txt")
-distancesM <- read.table("Dokumente/Messung_13_12_18/Hinfahrt/AutomatischeAuswertung/MarkovKolmogorovDistances.txt")
-conflowB <-tconfintlow (0.95 , distancesB[,1]) 
-confupB <-tconfintup (0.95 , distancesB[,1])
-conflowSG <-tconfintlow (0.95 , distancesSG[,1]) 
-confupSG <-tconfintup (0.95 , distancesSG[,1])
-conflowG <-tconfintlow (0.95 , distancesG[,1]) 
-confupG <-tconfintup (0.95 , distancesG[,1])
-conflowGE <-tconfintlow (0.95 , distancesGE[,1]) 
-confupGE <-tconfintup (0.95 , distancesGE[,1])
-conflowM <-tconfintlow (0.95 , distancesM[,1]) 
-confupM <-tconfintup (0.95 , distancesM[,1])
-boxplot(distancesB[,1], distancesSG[,1], distancesG[,1], distancesGE[,1], distancesM[,1], main="Fitting Results - Kolmogorov", ylab="Kolmogorov Distance", names=c("Bernoulli", "Simple-Gilbert", "Gilbert", "Gilbert-Elliot", "Markov"), sub="Train OS-MS 13.12.2018 Kolmogorov Distances")
-#lines(c(0,5), c(9, 9), col="grey", lty=2)
-#lines(c(0,5), c(9.2, 9.2), col="grey", lty=2)
-#lines(c(0,5), c(9.4, 9.4), col="grey", lty=2)
-#lines(c(0,5), c(9.6, 9.6), col="grey", lty=2)
-#lines(c(0,5), c(9.8, 9.8), col="grey", lty=2)
-#lines(c(0,5), c(10, 10), col="grey", lty=2)
-#boxplot(bandwidthsKernel[,1], bandwidthsUsr[,1], bandwidthsKernelNeu[,1], bandwidthsUsrNeu[,1], main="10Mbit/s Datenrate", ylab="Goodput [Mbit/s]", names=c("FreeBSD nanosleep", "Usrsctp nanosleep", "FreeBSD while", "Usrsctp while"), sub="Paketgröße: 1000 Byte; 1 Datenpunkt besteht aus 1000 Paketen; 1000 Datenpunkte pro Boxplot", add=TRUE) #Linien hinter dem plot
-lines(c(0.6,1.4),c(conflowB,conflowB), col="red", lty=1)
-lines(c(0.6,1.4),c(confupB,confupB), col="red", lty=1)
-lines(c(1.6,2.4),c(conflowSG,conflowSG), col="red", lty=1)
-lines(c(1.6,2.4),c(confupSG,confupSG), col="red", lty=1)
-lines(c(2.6,3.4),c(conflowG,conflowG), col="red", lty=1)
-lines(c(2.6,3.4),c(confupG,confupG), col="red", lty=1)
-lines(c(3.6,4.4),c(conflowGE,conflowGE), col="red", lty=1)
-lines(c(3.6,4.4),c(confupGE,confupGE), col="red", lty=1)
-lines(c(4.6,5.4),c(conflowM,conflowM), col="red", lty=1)
-lines(c(4.6,5.4),c(confupM,confupM), col="red", lty=1)
-legend("topright", lwd=1,lty=1,col="red",legend="95% Konfidenzintervall")
+library(ggplot2)
+
+distancesB_2 <- data.frame(distancesB, "Model")
+distancesSG_2 <- data.frame(distancesSG, "Model")
+distancesG_2 <- data.frame(distancesG, "Model")
+distancesGE_2 <- data.frame(distancesGE, "Model")
+distancesM_2 <- data.frame(distancesM, "Model")
+
+distancesB_2$X.Model. <- "Bernoulli"
+distancesSG_2$X.Model. <- "Simple-Gilbert"
+distancesG_2$X.Model. <- "Gilbert"
+distancesGE_2$X.Model. <- "Gilbert-Elliot"
+distancesM_2$X.Model. <- "Markov"
+
+#distance_final <- rbind.data.frame(distancesB_2, distancesSG_2, distancesG_2, distancesGE_2)
+distance_final <- rbind.data.frame(distancesB_2, distancesSG_2, distancesG_2, distancesGE_2, distancesM_2)
+
+ggplot(data = distance_final, aes(x=X.Model., y=V1)) + 
+  geom_boxplot(aes(fill=X.Model.), notch = TRUE) + xlab("Models") + ylab("Kolmogorov distance") + theme_bw() + theme(legend.position="none") + ggtitle("Train Osnabrück-Münster-2 29.01.2019")
