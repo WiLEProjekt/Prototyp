@@ -338,7 +338,7 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
             unsigned char lengthBytes[] = {data[16], data[17]};
             unsigned long length = parseNumberFromBytes(lengthBytes, 2);
             if (length == 1028) {
-                unsigned long seqNum = getSeqNumIperf(data);
+                unsigned long seqNum = getSeqNumMobileTool(data);
                 if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
                     toOtherTS[seqNum] = header->ts;
                     timestampsSend.push_back(seqNum);
@@ -362,13 +362,15 @@ struct pcapValues readPcapFile(const string &filename, const string &ipOfPcapDev
 }
 
 void writeDelayFile(const string &filename, vector<int64_t> delays) {
-    ofstream uploadDelayFile;
-    uploadDelayFile.open(filename);
-    for (int64_t ts: delays) {
-        uploadDelayFile << ts << " ";
+    if (!delays.empty()) {
+        ofstream uploadDelayFile;
+        uploadDelayFile.open(filename);
+        for (int64_t ts: delays) {
+            uploadDelayFile << ts << " ";
+        }
+        uploadDelayFile.flush();
+        uploadDelayFile.close();
     }
-    uploadDelayFile.flush();
-    uploadDelayFile.close();
 }
 
 void writeFullTraceFile(const string &filename, vector<resultPoint> result) {
@@ -383,23 +385,56 @@ void writeFullTraceFile(const string &filename, vector<resultPoint> result) {
 }
 
 void writeResultToFile(const string &path, result upload, result download) {
-    ofstream uploadLossFile;
     string pathcommand = "mkdir -p " + path;
     system(pathcommand.c_str());
-    uploadLossFile.open(path + "uploadLoss.txt");
-    for (bool b : upload.loss) {
-        uploadLossFile << b;
-    }
-    uploadLossFile.flush();
-    uploadLossFile.close();
+    if(!upload.loss.empty()) {
+        ofstream uploadLossFile;
+        uploadLossFile.open(path + "uploadLoss.txt");
+        for (bool b : upload.loss) {
+            uploadLossFile << b;
+        }
+        uploadLossFile.flush();
+        uploadLossFile.close();
 
-    ofstream downloadLossFile;
-    downloadLossFile.open(path + "downloadLoss.txt");
-    for (bool b : download.loss) {
-        downloadLossFile << b;
+        ofstream uploadDuplicationFile;
+        string filename = path + "uploadDuplication.txt";
+        uploadDuplicationFile.open(filename);
+        uploadDuplicationFile << upload.duplication << endl;
+        uploadDuplicationFile.flush();
+        uploadDuplicationFile.close();
+
+        ofstream uploadReorderingFile;
+        uploadReorderingFile.open(path + "uploadReordering.txt");
+        uploadReorderingFile << upload.reordering << endl;
+        uploadReorderingFile.flush();
+        uploadReorderingFile.close();
+
+        writeFullTraceFile(path + "uploadfull.csv", upload.fullResult);
     }
-    downloadLossFile.flush();
-    downloadLossFile.close();
+    if(!download.loss.empty()) {
+        ofstream downloadLossFile;
+        downloadLossFile.open(path + "downloadLoss.txt");
+        for (bool b : download.loss) {
+            downloadLossFile << b;
+        }
+        downloadLossFile.flush();
+        downloadLossFile.close();
+
+        ofstream downloadDuplicationFile;
+        downloadDuplicationFile.open(path + "downloadDuplication.txt");
+        downloadDuplicationFile << download.duplication << endl;
+        downloadDuplicationFile.flush();
+        downloadDuplicationFile.close();
+
+
+        ofstream downloadReorderingFile;
+        downloadReorderingFile.open(path + "downloadReordering.txt");
+        downloadReorderingFile << download.reordering << endl;
+        downloadReorderingFile.flush();
+        downloadReorderingFile.close();
+
+        writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
+    }
 
     string uploadDelayFilename = path + "uploadDelays.csv";
     writeDelayFile(uploadDelayFilename, upload.delays);
@@ -407,33 +442,6 @@ void writeResultToFile(const string &path, result upload, result download) {
     string downloadDelayFilename = path + "downloadDelays.csv";
     writeDelayFile(downloadDelayFilename, download.delays);
 
-    ofstream uploadDuplicationFile;
-    string filename = path + "uploadDuplication.txt";
-    uploadDuplicationFile.open(filename);
-    uploadDuplicationFile << upload.duplication << endl;
-    uploadDuplicationFile.flush();
-    uploadDuplicationFile.close();
-
-    ofstream downloadDuplicationFile;
-    downloadDuplicationFile.open(path + "downloadDuplication.txt");
-    downloadDuplicationFile << download.duplication << endl;
-    downloadDuplicationFile.flush();
-    downloadDuplicationFile.close();
-
-    ofstream uploadReorderingFile;
-    uploadReorderingFile.open(path + "uploadReordering.txt");
-    uploadReorderingFile << upload.reordering << endl;
-    uploadReorderingFile.flush();
-    uploadReorderingFile.close();
-
-    ofstream downloadReorderingFile;
-    downloadReorderingFile.open(path + "downloadReordering.txt");
-    downloadReorderingFile << download.reordering << endl;
-    downloadReorderingFile.flush();
-    downloadReorderingFile.close();
-
-    writeFullTraceFile(path + "uploadfull.csv", upload.fullResult);
-    writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
 }
 
 
@@ -631,13 +639,17 @@ int main(int argc, char **argv) {
             uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
             uploadValues.send = clientValues.send;
             uploadValues.received = serverValues.received;
+            struct result uploadResult{};
+            struct result downloadResult{};
 
-            struct result uploadResult = getResults(uploadValues);
-            struct result downloadResult = getResults(downloadValues);
-
+            if(!uploadValues.received.empty()) {
+                uploadResult = getResults(uploadValues);
+            }
+            if(!downloadValues.received.empty()) {
+                downloadResult = getResults(downloadValues);
+            }
             writeResultToFile(uploadResult, downloadResult);
-        }
-    } else if (argc == 5) {
+        }    } else if (argc == 5) {
         string path = argv[1];
         serverIp = argv[2];
         localeClientIp = argv[3];
