@@ -20,15 +20,6 @@ public:
      * @param numPackets number of packets
      * @param the parameters [p13, p31, p32, p23, p14]
      */
-    MarkovModel(long numPackets, const double parameter[]) : BasePacketlossModel(numPackets) {
-        p13 = parameter[0];
-        p31 = parameter[1];
-        p32 = parameter[2];
-        p23 = parameter[3];
-        p14 = parameter[4];
-        p41 = 1;
-    }
-
     MarkovModel(long numPackets, unsigned int seed, const double parameter[]) : BasePacketlossModel(seed, numPackets) {
         p13 = parameter[0];
         p31 = parameter[1];
@@ -37,38 +28,6 @@ public:
         p14 = parameter[4];
         p41 = 1;
     }
-
-    /**
-     *
-     * Constructor
-     * @param numPackets number of packets
-     * @param p13 chance of switching from state-1 to state-3
-     * @param p14 chance of switching from state-1 to state-4
-     * @param p23 chance of switching from state-2 to state-3
-     * @param p31 chance of switching from state-3 to state-1
-     * @param p32 chance of switching from state-3 to state-2
-     * @param p41 chance of switching from state-4 to state-1
-     */
-    MarkovModel(long numPackets, double p13, double p31, double p32, double p23, double p14)
-            : BasePacketlossModel(numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
-
-    /**
-     *
-     * Constructor
-     * @param seed seed of the random generator
-     * @param numPackets number of packets
-     * @param p13 chance of switching from state-1 to state-3
-     * @param p14 chance of switching from state-1 to state-4
-     * @param p23 chance of switching from state-2 to state-3
-     * @param p31 chance of switching from state-3 to state-1
-     * @param p32 chance of switching from state-3 to state-2
-     * @param p41 chance of switching from state-4 to state-1
-     */
-    MarkovModel(unsigned int seed, long numPackets, double p13, double p31, double p32, double p23, double p14)
-            : BasePacketlossModel(seed, numPackets), p13(p13), p14(p14), p23(p23), p31(p31), p32(p32) {}
-
-
-    vector<int> buildTrace2();
 };
 
 

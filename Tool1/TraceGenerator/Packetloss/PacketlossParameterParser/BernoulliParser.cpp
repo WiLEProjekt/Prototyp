@@ -1,3 +1,7 @@
+//
+// Created by drieke on 01.02.19.
+//
+
 #include "BernoulliParser.h"
 
 double *BernoulliParser::parseParameter(vector<bool> trace) {

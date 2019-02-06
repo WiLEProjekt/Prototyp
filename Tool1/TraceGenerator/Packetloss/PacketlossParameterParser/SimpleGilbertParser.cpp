@@ -1,3 +1,7 @@
+//
+// Created by drieke on 01.02.19.
+//
+
 #include "SimpleGilbertParser.h"
 
 double *SimpleGilbertParser::parseParameter(vector<bool> trace) {

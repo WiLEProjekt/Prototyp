@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <stdint-gcc.h>
 #include "Result.h"
-#include "SignalStrength.h"
 #include "PcapValues.h"
 #include "ResultPoint.h"
 
@@ -58,8 +57,6 @@ public:
     struct result
     startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
                  const string &localClientIp, const string &serverIp);
-
-    int main(int argc, char **argv);
 };
 
 

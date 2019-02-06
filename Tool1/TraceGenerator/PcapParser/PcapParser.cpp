@@ -147,7 +147,6 @@ struct result PcapParser::getResults(struct pcapValues values) {
     results.duplication = duplications;
     results.loss = loss;
     results.reordering = reordering;
-    results.fullResult = points;
     return results;
 }
 
@@ -209,6 +208,7 @@ PcapParser::readMobilePcapFile(const string &filename, const string &ipOfPcapDev
     return result;
 }
 
+
 struct result
 PcapParser::startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
                          const string &localClientIp, const string &serverIp) {
@@ -216,6 +216,7 @@ PcapParser::startParsing(const string &clientTraceFile, const string &serverTrac
     struct pcapValues serverValues = readMobilePcapFile(serverTraceFile, serverIp, globalClientIp);
 
     struct pcapValues downloadValues{};
+    struct pcapValues uploadValues{};
 
     downloadValues.seqNumsSend = serverValues.seqNumsSend;
     downloadValues.seqNumsReceived = clientValues.seqNumsReceived;

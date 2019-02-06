@@ -1,5 +1,8 @@
 #include "TraceGenerator.h"
 #include "PcapParser/PcapParser.h"
+#include "Packetloss/PacketLossModelType.h"
+#include "Packetloss/PacketlossParameterParser/BernoulliParser.h"
+#include "Packetloss/PacketlossParameterParser/SimpleGilbertParser.h"
 
 PacketLossModelType parseModelName(const string &modelName) {
     if (modelName == "markov") {
@@ -70,7 +73,7 @@ double *parseParams(PacketLossModelType model, const string *params, double *res
         paramCount = 5;
         double newresult[paramCount];
         for (int i = 0; i < paramCount; i++) {
-            newresult[i] = atof(params[i].c_str());
+            newresult[i] = stof(params[i]);
         }
         result = newresult;
         return result;
@@ -78,24 +81,24 @@ double *parseParams(PacketLossModelType model, const string *params, double *res
         paramCount = 4;
         double newresult[paramCount];
         for (int i = 0; i < paramCount; i++) {
-            newresult[i] = atof(params[i].c_str());
+            newresult[i] = stof(params[i]);
         }
         result = newresult;
         return result;
     } else if (model == GILBERT) {
         paramCount = 4;
         double newresult[paramCount];
-        newresult[0] = atof(params[0].c_str());
-        newresult[1] = atof(params[1].c_str());
+        newresult[0] = stof(params[0]);
+        newresult[1] = stof(params[1]);
         newresult[2] = 1;
-        newresult[3] = atof(params[2].c_str());
+        newresult[3] = stof(params[2]);
         result = newresult;
         return result;
     } else if (model == SIMPLE_GILBERT) {
         paramCount = 4;
         double newresult[paramCount];
-        newresult[0] = atof(params[0].c_str());
-        newresult[1] = atof(params[1].c_str());
+        newresult[0] = stof(params[0]);
+        newresult[1] = stof(params[1]);
         newresult[2] = 1;
         newresult[3] = 0;
         result = newresult;
@@ -103,7 +106,7 @@ double *parseParams(PacketLossModelType model, const string *params, double *res
     } else if (model == BERNOULLI) {
         paramCount = 4;
         double newresult[paramCount];
-        newresult[0] = atof(params[0].c_str());
+        newresult[0] = stof(params[0]);
         newresult[1] = 1 - newresult[0];
         newresult[2] = 1;
         newresult[3] = 0;
@@ -128,9 +131,137 @@ void writeLossToFile(vector<bool> loss, const string &path) {
 }
 
 /**
+ * Reads the temprary file, builds the matrices and deletes the temporary file
+ */
+void readFile(vector<vector<double>> &transitionmatrix, vector<vector<double>> &emissionmatrix,
+              vector<double> &initialprobabilities) {
+    ifstream infile;
+    string filename = "sageout.txt";
+    infile.open(filename);
+    string line;
+    int i = 0;
+    vector<double> temptrans;
+    vector<double> tempemission;
+    string tempstring;
+    //Push all probabilities into tempral vectors, then build the matrices
+    while (getline(infile, line)) {
+        if (i == 0) { //First line = Transition Matrix
+            for (int i = 0; i < line.size(); i++) {
+                if (line[i] != ';') {
+                    tempstring = tempstring + line[i];
+                } else {
+                    temptrans.push_back(stod(tempstring));
+                    tempstring = "";
+                }
+            }
+        } else if (i == 1) { //Second line = Emission Matrix
+            for (int i = 0; i < line.size(); i++) {
+                if (line[i] != ';') {
+                    tempstring = tempstring + line[i];
+                } else {
+                    tempemission.push_back(stod(tempstring));
+                    tempstring = "";
+                }
+            }
+
+        } else if (i == 2) { //Third line = Initial Probabilities
+            for (int i = 0; i < line.size(); i++) {
+                if (line[i] != ';') {
+                    tempstring = tempstring + line[i];
+                } else {
+                    initialprobabilities.push_back(stod(tempstring));
+                    tempstring = "";
+                }
+            }
+        } else {
+            break;
+        }
+        i++;
+    }
+    infile.close();
+    //Build Transitionmatrix
+    int dimension = sqrt(temptrans.size());
+    vector<double> tmp;
+    int counter = 0;
+    for (int i = 0; i < temptrans.size(); i++) {
+        if (counter == dimension) {
+            counter = 0;
+            transitionmatrix.push_back(tmp);
+            tmp.clear();
+        }
+        tmp.push_back(temptrans[i]);
+        counter++;
+    }
+    transitionmatrix.push_back(tmp);
+    tmp.clear();
+    counter = 0;
+
+    //Build Emissionmatrix
+    for (int i = 0; i < tempemission.size(); i++) {
+        if (counter == 2) {
+            counter = 0;
+            emissionmatrix.push_back(tmp);
+            tmp.clear();
+        }
+        tmp.push_back(tempemission[i]);
+        counter++;
+    }
+    emissionmatrix.push_back(tmp);
+    tmp.clear();
+    if (remove(filename.c_str()) != 0) { //delete temporary file
+        perror("Error deleting the temporary file");
+    }
+}
+
+double *startSageMath(const string &sagescript, const string &traceFile, const string &model, double *params) {
+    if (!(model == "gilbert" || model == "gilbertelliot" || model == "markov")) {
+        cout << "wrong model. choose gilbert | gilbertelliot | markov" << endl;
+        return nullptr;
+    }
+    cout << "Starting Sagemath" << endl;
+    string pythonCommand = "sage --python " + sagescript + " " + traceFile + " " + model;
+    int sageStatus = system(pythonCommand.c_str());
+    if (sageStatus < 0) {
+        cout << "An Error occured while executing Sagemath" << endl;
+        return nullptr;
+    }
+    cout << "Sagemath executed successfully. Calculating Results" << endl;
+    vector<vector<double>> transitionmatrix;
+    vector<vector<double>> emissionmatrix;
+    vector<double> initialprobabilities;
+    readFile(transitionmatrix, emissionmatrix, initialprobabilities);
+
+    if (model == "gilbert") {
+        params[0] = transitionmatrix[0][1];
+        params[1] = transitionmatrix[1][0];
+        params[2] = emissionmatrix[0][1];
+        params[3] = emissionmatrix[1][1];
+        cout << "p=" << transitionmatrix[0][1] << " r=" << transitionmatrix[1][0] << " k=" << emissionmatrix[0][1]
+             << " h=" << emissionmatrix[1][1] << endl;
+    } else if (model == "gilbertelliot") {
+        params[0] = transitionmatrix[0][1];
+        params[1] = transitionmatrix[1][0];
+        params[2] = emissionmatrix[0][1];
+        params[3] = emissionmatrix[1][1];
+        cout << "p=" << transitionmatrix[0][1] << " r=" << transitionmatrix[1][0] << " k=" << emissionmatrix[0][1]
+             << " h=" << emissionmatrix[1][1] << endl;
+    } else if (model == "markov") {
+        params[0] = transitionmatrix[0][2];
+        params[1] = transitionmatrix[2][0];
+        params[2] = transitionmatrix[2][1];
+        params[3] = transitionmatrix[1][2];
+        params[4] = transitionmatrix[0][3];
+        cout << "p13=" << transitionmatrix[0][2] << " p31=" << transitionmatrix[2][0] << " p32="
+             << transitionmatrix[2][1] << " p23=" << transitionmatrix[1][2] << " p14=" << transitionmatrix[0][3]
+             << " p41=" << transitionmatrix[3][0] << endl;
+    }
+    return params;
+}
+
+/**
  * Mögliche aufrufe:
  * ext outPath clientTrace serverTrace globalClientIp \\(extract)
- * exg outPath clientTrace serverTrace globalClientIp model \\(extract and generate)
+ * exg outPath clientTrace serverTrace globalClientIp model numPackets\\(extract and generate)
  * gen outPath [numPacktes] [model] [params] \\(generate)
  */
 int main(int argc, char **argv) {
@@ -171,14 +302,26 @@ int main(int argc, char **argv) {
         PcapParser parser;
         struct result pcapResult = parser.startParsing(clientTrace, serverTrace, globalClientIp);
 
+        writeResultToFile(pcapResult, outPath);
+
         if (params[1] == "exg") {
-            TraceGenerator generator;
+            auto *parameter = new double[5];
             PacketLossModelType model = parseModelName(params[6]);
-            ExtractParameter parameter = generator.extractModelParameter(model, pcapResult.loss, 0);
-            vector<bool> result = generate(model, parameter.packetCount, parameter.parameter);
+            if (model == BERNOULLI) {
+                BernoulliParser bernoulliParser;
+                parameter = bernoulliParser.parseParameter(pcapResult.loss);
+                cout << "p: " << parameter[0] << endl;
+            } else if (model == SIMPLE_GILBERT) {
+                SimpleGilbertParser simpleGilbertParser;
+                parameter = simpleGilbertParser.parseParameter(pcapResult.loss);
+                cout << "p: " << parameter[0] << endl;
+                cout << "r: " << parameter[1] << endl;
+            } else {
+                parameter = startSageMath("../SageBaumWelch.py", outPath + "/downloadLoss.txt", params[6], parameter);
+            }
+            vector<bool> result = generate(model, stoll(params[7]), parameter);
             pcapResult.loss = result;
         }
-        writeResultToFile(pcapResult, outPath);
     }
 
     return 0;

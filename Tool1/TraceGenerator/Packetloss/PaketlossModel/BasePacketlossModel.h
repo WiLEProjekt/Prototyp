@@ -20,18 +20,6 @@ protected:
 
     /**
      * Constructor
-     * @param numPackets number of packets
-     */
-    explicit BasePacketlossModel(long numPackets) : numPackets(numPackets) {
-        randomGenerator.seed(time(0));
-        //randomGenerator.seed(1);
-        auto *dist = new uniform_real_distribution<float>(0.0, 1.0);
-        distribution = *dist;
-        delete (dist);
-    }
-
-    /**
-     * Constructor
      * @param seed seed of the random generator
      * @param numPackets number of packets
      */
@@ -48,9 +36,6 @@ public:
      * @return a loss trace
      */
     virtual vector<bool> buildTrace() = 0;
-
-    void calculateBursts(vector<bool> &trace, int &i, int &losscounter, int &receivecounter,
-                         int &temp, vector<int> &genSizes);
 };
 
 
