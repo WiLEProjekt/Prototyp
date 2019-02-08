@@ -170,7 +170,7 @@ struct result getResults(struct pcapValues values) {
                 //Hole losses nach
                 int64_t tsDiff = recievedTs - lastTs;
                 double step = (double)tsDiff / lossCounter;
-                for(int i = 1; i < lossCounter - 1; i++){
+                for(int i = 0; i < lossCounter; i++){
                     auto currTs = (uint64_t)((double)lastTs + step * i);
                     struct resultPoint lossPoint{};
                     lossPoint.recievedTs = currTs;
