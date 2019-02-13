@@ -73,6 +73,12 @@ string parseIP(unsigned char *bytes) {
     return ip;
 }
 
+unsigned long getSeqNumRTP(const u_char *data) {
+    unsigned char seqNumBytes[] = {data[46], data[47]};
+    unsigned long seqNum = parseNumberFromBytes(seqNumBytes, 2);
+    return seqNum;
+}
+
 unsigned long getSeqNumIperf(const u_char *data) {
     //Data start: 42
     unsigned char seqNumBytes[] = {data[50], data[51], data[52], data[53]};
@@ -241,6 +247,65 @@ struct result getResults(struct pcapValues values) {
     results.reordering = reordering;
     results.fullResult = points;
     return results;
+}
+
+struct pcapValues readStreamPcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice) {
+    map<unsigned long, struct timeval> toOtherTS;
+    map<unsigned long, struct timeval> toSelfTS;
+    vector<unsigned long> timestampsSend;
+    vector<unsigned long> timestampsReceived;
+
+    struct pcapValues result{};
+
+    struct stat buffer{};
+    if (stat(filename.c_str(), &buffer) != 0) {
+        cout << "file " << filename << " not found" << endl;
+    } else {
+        char errbuff[PCAP_ERRBUF_SIZE];
+        pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
+        struct pcap_pkthdr *header;
+        const u_char *data;
+        //BRAUCHEN WIR DAS NOCH??????
+        bool isFirstPackageToOther = true;
+        //-------
+        unsigned long packageCount = 0;
+        while (pcap_next_ex(pcap, &header, &data) >= 0) {
+            packageCount++;
+
+
+            //TODO: EVENTUELL IPs checken
+            unsigned char sourceIPBytes[] = {data[28], data[29], data[30], data[31]};
+            unsigned char destIPBytes[] = {data[32], data[33], data[34], data[35]};
+            string packetSource = parseIP(sourceIPBytes);
+            string packetDest = parseIP(destIPBytes);
+
+            //check if packet is UDP (17)
+            unsigned char lengthBytes[] = {data[40], data[41]};
+            unsigned long length = parseNumberFromBytes(lengthBytes, 2);
+                unsigned long seqNum = getSeqNumRTP(data);
+                if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
+                    if (isFirstPackageToOther) {
+                        isFirstPackageToOther = false;
+                    } else {
+                        toOtherTS[seqNum] = header->ts;
+                        timestampsSend.push_back(seqNum);
+                    }
+                } else if (ipOfPcapDevice == packetDest && ipOfOtherDevice == packetSource) {
+                    toSelfTS[seqNum] = header->ts;
+                    timestampsReceived.push_back(seqNum);
+                }
+        }
+        pcap_close(pcap);
+
+        result.send = toOtherTS;
+        result.received = toSelfTS;
+        result.seqNumsReceived = timestampsReceived;
+        result.seqNumsSend = timestampsSend;
+
+        return result;
+    }
+
+    return result;
 }
 
 struct pcapValues readMobilePcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice) {
@@ -612,7 +677,34 @@ int main(int argc, char **argv) {
             downloadResult = addSigStrengthToResult(downloadResult, tsSigStr);
 
             writeResultToFile(downloadResult);
-        } else {
+        } else if(lastArg == "-s") {
+            /**
+             * Parse rtp-stream
+             */
+            clientFilename = argv[1];
+            serverFilename = argv[2];
+            localeClientIp = argv[3];
+            serverIp = argv[4];
+            struct pcapValues clientValues = readStreamPcapFile(clientFilename, localeClientIp, serverIp);
+            struct pcapValues serverValues = readStreamPcapFile(serverFilename, serverIp, localeClientIp);
+
+            struct pcapValues downloadValues{};
+            struct pcapValues uploadValues{};
+
+            downloadValues.seqNumsSend = serverValues.seqNumsSend;
+            downloadValues.seqNumsReceived = clientValues.seqNumsReceived;
+            downloadValues.send = serverValues.send;
+            downloadValues.received = clientValues.received;
+
+            uploadValues.seqNumsSend = clientValues.seqNumsSend;
+            uploadValues.seqNumsReceived = serverValues.seqNumsReceived;
+            uploadValues.send = clientValues.send;
+            uploadValues.received = serverValues.received;
+
+            struct result downloadResult = getResults(downloadValues);
+
+            writeResultToFile(downloadResult);
+        }else {
             string arg5 = argv[5];
 
             /*
@@ -649,7 +741,8 @@ int main(int argc, char **argv) {
                 downloadResult = getResults(downloadValues);
             }
             writeResultToFile(uploadResult, downloadResult);
-        }    } else if (argc == 5) {
+        }
+    } else if (argc == 5) {
         string path = argv[1];
         serverIp = argv[2];
         localeClientIp = argv[3];
