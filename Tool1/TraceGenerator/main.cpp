@@ -2,7 +2,17 @@
 #include "PcapParser/PcapParser.h"
 #include "Packetloss/PacketLossModelType.h"
 #include "Packetloss/PacketlossParameterParser/BernoulliParser.h"
+#include <string>
+#include <iostream>
 #include "Packetloss/PacketlossParameterParser/SimpleGilbertParser.h"
+
+enum ProgramFunction{
+    EXTRACT = 1,
+    GENERATE = 2,
+    EXTRACT_GENERATE = 3
+};
+
+int main(int argc, char** argv);
 
 PacketLossModelType parseModelName(const string &modelName) {
     if (modelName == "markov") {
@@ -258,73 +268,250 @@ double *startSageMath(const string &sagescript, const string &traceFile, const s
     return params;
 }
 
+vector<string> listAllTraces(){
+    vector<string> directories;
+    string path = "../Traces/";
+    DIR *dir;
+    int counter = 1;
+    struct dirent *ent;
+    if ((dir = opendir (path.c_str())) != NULL) {
+        /* print all the files and directories within directory */
+        while ((ent = readdir (dir)) != NULL) {
+            directories.push_back(ent->d_name);
+        }
+        closedir (dir);
+    } else {
+        /* could not open directory */
+        perror (("Could not open directory: " + path).c_str());
+    }
+    directories.pop_back();
+    directories.pop_back();
+    for(const string &directory : directories){
+        cout << "[" << counter++ << "] " << directory << endl;
+    }
+    return directories;
+}
+
+string getClientIpFromDirectory(const string& directory){
+    string path = "../Traces/" + directory;
+    ifstream ipFile;
+    ipFile.open(path + "/clientIp.txt");
+    string clientIp;
+    ipFile >> clientIp;
+    ipFile.close();
+    return clientIp;
+}
+
+void getExtractParams(){
+    string outpath;
+    string clientPcap;
+    string serverPcap;
+    string clientIp;
+    cout << "output path:" << endl;
+    cin >> outpath;
+    cout << "Trace:" << endl;
+    vector<string> directories = listAllTraces();
+    int directoryId;
+    cin >> directoryId;
+    string directory = directories[directoryId - 1];
+    clientPcap = "../Traces/" + directory + "/client.pcap";
+    serverPcap = "../Traces/" + directory + "/server.pcap";
+    clientIp = getClientIpFromDirectory(directory);
+
+    int argc = 6;
+    const auto **argv = new const char*[argc];
+    argv[0] = "TraceGenerator";
+    argv[1] = "ext";
+    argv[2] = outpath.c_str();
+    argv[3] = clientPcap.c_str();
+    argv[4] = serverPcap.c_str();
+    argv[5] = clientIp.c_str();
+    main(argc, (char**)argv);
+}
+/**
+ * gen outPath [numPacktes] [model] [params]
+ */
+void getGenerateParams(){
+    string outpath;
+    string numPackets;
+    string modelname;
+    cout << "output path:" << endl;
+    cin >> outpath;
+    cout << "Number of generated packets" << endl;
+    cin >> numPackets;
+    cout << "Model:" << endl
+         << "Bernoulli" << endl
+         << "SimpleGilbert" << endl
+         << "Gilbert" << endl
+         << "GilbertElliot" << endl
+         << "Markov" << endl;
+    cin >> modelname;
+
+    PacketLossModelType model = parseModelName(modelname);
+    int argc = 5;
+    const auto **argv = new const char*[9];
+    argv[0] = "TraceGenerator";
+    argv[1] = "gen";
+    argv[2] = outpath.c_str();
+    argv[3] = numPackets.c_str();
+    argv[4] = modelname.c_str();
+    if(model == BERNOULLI || model == SIMPLE_GILBERT || model == GILBERT || model == GILBERT_ELLIOT) {
+        cout << "p:" << endl;
+        string p;
+        cin >> p;
+        argv[5] = p.c_str();
+        argc += 1;
+        if(model != BERNOULLI) {
+            cout << "r:" << endl;
+            string r;
+            cin >> r;
+            argv[6] = r.c_str();
+            argc += 1;
+            if(model != SIMPLE_GILBERT) {
+                cout << "h:" << endl;
+                string h;
+                cin >> h;
+                argv[7] = h.c_str();
+                argc += 1;
+                if(model != GILBERT) {
+                    cout << "k:" << endl;
+                    string k;
+                    cin >> k;
+                    argv[8] = argv[7];
+                    argv[7] = k.c_str();
+                    argc += 1;
+                }
+            }
+        }
+    } else if(model == MARKOV){
+        argc = 10;
+        string p13;
+        string p31;
+        string p32;
+        string p23;
+        string p14;
+        cout << "p13:" << endl;
+        cin >> p13;
+        cout << "p31:" << endl;
+        cin >> p31;
+        cout << "p32:" << endl;
+        cin >> p32;
+        cout << "p23:" << endl;
+        cin >> p23;
+        cout << "p14:" << endl;
+        cin >> p14;
+        argv[5] = p13.c_str();
+        argv[6] = p31.c_str();
+        argv[7] = p32.c_str();
+        argv[8] = p23.c_str();
+        argv[9] = p14.c_str();
+    }
+    main(argc, (char**)argv);
+}
+
+/**
+ * 1. Funktion (extract/generate/extract-generate)
+ * 2. Funktionsparams..
+ * 3. output path
+ */
+void startMenu(){
+    bool validCommand = false;
+    while(!validCommand) {
+        cout << "What do you need?" << endl << "[1] extract real trace" << endl << "[2] generate trace with model"
+             << endl << "[3] extract model parameters from real trace" << endl;
+        int command;
+        cin >> command;
+        switch (command) {
+            case EXTRACT:
+                getExtractParams();
+                validCommand = true;
+                break;
+            case GENERATE:
+                getGenerateParams();
+                validCommand = true;
+                break;
+            case EXTRACT_GENERATE:
+                validCommand = true;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 /**
  * Mögliche aufrufe:
+ * //menu
  * ext outPath clientTrace serverTrace globalClientIp \\(extract)
  * exg outPath clientTrace serverTrace globalClientIp model numPackets\\(extract and generate)
  * gen outPath [numPacktes] [model] [params] \\(generate)
  */
 int main(int argc, char **argv) {
-    string params[argc];
-    for (int i = 0; i < argc; i++) {
-        params[i] = argv[i];
-    }
-
-    string outPath = argv[2];
-
-    if (params[1] == "gen") {
-        /*
-         * Modell aus Parametern generieren
-         */
-        auto numPackets = static_cast<unsigned long>(atoll(argv[3]));
-        string modelName = params[4];
-        int paramCount = argc - 5;
-        string modelParams[paramCount];
-        for (int i = 0; i < paramCount; i++) {
-            modelParams[i] = argv[i + 5];
-        }
-        double *parsedParams;
-        parsedParams = parseParams(parseModelName(modelName), modelParams, parsedParams);
-        double wtfParams[5];
-        for (int i = 0; i < 5; i++) {
-            wtfParams[i] = parsedParams[i];
-        }
-        vector<bool> result = generate(parseModelName(modelName), numPackets, wtfParams);
-        writeLossToFile(result, outPath);
-    } else if (params[1] == "ext" || params[1] == "exg") {
-        /*
-         * Real Trace extrahieren
-         */
-        string clientTrace = params[3];
-        string serverTrace = params[4];
-        string globalClientIp = params[5];
-
-        PcapParser parser;
-        struct result pcapResult = parser.startParsing(clientTrace, serverTrace, globalClientIp);
-
-        writeResultToFile(pcapResult, outPath);
-
-        if (params[1] == "exg") {
-            auto *parameter = new double[5];
-            PacketLossModelType model = parseModelName(params[6]);
-            if (model == BERNOULLI) {
-                BernoulliParser bernoulliParser;
-                parameter = bernoulliParser.parseParameter(pcapResult.loss);
-                cout << "p: " << parameter[0] << endl;
-            } else if (model == SIMPLE_GILBERT) {
-                SimpleGilbertParser simpleGilbertParser;
-                parameter = simpleGilbertParser.parseParameter(pcapResult.loss);
-                cout << "p: " << parameter[0] << endl;
-                cout << "r: " << parameter[1] << endl;
-            } else {
-                parameter = startSageMath("../SageBaumWelch.py", outPath + "/downloadLoss.txt", params[6], parameter);
-            }
-            vector<bool> result = generate(model, stoll(params[7]), parameter);
-            pcapResult.loss = result;
-            writeResultToFile(pcapResult, outPath);
-        }
+    if(argc == 1){
+        startMenu();
     } else {
-        cout << "Invalid params" << endl;
+        string params[argc];
+        for (int i = 0; i < argc; i++) {
+            params[i] = argv[i];
+        }
+
+        string outPath = argv[2];
+
+        if (params[1] == "gen") {
+            /*
+             * Modell aus Parametern generieren
+             */
+            auto numPackets = static_cast<unsigned long>(atoll(argv[3]));
+            string modelName = params[4];
+            int paramCount = argc - 5;
+            string modelParams[paramCount];
+            for (int i = 0; i < paramCount; i++) {
+                modelParams[i] = argv[i + 5];
+            }
+            double *parsedParams;
+            parsedParams = parseParams(parseModelName(modelName), modelParams, parsedParams);
+            double wtfParams[5];
+            for (int i = 0; i < 5; i++) {
+                wtfParams[i] = parsedParams[i];
+            }
+            vector<bool> result = generate(parseModelName(modelName), numPackets, wtfParams);
+            writeLossToFile(result, outPath);
+        } else if (params[1] == "ext" || params[1] == "exg") {
+            /*
+             * Real Trace extrahieren
+             */
+            string clientTrace = params[3];
+            string serverTrace = params[4];
+            string globalClientIp = params[5];
+
+            PcapParser parser;
+            struct result pcapResult = parser.startParsing(clientTrace, serverTrace, globalClientIp);
+
+            writeResultToFile(pcapResult, outPath);
+
+            if (params[1] == "exg") {
+                auto *parameter = new double[5];
+                PacketLossModelType model = parseModelName(params[6]);
+                if (model == BERNOULLI) {
+                    BernoulliParser bernoulliParser;
+                    parameter = bernoulliParser.parseParameter(pcapResult.loss);
+                    cout << "p: " << parameter[0] << endl;
+                } else if (model == SIMPLE_GILBERT) {
+                    SimpleGilbertParser simpleGilbertParser;
+                    parameter = simpleGilbertParser.parseParameter(pcapResult.loss);
+                    cout << "p: " << parameter[0] << endl;
+                    cout << "r: " << parameter[1] << endl;
+                } else {
+                    parameter = startSageMath("../SageBaumWelch.py", outPath + "/downloadLoss.txt", params[6],
+                                              parameter);
+                }
+                vector<bool> result = generate(model, stoll(params[7]), parameter);
+                pcapResult.loss = result;
+                writeResultToFile(pcapResult, outPath);
+            }
+        } else {
+            cout << "Invalid params" << endl;
+        }
     }
 
     return 0;
