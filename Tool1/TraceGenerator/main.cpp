@@ -321,7 +321,10 @@ int main(int argc, char **argv) {
             }
             vector<bool> result = generate(model, stoll(params[7]), parameter);
             pcapResult.loss = result;
+            writeResultToFile(pcapResult, outPath);
         }
+    } else {
+        cout << "Invalid params" << endl;
     }
 
     return 0;
