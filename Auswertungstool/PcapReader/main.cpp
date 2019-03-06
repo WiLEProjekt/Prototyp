@@ -17,6 +17,8 @@
 
 using namespace std;
 
+static const unsigned long MAXIMUM_RTP_SEQNUM = 65536;
+
 struct result {
     /**
      * 0 = packet arrived, 1 = packet lost
@@ -25,7 +27,7 @@ struct result {
     double reordering;
     double duplication;
     vector<int64_t> delays;
-
+    vector<unsigned long> seqNums;
     vector<struct resultPoint> fullResult;
 };
 
@@ -157,6 +159,22 @@ struct result getResults(struct pcapValues values) {
     vector<int64_t> delays;
     vector<bool> loss;
     vector<struct resultPoint> points;
+    vector<unsigned long> seqNumsRecieved;
+    unsigned long currentOffset = 0;
+
+    /*
+     * Reordering
+     */
+    unsigned long lastSeqNum = 0;
+    for (unsigned long i = (values.seqNumsReceived.size() - 1); i > 0; i--) {
+        unsigned long currentSeqNum = values.seqNumsReceived[i] + currentOffset;
+        if(lastSeqNum != 0 && currentSeqNum < lastSeqNum) {
+            currentOffset += MAXIMUM_RTP_SEQNUM;
+        } else {
+            lastSeqNum = currentSeqNum;
+            seqNumsRecieved.push_back(currentSeqNum);
+        }
+    }
 
     /*
      * Delays and Loss
@@ -207,36 +225,17 @@ struct result getResults(struct pcapValues values) {
             lossCounter++;
         }
     }
-    cout << "delays and loss finished" << endl;
-
-    /*
-     * Reordering
-     */
-    set<unsigned long> reorders;
-    unsigned long lastValidSeqNum = 0UL - 1UL;
-    for (unsigned long i = (values.seqNumsReceived.size() - 1); i > 0; i--) {
-        unsigned long currentSeqNum = values.seqNumsReceived[i];
-        if (currentSeqNum < lastValidSeqNum) {
-            lastValidSeqNum = currentSeqNum;
-        } else if (currentSeqNum > lastValidSeqNum) {
-            reorders.insert(currentSeqNum);
-        }
-    }
-
-    double reordering = (double) 100 / (double) values.seqNumsReceived.size() * (double) reorders.size();
-    cout << reorders.size() << " reordered packets [" << reordering << "%]" << endl;
-
     /*
      * Duplication
      */
     set<unsigned long> allSeqNums;
 
-    for (unsigned long recvSeqNum : values.seqNumsReceived) {
+    for (unsigned long recvSeqNum : seqNumsRecieved) {
         allSeqNums.insert(recvSeqNum);
     }
 
-    unsigned long duplications = values.seqNumsReceived.size() - allSeqNums.size();
-    double duplication = (double) 100 / (double) values.seqNumsReceived.size() * (double) duplications;
+    unsigned long duplications = seqNumsRecieved.size() - allSeqNums.size();
+    double duplication = (double) 100 / (double) seqNumsRecieved.size() * (double) duplications;
 
     cout << duplications << " duplicated packets [" << duplication << "%]" << endl;
 
@@ -244,8 +243,8 @@ struct result getResults(struct pcapValues values) {
     results.delays = delays;
     results.duplication = duplications;
     results.loss = loss;
-    results.reordering = reordering;
     results.fullResult = points;
+    results.seqNums = seqNumsRecieved;
     return results;
 }
 
@@ -265,23 +264,16 @@ struct pcapValues readStreamPcapFile(const string &filename, const string &ipOfP
         pcap_t *pcap = pcap_open_offline(filename.c_str(), errbuff);
         struct pcap_pkthdr *header;
         const u_char *data;
-        //BRAUCHEN WIR DAS NOCH??????
         bool isFirstPackageToOther = true;
-        //-------
         unsigned long packageCount = 0;
         while (pcap_next_ex(pcap, &header, &data) >= 0) {
             packageCount++;
 
-
-            //TODO: EVENTUELL IPs checken
             unsigned char sourceIPBytes[] = {data[28], data[29], data[30], data[31]};
             unsigned char destIPBytes[] = {data[32], data[33], data[34], data[35]};
             string packetSource = parseIP(sourceIPBytes);
             string packetDest = parseIP(destIPBytes);
 
-            //check if packet is UDP (17)
-            unsigned char lengthBytes[] = {data[40], data[41]};
-            unsigned long length = parseNumberFromBytes(lengthBytes, 2);
                 unsigned long seqNum = getSeqNumRTP(data);
                 if (ipOfPcapDevice == packetSource && ipOfOtherDevice == packetDest) {
                     if (isFirstPackageToOther) {
@@ -491,7 +483,7 @@ void writeResultToFile(const string &path, result upload, result download) {
         downloadDuplicationFile.flush();
         downloadDuplicationFile.close();
 
-
+        /*
         ofstream downloadReorderingFile;
         downloadReorderingFile.open(path + "downloadReordering.txt");
         downloadReorderingFile << download.reordering << endl;
@@ -499,6 +491,7 @@ void writeResultToFile(const string &path, result upload, result download) {
         downloadReorderingFile.close();
 
         writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
+        */
     }
 
     string uploadDelayFilename = path + "uploadDelays.csv";
@@ -545,6 +538,13 @@ void writeResultToFile(const result &download){
     downloadReorderingFile.close();
 
     writeFullTraceFile(path + "downloadfull.csv", download.fullResult);
+
+    ofstream seqNumFile;
+    seqNumFile.open(path + "seqNums.txt");
+    for(unsigned long l : download.seqNums){
+        seqNumFile << l << endl;
+    }
+    seqNumFile.close();
 }
 
 void pimpData(const string &path) {
