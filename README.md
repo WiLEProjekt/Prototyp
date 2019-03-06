@@ -39,8 +39,26 @@ extrahiert Netzwerkparameter aus den .pcap-Dateien [clientTrace.pcap] und [serve
 
 ### Wichtige Beispiele
 #### Menü starten um weitere Parameter einzugeben
+Das Menü zeigt eine Auswahl von Traces 
 ```
 ./ModelParameteriser
+
+What do you need?
+[1] extract real trace
+[2] generate trace with model
+[3] extract model parameters from real trace
+>3
+output path:
+output
+Trace:
+[1] 2019-03-05_Train_MS_OS
+[2] 2019-03-05_Train_OS_MS
+[3] Stationary_OS_2
+>1
+Modelname:
+>markov
+Number of Packets:
+>20000
 ```
 #### Trace aus Modellparameter generieren
 ./ModelParameteriser gen [outputfile] [number of packets] [modelname] [p] [r] [k] [h]
