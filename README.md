@@ -10,8 +10,21 @@ Zum erstellen des Programms wird libpcap benötigt.
 
 Für den Buildprozess wird [cmake](https://cmake.org/) genutzt.
 
+Die Parameter können über ein Menü abgefragt werden. Damit das Menü eine Auswahl von Traces anbieten kann, muss folgende Ordnerstrucktur vorliegen:
+```
+ModelParameteriser/
+     	|
+	|----Traces/
+	|     	|
+	|	|-----ExampleTrace/
+	|       |	    |
+	|       |	    |---clientIp.txt #enthält die globale IP-Adresse vom Client
+	|       |           |---client.pcap  #Der Netzwerkmitschnitt vom Client
+        |       |           |---server.pcap  #Der Netzwerkmitschnitt vom Server
+```
+
 ## Aufrufe 
-Startet den ModelParameteriser. Die Parameter werden über ein Menü abgefragt.
+Startet den ModelParameteriser. 
 ```
 ./ModelParameteriser 
 ```
@@ -39,7 +52,7 @@ extrahiert Netzwerkparameter aus den .pcap-Dateien [clientTrace.pcap] und [serve
 
 ### Wichtige Beispiele
 #### Menü starten um weitere Parameter einzugeben
-Das Menü zeigt eine Auswahl von Traces 
+Das Menü zeigt eine Auswahl von Traces.
 ```
 ./ModelParameteriser
 
