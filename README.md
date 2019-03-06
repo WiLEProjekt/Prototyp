@@ -1,5 +1,5 @@
 # Prototyp
-## Neues OneDrive Verzeichnis
+## OneDrive Verzeichnis
 https://1drv.ms/f/s!Ag0XrlR639VItTpaLc9gP4oNXFr4
 ## Systemvorraussetzungen
 Zum erstellen des Programms wird libpcap benötigt.
@@ -43,18 +43,18 @@ extrahiert Netzwerkparameter aus den .pcap-Dateien [clientTrace.pcap] und [serve
 ./ModelParameteriser
 ```
 #### Trace aus Modellparameter generieren
-```
 ./ModelParameteriser gen [outputfile] [number of packets] [modelname] [p] [r] [k] [h]
+```
 ./ModelParameteriser gen /output/ gilbertelliot 200000 0.2 0.7 0.97 0.05
 ```
 #### Netzwerkparameter aus Netzwerkmittschnitt extrahieren.
-```
 ./TraceGenerator ext [output-path] [clientTrace.pcap] [serverTrace.pcap] [global client-ip]
+```
 ./TraceGenerator ext /output/ client.pcap server.pcap 84.135.166.24
 ```
 #### Netzwerkparameter aus Netzwerkmittschnitt extrahieren. Parameterschätzung durchführen und damit mit unseren Modellen einen neuen Trace generieren
-```
 ./ModelParameteriser exg [output-path] [clientTrace.pcap] [serverTrace.pcap] [global client-ip] [model] [number of packets]
+```
 ./ModelParameteriser exg /output/ client.pcap server.pcap 84.135.166.24 markov 200000
 ```
 
