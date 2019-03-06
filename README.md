@@ -10,57 +10,39 @@ Für den Buildprozess wird cmake genutzt.
 ## Aufrufe 
 ./TraceGenerator 
 
-zeigt alle möglichen Parameterangaben an.
+startet den TraceGenerator. Die Parameter werden über ein Menü abgefragt.
 
 ### Optionen
 Im folgenden ist ein Trace eine Datei, die nur aus 0 (Paketverlust) und 1 (Kein Packetverlust) besteht.
 
 Das Programm lässt sich mit folgenden Optionen ausführen:
-#### -gen
--gen [outputfile] [model] [args...]
+#### gen
+gen [outputfile] [number of packets] [model] [args...]
 
-generiert einen Trace mit den Model [model] und nutzt die Parameter [args...] für das Model. Der Trace wird dann in die Datei [outputfile] gespeichert.
-#### -showmodel
--showmodel 
+generiert einen Trace mit [number of packets] Paketen, den Model [model] und nutzt die Parameter [args...] für das Model. Der Trace wird dann in die Datei [outputfile] gespeichert.
 
-zeigt alle verfügbaren Modelle an.
-#### -extract
--extract [tcp/icmp] [filename] [modelname] ([gMin])
+#### ext
+ext [output-path] [clientTrace.pcap] [serverTrace.pcap] [global client-ip]
 
-extrahiert Modellparameter für das Model [modelname] aus der .pcap-Datei [filename]. Der erste Parameter [tcp/icmp] gibt an, welche Packete untersucht werden sollen. Der Parameter ([gMin]) ist optional und gibt den schwellwert für die Burstlänge für Markov- oder Gilbert-Elliot-Modelle an. Der Standardwert ist bei Markov 4 und bei Gilbert-Elliot 16.
+extrahiert Netzwerkparameter aus den .pcap-Dateien [clientTrace.pcap] und [serverTrace.pcap]. Die [global client-ip] ist die globale IP-Adresse des Clients. Die extrahierten Parameter werden in den Ordner [output-path] geschrieben.
 
--extract ping [packetCount] [filename] [modelname] ([gMin])
+#### exg
+exg [output-path] [clientTrace.pcap] [serverTrace.pcap] [global client-ip] [model] [number of packets]
 
-extrahiert Modellparameter für das Model [modelname] aus einem ping-log [filename], in dem [packetCount] viele Packete per Ping verschickt wurden. Der Parameter ([gMin]) ist optional und gibt den schwellwert für die Burstlänge für Markov- oder Gilbert-Elliot-Modelle an. Der Standardwert ist bei Markov 4 und bei Gilbert-Elliot 16.
-#### -import
--import [tcp/icmp] [filename] [modelname] [outputfile] ([gMin]) ([seed])
-
-extrahiert die Modellparameter genau wie -extract und generiert daraus eine neue Trace-Datei [outputfile]. Mit dem optionalen Parameter [seed] kann ein seed für die Trace-Generierung angegeben werden. 
-
--import ping [packetCount] [filename] [modelname] [outputfile] ([gMin]) ([seed])
-
-extrahiert die Modellparameter genau wie -extract und generiert daraus eine neue Trace-Datei [outputfile]. Mit dem optionalen Parameter [seed] kann ein seed für die Trace-Generierung angegeben werden. 
-#### -parse
-Nimmt die Terminal-Ausgabe eines pings (z.B. ping -c 20 -i 0 131.173.33.228 >output.txt) als Eingabe und gibt 0,1 Losstrace aus
--parse -ping [filename] [packetCount] [outputfile]
-
-Wandelt eine Pinglog-Datei [filename] mit [packetCount] vielen Packeten in eine Trace-Datei [outputfile] um.
-
--parse -pcap [tcp|icmp] [filename] [outputfile]
-
-Wandelt eine .pcap-Datei [filename] in eine Trace-Datei [outputfile] um. [tcp/icmp] gibt an, ob tcp- oder icmp-Pakete untersucht werden sollen.
-
-#### ANMERKUNG
-TCP IST NUR KONZEPTIONELL IMPLEMENTIERT, NOCH NICHT GETESTET.
+extrahiert Netzwerkparameter aus den .pcap-Dateien [clientTrace.pcap] und [serverTrace.pcap], erzeugt aus den Loss-Trace Parameter für das Modell [model] und generiert einen neuen Trace mit [number of packets] Paketen. Die [global client-ip] ist die globale IP-Adresse des Clients. Die extrahierten Parameter und der generierte Loss-Trace werden in den Ordner [output-path] geschrieben.
 
 ### Wichtige Beispiele
-#### Trace aus Modellparameter als Eingabe generieren
-./TraceGenerator -gen [outputfile] [modelname] [seed] [number of packets] [p] [r] [k] [h]
-./TraceGenerator -gen GilbertElliotTrace.txt gilbertelliot 1 200000 0.2 0.7 0.97 0.05
+#### Menü starten um weitere Parameter einzugeben
+./TraceGenerator
 
-#### PCAP Trace als Eingabe in einen 0,1 Losstrace umwandeln
-./TraceGenerator -parse -pcap icmp input.pcap output.txt
+#### Trace aus Modellparameter generieren
+./TraceGenerator gen [outputfile] [number of packets] [modelname] [p] [r] [k] [h]
+./TraceGenerator gen /output/ gilbertelliot 200000 0.2 0.7 0.97 0.05
 
-#### PCAP Trace als Eingabe, Parameterschätzung durchführen und damit mit unseren Modellen einen neuen Trace generieren
-./TraceGenerator -import [tcp/icmp] [filename] [modelname] [outputfile] ([gMin]) ([seed])
-./TraceGenerator -import icmp inputfile.pcap gilbertelliot genGE.txt 16 1
+#### Netzwerkparameter aus Netzwerkmittschnitt extrahieren.
+./TraceGenerator ext [output-path] [clientTrace.pcap] [serverTrace.pcap] [global client-ip]
+./TraceGenerator ext /output/ client.pcap server.pcap 84.135.166.24
+
+#### Netzwerkparameter aus Netzwerkmittschnitt extrahieren. Parameterschätzung durchführen und damit mit unseren Modellen einen neuen Trace generieren
+./TraceGenerator exg [output-path] [clientTrace.pcap] [serverTrace.pcap] [global client-ip] [model] [number of packets]
+./TraceGenerator exg /output/ client.pcap server.pcap 84.135.166.24 markov 200000
