@@ -14,10 +14,10 @@ struct result {
     /**
      * 0 = packet arrived, 1 = packet lost
      */
-    vector<bool> loss;
+    vector<bool> *loss;
     double reordering;
     double duplication;
-    vector<int64_t> delays;
+    vector<int64_t> *delays;
 };
 
 #endif //TRACEGENERATOR_RESULT_H

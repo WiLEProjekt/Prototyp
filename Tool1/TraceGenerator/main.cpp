@@ -50,14 +50,14 @@ void writeResultToFile(const result &download, const string &path) {
 
     ofstream downloadLossFile;
     downloadLossFile.open(path + "/downloadLoss.txt");
-    for (bool b : download.loss) {
+    for (bool b : *download.loss) {
         downloadLossFile << b;
     }
     downloadLossFile.flush();
     downloadLossFile.close();
 
     string downloadDelayFilename = path + "/downloadDelays.csv";
-    writeDelayFile(downloadDelayFilename, download.delays);
+    writeDelayFile(downloadDelayFilename, *download.delays);
 
     ofstream downloadDuplicationFile;
     downloadDuplicationFile.open(path + "/downloadDuplication.txt");
@@ -72,7 +72,7 @@ void writeResultToFile(const result &download, const string &path) {
     downloadReorderingFile.close();
 }
 
-vector<bool> generate(PacketLossModelType model, unsigned long numPackets, double params[]) {
+vector<bool> *generate(PacketLossModelType model, unsigned long numPackets, double params[]) {
     TraceGenerator traceGenerator;
     return traceGenerator.generateTrace(model, numPackets, 0, params);
 }
@@ -127,17 +127,20 @@ double *parseParams(PacketLossModelType model, const string *params, double *res
     }
 }
 
-void writeLossToFile(vector<bool> loss, const string &path) {
+void writeLossToFile(vector<bool> *loss, const string &path) {
     string pathcommand = "mkdir -p " + path;
     system(pathcommand.c_str());
 
     ofstream downloadLossFile;
     downloadLossFile.open(path + "/loss.txt");
-    for (bool b : loss) {
-        downloadLossFile << b;
+    if (downloadLossFile.good()) {
+        for (bool b : *loss) {
+            downloadLossFile << b;
+        }
+        downloadLossFile.close();
+    } else {
+        cout << "Could not open " + path + "/loss.txt" << endl;
     }
-    downloadLossFile.flush();
-    downloadLossFile.close();
 }
 
 /**
@@ -275,17 +278,14 @@ vector<string> listAllTraces(){
     int counter = 1;
     struct dirent *ent;
     if ((dir = opendir (path.c_str())) != NULL) {
-        /* print all the files and directories within directory */
         while ((ent = readdir (dir)) != NULL) {
-            directories.push_back(ent->d_name);
+            if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0)
+                directories.push_back(ent->d_name);
         }
         closedir (dir);
     } else {
-        /* could not open directory */
         perror (("Could not open directory: " + path).c_str());
     }
-    directories.pop_back();
-    directories.pop_back();
     for(const string &directory : directories){
         cout << "[" << counter++ << "] " << directory << endl;
     }
@@ -302,7 +302,11 @@ string getClientIpFromDirectory(const string& directory){
     return clientIp;
 }
 
-void getExtractParams(){
+/**
+ * ext outPath clientTrace serverTrace globalClientIp \\(extract)
+ * exg outPath clientTrace serverTrace globalClientIp model numPackets\\(extract and generate)
+ */
+void getExtractParams(bool generate) {
     string outpath;
     string clientPcap;
     string serverPcap;
@@ -318,7 +322,7 @@ void getExtractParams(){
     serverPcap = "../Traces/" + directory + "/server.pcap";
     clientIp = getClientIpFromDirectory(directory);
 
-    int argc = 6;
+    int argc = generate ? 8 : 6;
     const auto **argv = new const char*[argc];
     argv[0] = "TraceGenerator";
     argv[1] = "ext";
@@ -326,6 +330,19 @@ void getExtractParams(){
     argv[3] = clientPcap.c_str();
     argv[4] = serverPcap.c_str();
     argv[5] = clientIp.c_str();
+
+    if (generate) {
+        string modelname;
+        string numPackets;
+        cout << "Modelname:" << endl;
+        cin >> modelname;
+        cout << "Number of Packets:" << endl;
+        cin >> numPackets;
+        argv[1] = "exg";
+        argv[6] = modelname.c_str();
+        argv[7] = numPackets.c_str();
+    }
+
     main(argc, (char**)argv);
 }
 /**
@@ -384,7 +401,6 @@ void getGenerateParams(){
             }
         }
     } else if(model == MARKOV){
-        argc = 10;
         string p13;
         string p31;
         string p32;
@@ -400,11 +416,16 @@ void getGenerateParams(){
         cin >> p23;
         cout << "p14:" << endl;
         cin >> p14;
-        argv[5] = p13.c_str();
-        argv[6] = p31.c_str();
-        argv[7] = p32.c_str();
-        argv[8] = p23.c_str();
-        argv[9] = p14.c_str();
+        double params[5];
+        params[0] = stof(p13);
+        params[1] = stof(p31);
+        params[2] = stof(p32);
+        params[3] = stof(p23);
+        params[4] = stof(p14);
+        vector<bool> *result = generate(MARKOV, stol(numPackets), params);
+        writeLossToFile(result, outpath);
+        delete (result);
+        return;
     }
     main(argc, (char**)argv);
 }
@@ -423,7 +444,7 @@ void startMenu(){
         cin >> command;
         switch (command) {
             case EXTRACT:
-                getExtractParams();
+                getExtractParams(false);
                 validCommand = true;
                 break;
             case GENERATE:
@@ -431,6 +452,7 @@ void startMenu(){
                 validCommand = true;
                 break;
             case EXTRACT_GENERATE:
+                getExtractParams(true);
                 validCommand = true;
                 break;
             default:
@@ -449,6 +471,7 @@ void startMenu(){
 int main(int argc, char **argv) {
     if(argc == 1){
         startMenu();
+        return 0;
     } else {
         string params[argc];
         for (int i = 0; i < argc; i++) {
@@ -456,6 +479,7 @@ int main(int argc, char **argv) {
         }
 
         string outPath = argv[2];
+
 
         if (params[1] == "gen") {
             /*
@@ -474,8 +498,9 @@ int main(int argc, char **argv) {
             for (int i = 0; i < 5; i++) {
                 wtfParams[i] = parsedParams[i];
             }
-            vector<bool> result = generate(parseModelName(modelName), numPackets, wtfParams);
+            vector<bool> *result = generate(parseModelName(modelName), numPackets, wtfParams);
             writeLossToFile(result, outPath);
+            delete (result);
         } else if (params[1] == "ext" || params[1] == "exg") {
             /*
              * Real Trace extrahieren
@@ -485,30 +510,34 @@ int main(int argc, char **argv) {
             string globalClientIp = params[5];
 
             PcapParser parser;
-            struct result pcapResult = parser.startParsing(clientTrace, serverTrace, globalClientIp);
+            struct result *pcapResult = parser.startParsing(clientTrace, serverTrace, globalClientIp);
 
-            writeResultToFile(pcapResult, outPath);
+            writeResultToFile(*pcapResult, outPath);
 
             if (params[1] == "exg") {
                 auto *parameter = new double[5];
                 PacketLossModelType model = parseModelName(params[6]);
                 if (model == BERNOULLI) {
                     BernoulliParser bernoulliParser;
-                    parameter = bernoulliParser.parseParameter(pcapResult.loss);
+                    parameter = bernoulliParser.parseParameter(*pcapResult->loss);
                     cout << "p: " << parameter[0] << endl;
                 } else if (model == SIMPLE_GILBERT) {
                     SimpleGilbertParser simpleGilbertParser;
-                    parameter = simpleGilbertParser.parseParameter(pcapResult.loss);
+                    parameter = simpleGilbertParser.parseParameter(*pcapResult->loss);
                     cout << "p: " << parameter[0] << endl;
                     cout << "r: " << parameter[1] << endl;
                 } else {
                     parameter = startSageMath("../SageBaumWelch.py", outPath + "/downloadLoss.txt", params[6],
                                               parameter);
                 }
-                vector<bool> result = generate(model, stoll(params[7]), parameter);
-                pcapResult.loss = result;
-                writeResultToFile(pcapResult, outPath);
+                vector<bool> *result = generate(model, stoll(params[7]), parameter);
+                pcapResult->loss = result;
+                writeResultToFile(*pcapResult, outPath);
             }
+
+            delete (pcapResult->loss);
+            delete (pcapResult->delays);
+            delete (pcapResult);
         } else {
             cout << "Invalid params" << endl;
         }

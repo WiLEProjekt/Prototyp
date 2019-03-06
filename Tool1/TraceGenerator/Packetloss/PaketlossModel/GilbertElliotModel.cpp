@@ -3,8 +3,8 @@
 #include <iostream>
 #include "GilbertElliotModel.h"
 
-vector<bool> GilbertElliotModel::buildTrace() {
-    vector<bool> trace;
+vector<bool> *GilbertElliotModel::buildTrace() {
+    vector<bool> *trace = new vector<bool>;
     bool good = true; // 1 = good state, 0 = bad state
     bool send; // 0 = loss, 1 = successfully send, or no loss
     for(long i = 0; i< this->numPackets+1; i++){
@@ -23,7 +23,7 @@ vector<bool> GilbertElliotModel::buildTrace() {
             //cout << "random h: " << randomNumberLossH << " h: " << this->h << " random r: " << randomNumberStateR << " r: " << this->r << endl;
         }
         if(i != 0) {
-            trace.push_back(send);
+            trace->push_back(send);
         }
     }
     return trace;

@@ -2,8 +2,8 @@
 #include <iostream>
 #include "MarkovModel.h"
 
-vector<bool> MarkovModel::buildTrace() {
-    vector<bool> trace;
+vector<bool> *MarkovModel::buildTrace() {
+    auto *trace = new vector<bool>;
     int state = 1;
 
     for (long i = 0; i < numPackets + 1; i++) {
@@ -40,7 +40,7 @@ vector<bool> MarkovModel::buildTrace() {
                 break;
         }
         if (i != 0) {
-            trace.push_back(value);
+            trace->push_back(value);
         }
     }
     return trace;

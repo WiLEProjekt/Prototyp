@@ -25,7 +25,7 @@ private:
     string checkParameter();
 
 public:
-    vector<bool> buildTrace() override;
+    vector<bool> *buildTrace() override;
 
     /**
      * Constructor

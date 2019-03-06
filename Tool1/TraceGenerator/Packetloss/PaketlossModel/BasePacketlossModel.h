@@ -27,7 +27,7 @@ protected:
         randomGenerator.seed(seed);
         auto *dist = new uniform_real_distribution<float>(0.0, 1.0);
         distribution = *dist;
-        delete (dist);
+        //delete (dist);
     }
 
 public:
@@ -35,7 +35,7 @@ public:
      * Builds a loss trace
      * @return a loss trace
      */
-    virtual vector<bool> buildTrace() = 0;
+    virtual vector<bool> *buildTrace() = 0;
 };
 
 

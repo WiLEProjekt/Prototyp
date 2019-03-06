@@ -27,12 +27,12 @@ private:
      * Prints the packetloss in percent on the console
      * @param trace the loss trace
      */
-    void printPacketloss(vector<bool> trace);
+    void printPacketloss(vector<bool> *trace);
 
 
 public:
 
-    vector<bool>
+    vector<bool> *
     generateTrace(PacketLossModelType modelType, unsigned long numPackets, unsigned int seed, double *params);
 };
 

@@ -1,8 +1,8 @@
 
 #include "TraceGenerator.h"
 
-vector<bool> TraceGenerator::generateTrace(PacketLossModelType modelType, unsigned long numPackets, unsigned int seed,
-                                           double *params) {
+vector<bool> *TraceGenerator::generateTrace(PacketLossModelType modelType, unsigned long numPackets, unsigned int seed,
+                                            double *params) {
     BasePacketlossModel *model = nullptr;
     if (seed == 0) {
         seed = time(0);
@@ -16,11 +16,11 @@ vector<bool> TraceGenerator::generateTrace(PacketLossModelType modelType, unsign
     } else {
         cout << "No valid model: " << modelType << endl;
         this->printModels();
-        vector<bool> result;
+        vector<bool> *result = new vector<bool>;
         return result;
     }
 
-    vector<bool> trace = model->buildTrace();
+    vector<bool> *trace = model->buildTrace();
     this->printPacketloss(trace);
     delete (model);
     return trace;
@@ -40,12 +40,12 @@ void TraceGenerator::printModels() {
          << numeric_limits<long>::max() << "]> <p13> <p31> <p32> <p23> <p14>" << endl;
 }
 
-void TraceGenerator::printPacketloss(vector<bool> trace) {
+void TraceGenerator::printPacketloss(vector<bool> *trace) {
     long zeros = 0;
-    for (auto &&i : trace) {
+    for (auto &&i : *trace) {
         if (i == false) {
             zeros++;
         }
     }
-    cout << " Packetloss: " << (100 / (float) trace.size()) * (float) zeros << "%" << endl;
+    cout << " Packetloss: " << (100 / (float) trace->size()) * (float) zeros << "%" << endl;
 }

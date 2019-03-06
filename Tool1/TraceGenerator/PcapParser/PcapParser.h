@@ -43,20 +43,20 @@ private:
     * @param values the values from the pcaps
     * @return the resutls
     */
-    struct result getResults(struct pcapValues values);
+    struct result *getResults(struct pcapValues *values);
 
-    struct pcapValues
+    struct pcapValues *
     readMobilePcapFile(const string &filename, const string &ipOfPcapDevice, const string &ipOfOtherDevice);
 
 public:
     struct result
-    startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp) {
+    *startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp) {
         return this->startParsing(clientTraceFile, serverTraceFile, globalClientIp, "192.168.8.100", "131.173.33.228");
     }
 
     struct result
-    startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
-                 const string &localClientIp, const string &serverIp);
+    *startParsing(const string &clientTraceFile, const string &serverTraceFile, const string &globalClientIp,
+                  const string &localClientIp, const string &serverIp);
 };
 
 

@@ -11,10 +11,10 @@
 using namespace std;
 
 struct pcapValues {
-    map<unsigned long, struct timeval> send;
-    map<unsigned long, struct timeval> received;
-    vector<unsigned long> seqNumsSend;
-    vector<unsigned long> seqNumsReceived;
+    map<unsigned long, struct timeval> *send;
+    map<unsigned long, struct timeval> *received;
+    vector<unsigned long> *seqNumsSend;
+    vector<unsigned long> *seqNumsReceived;
 };
 
 #endif //TRACEGENERATOR_PCAPVALUES_H

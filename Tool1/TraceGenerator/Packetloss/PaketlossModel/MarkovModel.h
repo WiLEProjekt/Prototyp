@@ -8,7 +8,7 @@ using namespace std;
 
 class MarkovModel : public BasePacketlossModel {
 protected:
-    vector<bool> buildTrace() override;
+    vector<bool> *buildTrace() override;
 
 private:
     double p13, p14, p23, p31, p32, p41 = 1;
