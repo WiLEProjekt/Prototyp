@@ -2,10 +2,14 @@
 ## OneDrive Verzeichnis
 https://1drv.ms/f/s!Ag0XrlR639VItTpaLc9gP4oNXFr4
 ## Systemvorraussetzungen
-Zum erstellen des Programms wird libpcap benötigt.
+Zum erstellen des Programms werden libpcap und sagemath benötigt.
 
 ```
- sudo apt-get install libpcap-dev
+sudo apt-get install libpcap-dev
+
+sudo apt-add-repository -y ppa:aims/sagemath
+sudo apt-get update
+sudo apt-get install sagemath-upstream-binary
 ```
 
 Für den Buildprozess wird [cmake](https://cmake.org/) genutzt.
@@ -62,7 +66,7 @@ What do you need?
 [3] extract model parameters from real trace
 >3
 output path:
-output
+>output
 Trace:
 [1] 2019-03-05_Train_MS_OS
 [2] 2019-03-05_Train_OS_MS
