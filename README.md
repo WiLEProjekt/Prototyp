@@ -59,7 +59,7 @@ extrahiert Netzwerkparameter aus den .pcap-Dateien [clientTrace.pcap] und [serve
 ```
 
 ## Autoren
-**Leonhard Brüggemann**
-**Alexander Ditt**
-**Domenic Laniewski**
-**Dennis Rieke**
+* **Leonhard Brüggemann**
+* **Alexander Ditt**
+* **Domenic Laniewski**
+* **Dennis Rieke** 
