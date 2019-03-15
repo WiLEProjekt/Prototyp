@@ -96,5 +96,5 @@ Number of Packets:
 ## Autoren
 * **Leonhard Brüggemann**
 * **Alexander Ditt**
-* **Domenic Laniewski**
+* **Dominic Laniewski**
 * **Dennis Rieke** 
